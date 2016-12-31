@@ -4,21 +4,27 @@ import com.soywiz.kimage.bitmap.Bitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korui.util.spawn
 
 interface Length {
     object AUTO : Length {
         override fun calc(size: Int): Int = size
+        override fun scale(ratio: Double): Length = AUTO
     }
     class PX(val v: Int) : Length {
         override fun calc(size: Int): Int = v
+        override fun scale(ratio: Double): Length = PT((this.v * ratio).toInt())
     }
     class PT(val v: Int) : Length {
         override fun calc(size: Int): Int = v
+        override fun scale(ratio: Double): Length = PT((this.v * ratio).toInt())
     }
     class Ratio(val ratio: Double) : Length {
         override fun calc(size: Int): Int = (ratio * size).toInt()
+        override fun scale(ratio: Double): Length = Ratio(this.ratio * ratio)
     }
     fun calc(size: Int): Int
+    fun scale(ratio: Double): Length
 }
 
 val Int.px: Length get() = Length.PX(this)
@@ -75,9 +81,9 @@ open class Component(val lc: LightComponents, val handle: Any) {
         lc.setBounds(handle, bounds.x, bounds.y, bounds.width, bounds.height)
     }
 
-    fun onClick(handler: () -> Unit) {
+    fun onClick(handler: suspend () -> Unit) {
         lc.setEventHandler<LightComponents.ClickEvent>(handle) {
-            handler()
+            spawn(handler)
         }
     }
 
@@ -117,6 +123,8 @@ class Frame(lc: LightComponents) : Container(lc, LightComponents.TYPE_FRAME) {
 }
 
 open class Layout(lc: LightComponents) : Container(lc, LightComponents.TYPE_CONTAINER) {
+    val padding = Padding()
+
     init {
         width = 100.percent
         height = 100.percent
@@ -135,6 +143,9 @@ open class VerticalLayout(lc: LightComponents) : Layout(lc) {
     }
 }
 
+data class Padding(var left: Length = 0.px, var top: Length = 0.px, var right: Length = 0.px, var bottom: Length = 0.px) {
+}
+
 data class Rectangle(var x: Int = 0, var y: Int = 0, var width: Int = 0, var height: Int = 0) {
     fun set(that: Rectangle) = set(that.x, that.y, that.width, that.height)
 
@@ -151,6 +162,13 @@ class Button(lc: LightComponents, val text: String) : Component(lc, lc.create(Li
         width = 100.percent
         height = 32.pt
         lc.setText(handle, text)
+    }
+}
+
+class Spacer(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_CONTAINER)) {
+    init {
+        width = 100.percent
+        height = 32.pt
     }
 }
 
@@ -202,5 +220,7 @@ fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this
 
 inline fun Container.button(text: String, callback: Button.() -> Unit) = add(Button(this.lc, text).apply { callback() })
 inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Image(this.lc).apply { image = bitmap; callback() })
+inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
+inline fun Container.spacer() = add(Spacer(this.lc))
 
 inline fun Container.vertical(callback: VerticalLayout.() -> Unit): VerticalLayout = add(VerticalLayout(this.lc).apply { callback() })
