@@ -38,7 +38,7 @@ class AwtLightComponents : LightComponents() {
 		else -> throw UnsupportedOperationException()
 	}
 
-	override fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit) {
+	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		when (type) {
 			LightClickEvent::class.java -> {
 				(c as Component).addMouseListener(object : MouseAdapter() {

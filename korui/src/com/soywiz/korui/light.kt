@@ -23,7 +23,21 @@ open class LightComponents {
 
 	open fun create(type: String): Any = throw UnsupportedOperationException()
 	open fun setParent(c: Any, parent: Any?): Unit = throw UnsupportedOperationException()
-	open fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit): Unit = throw UnsupportedOperationException()
+	open protected fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit): Unit = throw UnsupportedOperationException()
+
+	var insideEventHandler: Boolean = false; private set
+
+	fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit): Unit {
+		setEventHandlerInternal(c, type, {
+			insideEventHandler = true
+			try {
+				handler(it)
+			} finally {
+				insideEventHandler = false
+			}
+		})
+	}
+
 	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun setText(c: Any, text: String): Unit = throw UnsupportedOperationException()
 	open fun setAttribute(c: Any, key: String, value: Any?): Unit = Unit

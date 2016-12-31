@@ -3,11 +3,20 @@ package com.soywiz.korui.html
 import com.jtransc.annotation.JTranscMethodBody
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korio.async.asyncFun
+import com.soywiz.korio.stream.AsyncStream
+import com.soywiz.korio.stream.AsyncStreamBase
+import com.soywiz.korio.stream.toAsyncStream
+import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korio.vfs.VfsOpenMode
+import com.soywiz.korio.vfs.VfsStat
+import com.soywiz.korio.vfs.js.JsStat
 import com.soywiz.korui.LightClickEvent
 import com.soywiz.korui.LightComponents
 import com.soywiz.korui.LightEvent
 import com.soywiz.korui.LightResizeEvent
+import java.io.FileNotFoundException
 import kotlin.coroutines.CoroutineIntrinsics
 
 @Suppress("unused")
@@ -35,8 +44,9 @@ class HtmlLightComponents : LightComponents() {
 		document.body.style.background = '#e0e0e0';
 		var inputFile = document.createElement('input');
 		inputFile.type = 'file';
-		inputFile.style.display = 'none';
+		//inputFile.style.display = 'none';
 		window.inputFile = inputFile;
+		window.selectedFiles = [];
 		document.body.appendChild(inputFile);
 	""")
 	external private fun _init()
@@ -98,7 +108,7 @@ class HtmlLightComponents : LightComponents() {
     """)
 	external fun _setEventHandler(c: Any, type: String, handler: (Any) -> Unit)
 
-	override fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit) {
+	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		_setEventHandler(c, when (type) {
 			LightClickEvent::class.java -> "click"
 			LightResizeEvent::class.java -> "resize"
@@ -179,7 +189,11 @@ class HtmlLightComponents : LightComponents() {
         var child = p0, message = N.istr(p1), continuation = p2;
 		var result = prompt(message); // @TODO: Synchronous
 		setTimeout(function() {
-			continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](N.str(result));
+			if (result === null) {
+				continuation['{% METHOD kotlin.coroutines.Continuation:resumeWithException %}']({% CONSTRUCTOR java.util.concurrent.CancellationException:()V %}());
+			} else {
+				continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](N.str(result));
+			}
 		}, 0);
 		return this['{% METHOD #CLASS:getSuspended %}']();
     """)
@@ -188,10 +202,117 @@ class HtmlLightComponents : LightComponents() {
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, message = N.istr(p1), continuation = p2;
 		var inputFile = window.inputFile;
+		var files = [];
+		var completedOnce = false;
+
+		function completed() {
+			if (completedOnce) return;
+			completedOnce = true;
+			window.selectedFiles = files;
+			//console.log('completed', files);
+			if (files.length > 0) {
+				continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](N.str(files[0].name));
+			} else {
+				continuation['{% METHOD kotlin.coroutines.Continuation:resumeWithException %}']({% CONSTRUCTOR java.util.concurrent.CancellationException:()V %}());
+			}
+		}
+
+		inputFile.value = '';
+
+		inputFile.onclick = function() {
+			//console.log('onclick!');
+
+			document.body.onfocus = function() {
+				document.body.onfocus = null;
+				setTimeout(function() {
+					completed()
+				}, 100);
+			};
+		};
+
+		inputFile.onchange = function (e) {
+			files = e.target.files;
+			//var v = this.value;
+			//console.log(v);
+			completed();
+		};
+
+		inputFile.click();
+
 		return this['{% METHOD #CLASS:getSuspended %}']();
     """)
-	external suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile
+	external suspend fun _dialogOpenFile(c: Any, filter: String): String
+
+	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = asyncFun {
+		SelectedFilesVfs[_dialogOpenFile(c, filter)]
+	}
 
 	@Suppress("unused")
 	private fun getSuspended() = CoroutineIntrinsics.SUSPENDED
+}
+
+internal object SelectedFilesVfs : Vfs() {
+	@JTranscMethodBody(target = "js", value = """
+		var name = N.istr(p0);
+		var selectedFiles = window.selectedFiles;
+		for (var n = 0; n < selectedFiles.length; n++) {
+			var file = selectedFiles[n];
+			if (file.name == name) return file;
+		}
+		return null;
+    """)
+	external private fun _locate(name: String): Any?
+
+	@JTranscMethodBody(target = "js", value = """
+		var file = p0 || { size : -1 };
+		var stat = {% CONSTRUCTOR com.soywiz.korio.vfs.js.JsStat:(D)V %}(file.size);
+		return stat;
+    """)
+	external private fun jsstat(file: Any?): JsStat
+
+	private fun locate(path: String): Any? = _locate(path.trim('/'))
+
+	suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
+		val jsfile = locate(path) ?: throw FileNotFoundException(path)
+		val jsstat = jsstat(jsfile)
+		return object : AsyncStreamBase() {
+			@JTranscMethodBody(target = "js", value = """
+				var file = p0, position = p1, len = p2, continuation = p3;
+				var reader = new FileReader();
+				var slice = file.slice(position, position + len);
+				reader.onload = function(e) {
+					var result = reader.result;
+					var u8array = new Uint8Array(result);
+					var out = new JA_B(u8array.length);
+					out.setArraySlice(0, u8array);
+
+					//console.log('read', result, slice, e, position, len, continuation);
+					//console.log(result);
+					continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](out);
+				};
+				reader.onerror = function(e) {
+					continuation['{% METHOD kotlin.coroutines.Continuation:resumeWithException %}'](N.createRuntimeException('error reading file'));
+				};
+				reader.readAsArrayBuffer(slice);
+				return this['{% METHOD #CLASS:getSuspended %}']();
+		    """)
+			external suspend fun _read(jsfile: Any, position: Double, len: Int): ByteArray
+
+			suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int = asyncFun {
+				val data = _read(jsfile, position.toDouble(), len)
+				System.arraycopy(data, 0, buffer, offset, data.size)
+				data.size
+			}
+
+			suspend override fun getLength(): Long = jsstat.size.toLong()
+			suspend override fun close() = Unit
+
+			@Suppress("unused")
+			private fun getSuspended() = CoroutineIntrinsics.SUSPENDED
+		}.toAsyncStream()
+	}
+
+	suspend override fun stat(path: String): VfsStat {
+		return jsstat(locate(path)).toStat(path, this)
+	}
 }

@@ -4,7 +4,7 @@ import com.jtransc.annotation.JTranscKeep
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
-import com.soywiz.korio.async.spawn
+import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.korio.vfs.VfsFile
 
 interface Length {
@@ -95,7 +95,7 @@ open class Component(val lc: LightComponents, val handle: Any) {
 
 	fun onClick(handler: suspend () -> Unit) {
 		lc.setEventHandler<LightClickEvent>(handle) {
-			spawn(handler)
+			spawnAndForget(handler)
 		}
 	}
 
@@ -127,6 +127,7 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LightComponents.
 	}
 
 	open suspend fun dialogOpenFile(filter: String = ""): VfsFile = asyncFun {
+		if (!lc.insideEventHandler) throw IllegalStateException("Can't open file dialog outside an event")
 		lc.dialogOpenFile(handle, filter)
 	}
 
@@ -195,6 +196,7 @@ class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightC
 			field = value
 			lc.setText(handle, value)
 		}
+
 	init {
 		width = 100.percent
 		height = 32.pt

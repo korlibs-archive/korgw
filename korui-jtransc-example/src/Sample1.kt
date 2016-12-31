@@ -22,25 +22,34 @@ fun main(args: Array<String>) = EventLoop.main {
 
 		vertical {
 			width = 50.percent
-			button("hello") {
+			button("Alert!") {
 				alert("hello")
 			}.apply {
 				width = 50.percent
 			}
-			askButton = button("What's your name?") {
-				askButton?.text = prompt("What's your name?")
+			askButton = button("What's your name...?") {
+				try {
+					askButton?.text = prompt("My name is:")
+				} catch (c: CancellationException) {
+					askButton?.text = "What's your name again...?"
+				}
 			}
 			image(image).apply {
 				setSize(width.scale(0.5), height.scale(0.5))
 			}
 			spacer()
-			button("Load Image") {
+			button("Load Image...") {
 				try {
 					val file = dialogOpenFile()
+					println("File opened...")
+					println(file.stat())
 					loadImage?.image = file.readBitmap()
 				} catch (c: CancellationException) {
-					loadImage?.image = null
+					println("Cancelled!")
+					alert("Cancelled!")
+					//loadImage?.image = null
 				}
+				loadImage?.setSize(200.px, 200.px)
 			}
 			loadImage = image(image)
 		}
