@@ -1,5 +1,6 @@
 package com.soywiz.korui
 
+import com.jtransc.annotation.JTranscKeep
 import com.soywiz.kimage.bitmap.Bitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
@@ -10,18 +11,22 @@ interface Length {
     object AUTO : Length {
         override fun calc(size: Int): Int = size
         override fun scale(ratio: Double): Length = AUTO
+        override fun toString() = "auto"
     }
-    class PX(val v: Int) : Length {
+    data class PX(val v: Int) : Length {
         override fun calc(size: Int): Int = v
         override fun scale(ratio: Double): Length = PT((this.v * ratio).toInt())
+        override fun toString() = "${v}px"
     }
-    class PT(val v: Int) : Length {
+    data class PT(val v: Int) : Length {
         override fun calc(size: Int): Int = v
         override fun scale(ratio: Double): Length = PT((this.v * ratio).toInt())
+        override fun toString() = "${v}pt"
     }
-    class Ratio(val ratio: Double) : Length {
+    data class Ratio(val ratio: Double) : Length {
         override fun calc(size: Int): Int = (ratio * size).toInt()
         override fun scale(ratio: Double): Length = Ratio(this.ratio * ratio)
+        override fun toString() = "${ratio * 100}%"
     }
     fun calc(size: Int): Int
     fun scale(ratio: Double): Length
@@ -55,6 +60,7 @@ open class Component(val lc: LightComponents, val handle: Any) {
 
     fun relayout() {
         if (valid) return
+        println("$this: relayout")
         valid = true
         relayoutInternal()
         setBoundsInternal(actualBounds)
@@ -64,6 +70,7 @@ open class Component(val lc: LightComponents, val handle: Any) {
     }
 
     open protected fun relayoutInternal() {
+        println("relayoutInternal: $this")
     }
 
     fun invalidate() {
@@ -78,11 +85,12 @@ open class Component(val lc: LightComponents, val handle: Any) {
     }
 
     open fun setBoundsInternal(bounds: Rectangle) {
+        println("$this($parent): $bounds")
         lc.setBounds(handle, bounds.x, bounds.y, bounds.width, bounds.height)
     }
 
     fun onClick(handler: suspend () -> Unit) {
-        lc.setEventHandler<LightComponents.ClickEvent>(handle) {
+        lc.setEventHandler<LightClickEvent>(handle) {
             spawn(handler)
         }
     }
@@ -112,6 +120,7 @@ class Frame(lc: LightComponents) : Container(lc, LightComponents.TYPE_FRAME) {
         lc.dialogAlert(handle, message)
     }
 
+    // @TODO: @FIXME: JTransc 0.5.3 treeshaking doesn't include this!
     override fun relayoutInternal() {
         for (child in children) {
             child.actualBounds.set(0, 0, child.width.calc(actualBounds.width), child.height.calc(actualBounds.height))
@@ -132,11 +141,15 @@ open class Layout(lc: LightComponents) : Container(lc, LightComponents.TYPE_CONT
 }
 
 open class VerticalLayout(lc: LightComponents) : Layout(lc) {
+    @JTranscKeep
     override fun relayoutInternal() {
+        println("vertical: relayout ${children.size}")
         val (_, _, width, height) = actualBounds
         //var y = this.actualBounds.y
         var y2 = 0
+        println("vertical: relayout ${children.size}")
         for (child in children) {
+            println("child: $child ${child.width}x${child.height}")
             child.actualBounds.set(0, y2, child.width.calc(width), child.height.calc(height))
             y2 += child.actualBounds.height
         }
@@ -188,11 +201,16 @@ class Application(val light: LightComponents = defaultLight) {
 
     init {
         EventLoop.setInterval(16) {
+            //println("interval!")
             for (frame in frames.filter { !it.valid }) {
                 frame.relayout()
                 light.repaint(frame.handle)
             }
         }
+    }
+
+    companion object {
+
     }
 }
 
@@ -205,12 +223,13 @@ fun Application.frame(callback: Frame.() -> Unit): Frame {
         invalidate()
     }
     light.setBounds(frame.handle, 0, 0, frame.actualBounds.width, frame.actualBounds.height)
-    light.setEventHandler<LightComponents.ResizeEvent>(frame.handle) { e ->
+    light.setEventHandler<LightResizeEvent>(frame.handle) { e ->
         frame.actualBounds.width = e.width
         frame.actualBounds.height = e.height
-        frame.invalidate()
+        //frame.invalidate()
     }
     frames += frame
+    frame.invalidate()
     return frame
 }
 

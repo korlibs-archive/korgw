@@ -3,13 +3,17 @@ package com.soywiz.korui.awt
 import com.soywiz.kimage.awt.toAwt
 import com.soywiz.kimage.bitmap.Bitmap
 import com.soywiz.korio.async.asyncFun
-import com.soywiz.korio.async.executeInWorker
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korui.LightClickEvent
 import com.soywiz.korui.LightComponents
+import com.soywiz.korui.LightEvent
+import com.soywiz.korui.LightResizeEvent
 import java.awt.*
-import java.awt.event.*
-import java.awt.image.BufferedImage
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.util.concurrent.CancellationException
 import javax.swing.*
 
@@ -31,19 +35,19 @@ class AwtLightComponents : LightComponents() {
         else -> throw UnsupportedOperationException()
     }
 
-    override fun <T : LightComponents.Event> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit) {
+    override fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit) {
         when (type) {
-            LightComponents.ClickEvent::class.java -> {
+            LightClickEvent::class.java -> {
                 (c as Component).addMouseListener(object : MouseAdapter() {
                     override fun mouseClicked(e: MouseEvent?) {
-                        handler(LightComponents.ClickEvent() as T)
+                        handler(LightClickEvent() as T)
                     }
                 })
             }
-            LightComponents.ResizeEvent::class.java -> {
+            LightResizeEvent::class.java -> {
                 (c as Frame).addComponentListener(object : ComponentAdapter() {
                     override fun componentResized(e: ComponentEvent) {
-                        handler(LightComponents.ResizeEvent(e.component.width, e.component.height) as T)
+                        handler(LightResizeEvent(e.component.width, e.component.height) as T)
                     }
                 })
             }

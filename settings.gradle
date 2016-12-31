@@ -1,2 +1,2 @@
-rootProject.name = 'korui'
-
+rootProject.name = 'korui-root'
+include('korui', 'korui-jtransc-example')

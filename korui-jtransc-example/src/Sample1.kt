@@ -1,15 +1,18 @@
-package com.soywiz.korui
-
 import com.soywiz.kimage.bitmap.Bitmap32
 import com.soywiz.kimage.color.Colors
 import com.soywiz.kimage.format.readBitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.vfs.ResourcesVfs
+import com.soywiz.korui.*
 
 fun main(args: Array<String>) = EventLoop.main {
     val image = ResourcesVfs["kotlin.png"].readBitmap()
 
     Application().frame {
+        image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) Colors.WHITE else Colors.BLACK })) {
+            setSize(100.percent, 100.percent)
+        }
+
         vertical {
             width = 50.percent
             button("hello") {
@@ -24,9 +27,6 @@ fun main(args: Array<String>) = EventLoop.main {
             spacer()
             button("test") { onClick { alert("world") } }
             image(image)
-        }
-        image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) Colors.WHITE else Colors.BLACK })) {
-            setSize(100.percent, 100.percent)
         }
 
         //image(Bitmap32(50, 50, { _, _ -> Colors.WHITE })) {
