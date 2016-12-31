@@ -3,6 +3,7 @@ package com.soywiz.korui.html
 import com.jtransc.annotation.JTranscMethodBody
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korim.format.registerBitmapReading
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
@@ -252,6 +253,10 @@ class HtmlLightComponents : LightComponents() {
 }
 
 internal object SelectedFilesVfs : Vfs() {
+	init {
+		registerBitmapReading()
+	}
+
 	@JTranscMethodBody(target = "js", value = """
 		var name = N.istr(p0);
 		var selectedFiles = window.selectedFiles;
