@@ -20,7 +20,7 @@ maven { url "https://dl.bintray.com/soywiz/soywiz-maven" }
 
 ### Online Example:
 
-![https://soywiz.github.io/korio_samples/korui1/index.html](https://soywiz.github.io/korio_samples/korui1/index.html)
+[https://soywiz.github.io/korio_samples/korui1/index.html](https://soywiz.github.io/korio_samples/korui1/index.html)
 
 ![](docs/korui.png)
 
