@@ -1,12 +1,35 @@
 package com.soywiz.korui
 
+import com.soywiz.kimage.bitmap.Bitmap32
+import com.soywiz.kimage.color.Colors
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.Promise
-import java.util.concurrent.CancellationException
 import kotlin.coroutines.startCoroutine
 
 fun main(args: Array<String>) = EventLoop.main {
-    light.frame {
+    Application().frame {
+        vertical {
+            width = 50.percent
+            button("hello") {
+                onClick { spawn { alert("hello") } }
+            }.apply {
+                width = 50.percent
+            }
+            button("world") { onClick { spawn { alert("world") } } }
+            image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) Colors.WHITE else Colors.BLACK })) {
+            }
+            button("test") { onClick { spawn { alert("world") } } }
+            image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) Colors.WHITE else Colors.BLACK })) {
+            }
+        }
+        image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) Colors.WHITE else Colors.BLACK })) {
+            setSize(100.percent, 100.percent)
+        }
+
+        //image(Bitmap32(50, 50, { _, _ -> Colors.WHITE })) {
+        //    setBoundsInternal(0, 0, 100, 100)
+        //}
+        /*
         button {
             top = 50.percent
             width = 50.percent
@@ -26,7 +49,7 @@ fun main(args: Array<String>) = EventLoop.main {
                 }
             }
         }
-        setBoundsInternal(0, 0, 100, 100)
+        */
     }
 }
 

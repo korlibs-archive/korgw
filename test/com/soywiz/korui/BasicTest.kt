@@ -9,8 +9,9 @@ class BasicTest {
 
     @Test
     fun name() {
-        val frame = lc.createFrame()
-        frame.visible = true
+        val frame = Application(lc).frame {
+
+        }
         Assert.assertEquals(
                 listOf(
                         "create(frame)=0",
