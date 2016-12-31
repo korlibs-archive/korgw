@@ -18,6 +18,8 @@ For bintray:
 maven { url "https://dl.bintray.com/soywiz/soywiz-maven" }
 ```
 
+![](docs/korui.png)
+
 HTML test:
 ```
 npm -g install http-server
