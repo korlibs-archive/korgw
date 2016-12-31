@@ -26,6 +26,7 @@ open class LightComponents {
 	open fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit): Unit = throw UnsupportedOperationException()
 	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun setText(c: Any, text: String): Unit = throw UnsupportedOperationException()
+	open fun setAttribute(c: Any, key: String, value: Any?): Unit = Unit
 	open fun setImage(c: Any, bmp: Bitmap?): Unit = throw UnsupportedOperationException()
 	open fun setVisible(c: Any, visible: Boolean): Unit = throw UnsupportedOperationException()
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = throw UnsupportedOperationException()

@@ -47,6 +47,11 @@ class AwtLightComponents : LightComponents() {
 			LightResizeEvent::class.java -> {
 				(c as Frame).addComponentListener(object : ComponentAdapter() {
 					override fun componentResized(e: ComponentEvent) {
+						val c = e.component
+						if (c is JFrame) {
+							c.contentPane.setSize(c.size)
+							//println("Resized!: ${c.size}")
+						}
 						handler(LightResizeEvent(e.component.width, e.component.height) as T)
 					}
 				})
@@ -68,11 +73,17 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun setVisible(c: Any, visible: Boolean) {
+		if (c is JFrame) {
+			if (!c.isVisible && visible) {
+				c.setLocationRelativeTo(null)
+			}
+		}
 		(c as Component).isVisible = visible
 	}
 
 	override fun setText(c: Any, text: String) {
 		(c as? Button)?.label = text
+		(c as? Frame)?.title = text
 	}
 
 	suspend override fun dialogAlert(c: Any, message: String) = asyncFun {

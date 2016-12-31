@@ -17,3 +17,12 @@ For bintray:
 ```
 maven { url "https://dl.bintray.com/soywiz/soywiz-maven" }
 ```
+
+HTML test:
+```
+npm -g install http-server
+./gradlew distJs
+cd korui-jtransc-example/build/jtransc-js
+http-server
+open http://127.0.0.1:8080
+```

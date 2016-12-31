@@ -9,7 +9,7 @@ class BasicTest {
 
     @Test
     fun name() {
-        val frame = Application(lc).frame {
+        val frame = Application(lc).frame("Title") {
 
         }
         Assert.assertEquals(

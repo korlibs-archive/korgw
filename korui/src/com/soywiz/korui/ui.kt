@@ -4,8 +4,8 @@ import com.jtransc.annotation.JTranscKeep
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
+import com.soywiz.korio.async.spawn
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korui.util.spawn
 
 interface Length {
 	object AUTO : Length {
@@ -64,7 +64,7 @@ open class Component(val lc: LightComponents, val handle: Any) {
 
 	fun relayout() {
 		if (valid) return
-		println("$this: relayout")
+		//println("$this: relayout")
 		valid = true
 		relayoutInternal()
 		setBoundsInternal(actualBounds)
@@ -74,7 +74,7 @@ open class Component(val lc: LightComponents, val handle: Any) {
 	}
 
 	open protected fun relayoutInternal() {
-		println("relayoutInternal: $this")
+		//println("relayoutInternal: $this")
 	}
 
 	fun invalidate() {
@@ -89,7 +89,7 @@ open class Component(val lc: LightComponents, val handle: Any) {
 	}
 
 	open fun setBoundsInternal(bounds: Rectangle) {
-		println("$this($parent): $bounds")
+		//println("$this($parent): $bounds")
 		lc.setBounds(handle, bounds.x, bounds.y, bounds.width, bounds.height)
 	}
 
@@ -115,7 +115,17 @@ open class Container(lc: LightComponents, type: String) : Component(lc, lc.creat
 	}
 }
 
-class Frame(lc: LightComponents) : Container(lc, LightComponents.TYPE_FRAME) {
+class Frame(lc: LightComponents, title: String) : Container(lc, LightComponents.TYPE_FRAME) {
+	var title: String = ""
+		get() = field
+		set(value) {
+			lc.setText(handle, value)
+		}
+
+	init {
+		this.title = title
+	}
+
 	open suspend fun dialogOpenFile(filter: String = ""): VfsFile = asyncFun {
 		lc.dialogOpenFile(handle, filter)
 	}
@@ -147,13 +157,13 @@ open class Layout(lc: LightComponents) : Container(lc, LightComponents.TYPE_CONT
 open class VerticalLayout(lc: LightComponents) : Layout(lc) {
 	@JTranscKeep
 	override fun relayoutInternal() {
-		println("vertical: relayout ${children.size}")
+		//println("vertical: relayout ${children.size}")
 		val (_, _, width, height) = actualBounds
 		//var y = this.actualBounds.y
 		var y2 = 0
-		println("vertical: relayout ${children.size}")
+		//println("vertical: relayout ${children.size}")
 		for (child in children) {
-			println("child: $child ${child.width}x${child.height}")
+			//println("child: $child ${child.width}x${child.height}")
 			child.actualBounds.set(0, y2, child.width.calc(width), child.height.calc(height))
 			y2 += child.actualBounds.height
 		}
@@ -218,26 +228,25 @@ class Application(val light: LightComponents = defaultLight) {
 	}
 }
 
-fun Application.frame(callback: Frame.() -> Unit): Frame {
-	val frame = Frame(this.light).apply {
-		actualBounds.width = 100
-		actualBounds.height = 100
+fun Application.frame(title: String, width: Int = 640, height: Int = 480, callback: Frame.() -> Unit = {}): Frame {
+	val frame = Frame(this.light, title).apply {
+		actualBounds.width = width
+		actualBounds.height = height
 		callback()
-		visible = true
-		invalidate()
 	}
 	light.setBounds(frame.handle, 0, 0, frame.actualBounds.width, frame.actualBounds.height)
 	light.setEventHandler<LightResizeEvent>(frame.handle) { e ->
 		frame.actualBounds.width = e.width
 		frame.actualBounds.height = e.height
-		//frame.invalidate()
+		frame.invalidate()
 	}
 	frames += frame
+	frame.visible = true
 	frame.invalidate()
 	return frame
 }
 
-fun Application.createFrame(): Frame = Frame(this.light)
+//fun Application.createFrame(): Frame = Frame(this.light)
 
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.width = width; this.height = height }
 

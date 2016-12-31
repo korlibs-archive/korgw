@@ -2,6 +2,7 @@ package com.soywiz.korui.html
 
 import com.jtransc.annotation.JTranscMethodBody
 import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.LightClickEvent
 import com.soywiz.korui.LightComponents
@@ -16,11 +17,12 @@ class HtmlLightComponents : LightComponents() {
             case 'frame': e = document.createElement('div'); document.body.appendChild(e); break;
             case 'container': e = document.createElement('div'); break;
             case 'button': e = document.createElement('input'); e.type = 'button'; break;
-            case 'image': e = document.createElement('img'); break;
+            case 'image': e = document.createElement('canvas'); break;
             case 'label': e = document.createElement('div'); break;
             default: e = document.createElement('div'); break;
         }
         e.style.position = 'absolute';
+		e.style.overflow = 'hidden';
         e.style.left = e.style.top = '0px';
         e.style.width = e.style.height = '100px';
         return e;
@@ -36,18 +38,21 @@ class HtmlLightComponents : LightComponents() {
 
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, type = N.istr(p1), handler = p2;
-        child.addEventListener(type, function(e) {
+		var node = (type == 'resize') ? window : child;
+		function dispatch(e) {
             var arg = null;
             switch (type) {
                 case 'click':
                     arg = {% CONSTRUCTOR com.soywiz.korui.LightClickEvent:()V %}();
                     break;
                 case 'resize':
-                    arg = {% CONSTRUCTOR com.soywiz.korui.LightResizeEvent:(II)V %}(100, 100);
+                    arg = {% CONSTRUCTOR com.soywiz.korui.LightResizeEvent:(II)V %}(window.innerWidth, window.innerHeight);
                     break;
             }
             handler['{% METHOD kotlin.jvm.functions.Function1:invoke %}'](arg);
-        });
+        }
+        node.addEventListener(type, dispatch);
+		if (type == 'resize') dispatch();
     """)
 	external fun _setEventHandler(c: Any, type: String, handler: (Any) -> Unit)
 
@@ -65,10 +70,39 @@ class HtmlLightComponents : LightComponents() {
     """)
 	external override fun setText(c: Any, text: String)
 
+	override fun setImage(c: Any, bmp: Bitmap?) = setImage32(c, bmp?.toBMP32())
+
 	@JTranscMethodBody(target = "js", value = """
-        var child = p0, image = p1;
+        var child = p0, bmp = p1;
+		if (child.getContext) { // Canvas
+			var width = child.width;
+			var height = child.height;
+			var ctx = child.getContext('2d');
+			ctx.clearRect(0, 0, width, height);
+			if (bmp != null) {
+				var bmpWidth = bmp["{% METHOD com.soywiz.korim.bitmap.Bitmap:getWidth %}"](); // int
+				var bmpHeight = bmp["{% METHOD com.soywiz.korim.bitmap.Bitmap:getHeight %}"](); // int
+				var bmpData = bmp["{% METHOD com.soywiz.korim.bitmap.Bitmap32:getData %}"](); // int[]
+				child.width = bmpWidth;
+				child.height = bmpHeight;
+				//console.log(bmpData, bmpWidth, bmpHeight);
+				var pixelCount = bmpData.length;
+				var idata = ctx.createImageData(bmpWidth, bmpHeight);
+				var idataData = idata.data;
+				var m = 0;
+				for (var n = 0; n < pixelCount; n++) {
+					var c = bmpData.data[n];
+					idataData[m++] = (c >>  0) & 0xFF;
+					idataData[m++] = (c >>  8) & 0xFF;
+					idataData[m++] = (c >> 16) & 0xFF;
+					idataData[m++] = (c >> 24) & 0xFF;
+				}
+				ctx.putImageData(idata, 0, 0);
+			}
+		} else {
+		}
     """)
-	external override fun setImage(c: Any, bmp: Bitmap?)
+	external private fun setImage32(c: Any, bmp: Bitmap32?)
 
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, visible = p1;
