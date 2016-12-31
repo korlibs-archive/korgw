@@ -87,7 +87,7 @@ if (project.hasProperty('sonatypeUsername')) {
                 pom.project {
                     name "${project.name}"
                     packaging 'jar'
-                    description 'Kotlin cORoutines User Interfaces'
+                    description 'Kotlin cORoutines User Interfaces for JVM, Node.JS and Browser using JTransc'
                     url 'https://github.com/soywiz/korui/'
                     inceptionYear '2016'
 

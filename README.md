@@ -1,4 +1,4 @@
-## Korui : Kotlin cORoutines User Interfaces : korio + kimage + korui Edit
+## Korui : Kotlin cORoutines User Interfaces : korio + kimage + korui for JVM, Node.JS and Browser
 
 [![Build Status](https://travis-ci.org/soywiz/korui.svg?branch=master)](https://travis-ci.org/soywiz/korui)
 [![Maven Version](https://img.shields.io/github/tag/soywiz/korui.svg?style=flat&label=maven)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22korui%22)
