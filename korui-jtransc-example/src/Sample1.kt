@@ -1,36 +1,48 @@
 import com.soywiz.korim.bitmap.Bitmap32
-import com.soywiz.korim.color.Colors
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.format.readBitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.*
+import java.util.concurrent.CancellationException
 
 fun main(args: Array<String>) = EventLoop.main {
 	val image = ResourcesVfs["kotlin.png"].readBitmap()
 
 	Application().frame("Hello Frame!") {
-		val c1 = RGBA.blend(Colors.BLACK, Colors.WHITE, 256)
-		val c2 = RGBA.blend(Colors.BLACK, Colors.WHITE, 200)
+		val c1 = RGBA(220, 220, 220, 255)
+		val c2 = RGBA(255, 255, 255, 255)
 
 		image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
 			setSize(100.percent, 100.percent)
 		}
 
+		var askButton: Button? = null
+		var loadImage: Image? = null
+
 		vertical {
 			width = 50.percent
 			button("hello") {
-				onClick { alert("hello") }
+				alert("hello")
 			}.apply {
 				width = 50.percent
 			}
-			button("world") { onClick { alert("world") } }
+			askButton = button("What's your name?") {
+				askButton?.text = prompt("What's your name?")
+			}
 			image(image).apply {
 				setSize(width.scale(0.5), height.scale(0.5))
 			}
 			spacer()
-			button("test") { onClick { alert("world") } }
-			image(image)
+			button("Load Image") {
+				try {
+					val file = dialogOpenFile()
+					loadImage?.image = file.readBitmap()
+				} catch (c: CancellationException) {
+					loadImage?.image = null
+				}
+			}
+			loadImage = image(image)
 		}
 
 		//image(Bitmap32(50, 50, { _, _ -> Colors.WHITE })) {

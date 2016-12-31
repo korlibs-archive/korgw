@@ -130,6 +130,10 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LightComponents.
 		lc.dialogOpenFile(handle, filter)
 	}
 
+	open suspend fun prompt(message: String): String = asyncFun {
+		lc.dialogPrompt(handle, message)
+	}
+
 	open suspend fun alert(message: String): Unit = asyncFun {
 		lc.dialogAlert(handle, message)
 	}
@@ -184,11 +188,17 @@ data class Rectangle(var x: Int = 0, var y: Int = 0, var width: Int = 0, var hei
 	}
 }
 
-class Button(lc: LightComponents, val text: String) : Component(lc, lc.create(LightComponents.TYPE_BUTTON)) {
+class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightComponents.TYPE_BUTTON)) {
+	var text: String = ""
+		get() = field
+		set(value) {
+			field = value
+			lc.setText(handle, value)
+		}
 	init {
 		width = 100.percent
 		height = 32.pt
-		lc.setText(handle, text)
+		this.text = text
 	}
 }
 
@@ -202,11 +212,12 @@ class Spacer(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE
 class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_IMAGE)) {
 	var image: Bitmap? = null
 		set(newImage) {
-			lc.setImage(handle, newImage)
 			if (newImage != null) {
 				width = newImage.width.px
 				height = newImage.height.px
 			}
+			lc.setImage(handle, newImage)
+			invalidate()
 		}
 }
 
@@ -250,7 +261,8 @@ fun Application.frame(title: String, width: Int = 640, height: Int = 480, callba
 
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.width = width; this.height = height }
 
-inline fun Container.button(text: String, callback: Button.() -> Unit) = add(Button(this.lc, text).apply { callback() })
+fun Container.button(text: String) = add(Button(this.lc, text))
+inline fun Container.button(text: String, clickHandler: suspend () -> Unit) = add(Button(this.lc, text).apply { onClick(clickHandler) })
 inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Image(this.lc).apply { image = bitmap; callback() })
 inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
 inline fun Container.spacer() = add(Spacer(this.lc))

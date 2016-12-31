@@ -16,6 +16,9 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.util.concurrent.CancellationException
 import javax.swing.*
+import javax.swing.event.AncestorEvent
+import javax.swing.event.AncestorListener
+
 
 class AwtLightComponents : LightComponents() {
 	init {
@@ -30,7 +33,7 @@ class AwtLightComponents : LightComponents() {
 		TYPE_CONTAINER -> JPanel2().apply {
 			layout = null
 		}
-		TYPE_BUTTON -> JButton("hello")
+		TYPE_BUTTON -> JButton()
 		TYPE_IMAGE -> JImage()
 		else -> throw UnsupportedOperationException()
 	}
@@ -82,12 +85,23 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun setText(c: Any, text: String) {
-		(c as? Button)?.label = text
+		(c as? JButton)?.text = text
 		(c as? Frame)?.title = text
 	}
 
 	suspend override fun dialogAlert(c: Any, message: String) = asyncFun {
 		JOptionPane.showMessageDialog(null, message)
+	}
+
+	suspend override fun dialogPrompt(c: Any, message: String): String = asyncFun {
+		val jpf = JTextField()
+		jpf.addAncestorListener(RequestFocusListener())
+		val result = JOptionPane.showConfirmDialog(null, arrayOf(JLabel(message), jpf), "Reply:", JOptionPane.OK_CANCEL_OPTION)
+		if (result == JFileChooser.APPROVE_OPTION) {
+			jpf.text
+		} else {
+			throw CancellationException()
+		}
 	}
 
 	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = asyncFun {
@@ -103,6 +117,7 @@ class AwtLightComponents : LightComponents() {
 	override fun setImage(c: Any, bmp: Bitmap?) {
 		val image = (c as? JImage)
 		image?.image = bmp?.toBMP32()?.toAwt()
+		//(c as? Component)?.repaint()
 		//label?.horizontalTextPosition = SwingConstants.LEFT
 		//label?.verticalTextPosition = SwingConstants.TOP
 		//label?.icon = if (bmp != null) ImageIcon(bmp.toBMP32().toAwt()) else null
@@ -127,4 +142,16 @@ class JImage : JComponent() {
 		}
 		//super.paintComponent(g)
 	}
+}
+
+class RequestFocusListener(private val removeListener: Boolean = true) : AncestorListener {
+	override fun ancestorAdded(e: AncestorEvent) {
+		val component = e.component
+		component.requestFocusInWindow()
+		if (removeListener) component.removeAncestorListener(this)
+	}
+
+	override fun ancestorMoved(e: AncestorEvent) {}
+
+	override fun ancestorRemoved(e: AncestorEvent) {}
 }
