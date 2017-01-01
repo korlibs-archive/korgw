@@ -22,8 +22,8 @@ import javax.swing.event.AncestorListener
 
 class AwtLightComponents : LightComponents() {
 	init {
-		//UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-		UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
+		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+		//UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
 	}
 
 	override fun create(type: String): Any = when (type) {
@@ -43,8 +43,8 @@ class AwtLightComponents : LightComponents() {
 		when (type) {
 			LightClickEvent::class.java -> {
 				(c as Component).addMouseListener(object : MouseAdapter() {
-					override fun mouseClicked(e: MouseEvent?) {
-						handler(LightClickEvent() as T)
+					override fun mouseClicked(e: MouseEvent) {
+						handler(LightClickEvent(e.x, e.y) as T)
 					}
 				})
 			}

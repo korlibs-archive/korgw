@@ -54,7 +54,8 @@ open class LightComponents {
 
 interface LightEvent
 class LightResizeEvent(var width: Int, var height: Int) : LightEvent
-class LightClickEvent() : LightEvent
+class LightClickEvent(var x: Int, var y: Int) : LightEvent
+class LightOverEvent(var x: Int, var y: Int) : LightEvent
 
 val defaultLight: LightComponents by lazy { _LightComponents() }
 

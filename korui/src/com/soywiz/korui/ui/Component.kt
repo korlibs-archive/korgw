@@ -2,6 +2,7 @@ package com.soywiz.korui.ui
 
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.asyncFun
+import com.soywiz.korio.async.await
 import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.geom.IRectangle
@@ -62,9 +63,20 @@ open class Component(val lc: LightComponents, val handle: Any) : Styled {
 		lc.setBounds(handle, bounds.x, bounds.y, bounds.width, bounds.height)
 	}
 
-	fun onClick(handler: suspend () -> Unit) {
-		lc.setEventHandler<LightClickEvent>(handle) {
-			spawnAndForget(handler)
+	//fun onClick(handler: (LightClickEvent) -> Unit) {
+	//	lc.setEventHandler<LightClickEvent>(handle, handler)
+	//}
+
+	var mouseX = 0
+	var mouseY = 0
+
+	fun onClick(handler: suspend Component.() -> Unit) {
+		lc.setEventHandler<LightClickEvent>(handle) { e ->
+			mouseX = e.x
+			mouseY = e.y
+			spawnAndForget {
+				handler.await(this)
+			}
 		}
 	}
 
@@ -173,6 +185,12 @@ class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_
 			lc.setImage(handle, newImage)
 			invalidate()
 		}
+
+	fun refreshImage() {
+		this.image = image
+		//lc.setImage(handle, image)
+		//invalidate()
+	}
 }
 
 //fun Application.createFrame(): Frame = Frame(this.light)
@@ -180,7 +198,12 @@ class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
 fun Container.button(text: String) = add(Button(this.lc, text))
-inline fun Container.button(text: String, clickHandler: suspend () -> Unit) = add(Button(this.lc, text).apply { onClick(clickHandler) })
+inline fun Container.button(text: String, clickHandler: suspend Button.() -> Unit) = add(Button(this.lc, text).apply {
+	onClick {
+		clickHandler.await(this@apply)
+	}
+})
+
 inline fun Container.progress(current: Int, max: Int) = add(Progress(this.lc, current, max))
 inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Image(this.lc).apply { image = bitmap; callback() })
 inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })

@@ -69,7 +69,7 @@ fun IRectangle.set(bounds: IRectangle, x: Length?, y: Length?, width: Length?, h
 	height?.calc(bounds.height) ?: bounds.height
 )
 
-fun IRectangle.setBounds(bounds: IRectangle, left: Length?, top: Length?, right: Length?, bottom: Length?) = this.set(
+fun IRectangle.setBounds(bounds: IRectangle, left: Length?, top: Length?, right: Length?, bottom: Length?) = this.setBounds(
 	left?.calc(bounds.width) ?: bounds.left,
 	top?.calc(bounds.height) ?: bounds.top,
 	right?.calc(bounds.width) ?: bounds.right,

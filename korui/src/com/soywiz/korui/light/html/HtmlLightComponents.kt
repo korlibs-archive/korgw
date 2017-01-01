@@ -92,7 +92,7 @@ class HtmlLightComponents : LightComponents() {
             var arg = null;
             switch (type) {
                 case 'click':
-                    arg = {% CONSTRUCTOR com.soywiz.korui.light.LightClickEvent:()V %}();
+                    arg = {% CONSTRUCTOR com.soywiz.korui.light.LightClickEvent:(II)V %}(e.offsetX, e.offsetY);
                     break;
                 case 'resize':
 					if (window.mainFrame) {
@@ -186,6 +186,8 @@ class HtmlLightComponents : LightComponents() {
 
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, visible = p1;
+
+		if (child) child.style.display = visible ? 'block' : 'none';
     """)
 	external override fun setVisible(c: Any, visible: Boolean)
 
