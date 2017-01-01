@@ -76,14 +76,19 @@ open class Component(val lc: LightComponents, val handle: Any) {
 	override fun toString(): String = javaClass.simpleName
 }
 
-open class Container(lc: LightComponents, type: String) : Component(lc, lc.create(type)) {
+open class Container(lc: LightComponents, var layout: Layout, type: String = LightComponents.TYPE_CONTAINER) : Component(lc, lc.create(type)) {
 	fun <T : Component> add(other: T): T {
 		other.parent = this
 		return other
 	}
+
+	// @TODO: @FIXME: JTransc 0.5.3 treeshaking doesn't include this!
+	override final fun relayoutInternal() {
+		layout.applyLayout(actualBounds, this, children)
+	}
 }
 
-class Frame(lc: LightComponents, title: String) : Container(lc, LightComponents.TYPE_FRAME) {
+class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, LightComponents.TYPE_FRAME) {
 	var title: String = ""
 		get() = field
 		set(value) {
@@ -105,13 +110,6 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LightComponents.
 
 	open suspend fun alert(message: String): Unit = asyncFun {
 		lc.dialogAlert(handle, message)
-	}
-
-	// @TODO: @FIXME: JTransc 0.5.3 treeshaking doesn't include this!
-	override fun relayoutInternal() {
-		for (child in children) {
-			child.actualBounds.set(0, 0, child.style.computedWidth.calc(actualBounds.width), child.style.computedHeight.calc(actualBounds.height))
-		}
 	}
 
 	override fun setBoundsInternal(bounds: IRectangle) {
@@ -186,5 +184,8 @@ inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Ima
 inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
 inline fun Container.spacer() = add(Spacer(this.lc))
 
-inline fun Container.vertical(callback: VerticalLayout.() -> Unit): VerticalLayout = add(VerticalLayout(this.lc).apply { callback() })
-inline fun Container.horizontal(callback: HorizontalLayout.() -> Unit): HorizontalLayout = add(HorizontalLayout(this.lc).apply { callback() })
+inline fun Container.vertical(callback: Container.() -> Unit): Container = add(Container(this.lc, VerticalLayout).apply { callback() })
+inline fun Container.horizontal(callback: Container.() -> Unit): Container = add(Container(this.lc, HorizontalLayout).apply {
+	style.height = 32.pt
+	callback()
+})
