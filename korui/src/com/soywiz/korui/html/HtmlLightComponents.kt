@@ -41,7 +41,7 @@ class HtmlLightComponents : LightComponents() {
 			head.appendChild(style);
 		}
 
-		addStyles('input { -webkit-appearance: none; }');
+		addStyles('input, progress { -webkit-appearance: none; }');
 		document.body.style.background = '#e0e0e0';
 		var inputFile = document.createElement('input');
 		inputFile.type = 'file';
@@ -63,6 +63,7 @@ class HtmlLightComponents : LightComponents() {
 				break;
             case 'container': e = document.createElement('div'); break;
             case 'button': e = document.createElement('input'); e.type = 'button'; break;
+			case 'progress': e = document.createElement('progress'); break;
             case 'image':
                 e = document.createElement('canvas');
 				e.style.imageRendering = 'pixelated';
@@ -126,6 +127,29 @@ class HtmlLightComponents : LightComponents() {
 		}
     """)
 	external override fun setText(c: Any, text: String)
+
+	@JTranscMethodBody(target = "js", value = """
+        var child = p0, key = N.istr(p1), value = N.istr(p2);
+		switch (child.nodeName.toLowerCase()) {
+			case 'progress':
+			break;
+		}
+    """)
+	external override fun setAttributeString(c: Any, key: String, value: String)
+
+	@JTranscMethodBody(target = "js", value = """
+        var child = p0, key = N.istr(p1), value = p2;
+		switch (child.nodeName.toLowerCase()) {
+			case 'progress':
+				switch (key) {
+					case 'current': child.value = value; break;
+					case 'max': child.max = value; break;
+				}
+			break;
+		}
+    """)
+	external override fun setAttributeInt(c: Any, key: String, value: Int)
+
 
 	override fun setImage(c: Any, bmp: Bitmap?) = setImage32(c, bmp?.toBMP32())
 

@@ -11,6 +11,7 @@ open class LightComponents {
 		val TYPE_FRAME = "frame"
 		val TYPE_CONTAINER = "container"
 		val TYPE_BUTTON = "button"
+		val TYPE_PROGRESS = "progress"
 		val TYPE_IMAGE = "image"
 		val TYPE_LABEL = "label"
 		// Events
@@ -40,7 +41,8 @@ open class LightComponents {
 
 	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun setText(c: Any, text: String): Unit = throw UnsupportedOperationException()
-	open fun setAttribute(c: Any, key: String, value: Any?): Unit = Unit
+	open fun setAttributeString(c: Any, key: String, value: String): Unit = Unit
+	open fun setAttributeInt(c: Any, key: String, value: Int): Unit = Unit
 	open fun setImage(c: Any, bmp: Bitmap?): Unit = throw UnsupportedOperationException()
 	open fun setVisible(c: Any, visible: Boolean): Unit = throw UnsupportedOperationException()
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = throw UnsupportedOperationException()

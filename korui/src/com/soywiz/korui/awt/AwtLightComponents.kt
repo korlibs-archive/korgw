@@ -35,6 +35,7 @@ class AwtLightComponents : LightComponents() {
 		}
 		TYPE_BUTTON -> JButton()
 		TYPE_IMAGE -> JImage()
+		TYPE_PROGRESS -> JProgressBar(0, 100)
 		else -> throw UnsupportedOperationException()
 	}
 
@@ -125,6 +126,20 @@ class AwtLightComponents : LightComponents() {
 
 	override fun repaint(c: Any) {
 		(c as? Component)?.repaint()
+	}
+
+	override fun setAttributeString(c: Any, key: String, value: String) {
+	}
+
+	override fun setAttributeInt(c: Any, key: String, value: Int) {
+		when (c) {
+			is JProgressBar -> {
+				when (key) {
+					"current" -> c.value = value
+					"max" -> c.maximum = value
+				}
+			}
+		}
 	}
 }
 

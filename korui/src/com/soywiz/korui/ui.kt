@@ -67,10 +67,8 @@ open class Component(val lc: LightComponents, val handle: Any) {
 		//println("$this: relayout")
 		valid = true
 		relayoutInternal()
+		for (child in children) child.relayout()
 		setBoundsInternal(actualBounds)
-		for (child in children) {
-			child.relayout()
-		}
 	}
 
 	open protected fun relayoutInternal() {
@@ -160,6 +158,11 @@ open class Layout(lc: LightComponents) : Container(lc, LightComponents.TYPE_CONT
 }
 
 open class VerticalLayout(lc: LightComponents) : Layout(lc) {
+	init {
+		width = 100.percent
+		height = 100.percent
+	}
+
 	@JTranscKeep
 	override fun relayoutInternal() {
 		//println("vertical: relayout ${children.size}")
@@ -172,6 +175,35 @@ open class VerticalLayout(lc: LightComponents) : Layout(lc) {
 			child.actualBounds.set(0, y2, child.width.calc(width), child.height.calc(height))
 			y2 += child.actualBounds.height
 		}
+	}
+}
+
+open class HorizontalLayout(lc: LightComponents) : Layout(lc) {
+	init {
+		width = 100.percent
+		height = 32.pt
+	}
+
+	@JTranscKeep
+	override fun relayoutInternal() {
+		//println("vertical: relayout ${children.size}")
+		val (_, _, width, height) = actualBounds
+		//var y = this.actualBounds.y
+		//println("vertical: relayout ${children.size}")
+
+		val widths = children.map { it.width.calc(width) }
+		val totalWidth = widths.sum()
+		val scaleRatio = if (totalWidth > width) width.toDouble() / totalWidth.toDouble() else 1.0
+
+		var x2 = 0
+		var maxy = 0
+		for (child in children) {
+			child.actualBounds.set(x2, 0, (child.width.calc(width) * scaleRatio).toInt(), child.height.calc(height))
+			x2 += child.actualBounds.width
+			maxy = Math.max(maxy, child.actualBounds.height)
+		}
+		actualBounds.width = x2
+		actualBounds.height = maxy
 	}
 }
 
@@ -201,6 +233,33 @@ class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightC
 		width = 100.percent
 		height = 32.pt
 		this.text = text
+	}
+}
+
+class Progress(lc: LightComponents, current: Int, max: Int) : Component(lc, lc.create(LightComponents.TYPE_PROGRESS)) {
+	var current: Int = 0
+		get() = field
+		set(value) {
+			field = value
+			lc.setAttributeInt(handle, "current", value)
+		}
+
+	var max: Int = 0
+		get() = field
+		set(value) {
+			field = value
+			lc.setAttributeInt(handle, "max", value)
+		}
+
+	fun set(current: Int, max: Int) {
+		this.current = current
+		this.max = max
+	}
+
+	init {
+		width = 100.percent
+		height = 32.pt
+		set(current, max)
 	}
 }
 
@@ -265,8 +324,10 @@ fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this
 
 fun Container.button(text: String) = add(Button(this.lc, text))
 inline fun Container.button(text: String, clickHandler: suspend () -> Unit) = add(Button(this.lc, text).apply { onClick(clickHandler) })
+inline fun Container.progress(current: Int, max: Int) = add(Progress(this.lc, current, max))
 inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Image(this.lc).apply { image = bitmap; callback() })
 inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
 inline fun Container.spacer() = add(Spacer(this.lc))
 
 inline fun Container.vertical(callback: VerticalLayout.() -> Unit): VerticalLayout = add(VerticalLayout(this.lc).apply { callback() })
+inline fun Container.horizontal(callback: HorizontalLayout.() -> Unit): HorizontalLayout = add(HorizontalLayout(this.lc).apply { callback() })

@@ -2,6 +2,8 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.format.readBitmap
 import com.soywiz.korio.async.EventLoop
+import com.soywiz.korio.async.async
+import com.soywiz.korio.async.sleep
 import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.*
 import java.util.concurrent.CancellationException
@@ -21,11 +23,23 @@ fun main(args: Array<String>) = EventLoop.main {
 		var loadImage: Image? = null
 
 		vertical {
-			width = 50.percent
+			//width = 50.percent
 			button("Alert!") {
 				alert("hello")
 			}.apply {
 				width = 50.percent
+			}
+			horizontal {
+				button("Hi")
+				button("Hello")
+				button("World")
+			}
+			val p = progress(0, 100)
+			async {
+				for (n in 0..100) {
+					p.set(n, 100)
+					sleep(16)
+				}
 			}
 			askButton = button("What's your name...?") {
 				try {
