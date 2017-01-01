@@ -57,7 +57,7 @@ class HtmlLightComponents : LightComponents() {
         var e;
         switch (type) {
             case 'frame':
-                e = document.createElement('div');
+                e = document.createElement('article');
 				document.body.appendChild(e);
 				window.mainFrame = e;
 				break;
@@ -119,7 +119,11 @@ class HtmlLightComponents : LightComponents() {
 
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, text = N.istr(p1);
-        child.value = text;
+		if (child.nodeName.toLowerCase() == 'article') {
+			document.title = text;
+		} else {
+        	child.value = text;
+		}
     """)
 	external override fun setText(c: Any, text: String)
 
@@ -227,7 +231,7 @@ class HtmlLightComponents : LightComponents() {
 				document.body.onfocus = null;
 				setTimeout(function() {
 					completed()
-				}, 100);
+				}, 2000);
 			};
 		};
 
