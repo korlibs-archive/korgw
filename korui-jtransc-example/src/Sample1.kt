@@ -7,8 +7,12 @@ import com.soywiz.korio.async.sleep
 import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
+import com.soywiz.korui.geom.len.Padding
 import com.soywiz.korui.geom.len.percent
-import com.soywiz.korui.geom.len.px
+import com.soywiz.korui.geom.len.pt
+import com.soywiz.korui.style.Style
+import com.soywiz.korui.style.padding
+import com.soywiz.korui.style.width
 import com.soywiz.korui.ui.*
 import java.util.concurrent.CancellationException
 
@@ -26,15 +30,24 @@ fun main(args: Array<String>) = EventLoop.main {
 		var askButton: Button? = null
 		var loadImage: Image? = null
 
+		//style.padding.setTo(8.px)
+
+		padding = Padding(8.pt)
+
 		vertical {
+			padding = Padding(8.pt)
 			//width = 50.percent
-			button("Alert!") {
-				alert("hello")
-			}.apply {
-				style.width = 50.percent
+
+			horizontal {
+				button("Alert!") {
+					alert("hello")
+				}.apply {
+					width = 50.percent
+				}
 			}
 			horizontal {
-				button("Hi")
+				padding.setTo(8.pt)
+				button("Hi").apply { width = 100.pt }
 				button("Hello")
 				button("World")
 			}
@@ -52,8 +65,10 @@ fun main(args: Array<String>) = EventLoop.main {
 					askButton?.text = "What's your name again...?"
 				}
 			}
-			image(image).apply {
-				style.size.setToScale(0.5, 0.5)
+			horizontal {
+				image(image).apply {
+					style.size.setToScale(0.5, 0.5)
+				}
 			}
 			spacer()
 			button("Load Image...") {
@@ -67,9 +82,11 @@ fun main(args: Array<String>) = EventLoop.main {
 					alert("Cancelled!")
 					//loadImage?.image = null
 				}
-				loadImage?.setSize(200.px, 200.px)
+				loadImage?.setSize(200.pt, 200.pt)
 			}
-			loadImage = image(image)
+			horizontal {
+				loadImage = image(image)
+			}
 		}
 
 		//image(Bitmap32(50, 50, { _, _ -> Colors.WHITE })) {

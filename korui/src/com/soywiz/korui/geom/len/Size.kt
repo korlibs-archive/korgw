@@ -7,6 +7,6 @@ data class Size(var width: Length? = null, var height: Length? = null) {
 	}
 
 	fun setToScale(sX: Double, sY: Double = sX) = this.apply {
-		this.setTo(this.width?.scale(sX), this.height?.scale(sY))
+		this.setTo(this.width * sX, this.height * sY)
 	}
 }

@@ -41,7 +41,7 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		addStyles('input, progress { -webkit-appearance: none; }');
-		document.body.style.background = '#e0e0e0';
+		document.body.style.background = '#f0f0f0';
 		var inputFile = document.createElement('input');
 		inputFile.type = 'file';
 		//inputFile.style.display = 'none';

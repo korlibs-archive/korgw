@@ -6,15 +6,16 @@ import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.geom.IRectangle
 import com.soywiz.korui.geom.len.Length
-import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.pt
-import com.soywiz.korui.geom.len.px
 import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.style.Style
+import com.soywiz.korui.style.Styled
+import com.soywiz.korui.style.height
+import com.soywiz.korui.style.width
 
-open class Component(val lc: LightComponents, val handle: Any) {
-	var style = Style()
+open class Component(val lc: LightComponents, val handle: Any) : Styled {
+	override var style = Style()
 
 	var valid = false
 	val actualBounds: IRectangle = IRectangle()
@@ -125,7 +126,8 @@ class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightC
 		}
 
 	init {
-		style.size.setTo(100.percent, 32.pt)
+		width = 120.pt
+		height = 32.pt
 		this.text = text
 	}
 }
@@ -151,14 +153,14 @@ class Progress(lc: LightComponents, current: Int, max: Int) : Component(lc, lc.c
 	}
 
 	init {
-		style.size.setTo(100.percent, 32.pt)
+		style.size.setTo(100.pt, 32.pt)
 		set(current, max)
 	}
 }
 
 class Spacer(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_CONTAINER)) {
 	init {
-		style.size.setTo(100.percent, 32.pt)
+		style.size.setTo(32.pt, 32.pt)
 	}
 }
 
@@ -166,7 +168,7 @@ class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_
 	var image: Bitmap? = null
 		set(newImage) {
 			if (newImage != null) {
-				style.size.setTo(newImage.width.px, newImage.height.px)
+				style.size.setTo(newImage.width.pt, newImage.height.pt)
 			}
 			lc.setImage(handle, newImage)
 			invalidate()
@@ -184,6 +186,7 @@ inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Ima
 inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
 inline fun Container.spacer() = add(Spacer(this.lc))
 
+inline fun Container.layers(callback: Container.() -> Unit): Container = add(Container(this.lc, LayeredLayout).apply { callback() })
 inline fun Container.vertical(callback: Container.() -> Unit): Container = add(Container(this.lc, VerticalLayout).apply { callback() })
 inline fun Container.horizontal(callback: Container.() -> Unit): Container = add(Container(this.lc, HorizontalLayout).apply {
 	style.height = 32.pt

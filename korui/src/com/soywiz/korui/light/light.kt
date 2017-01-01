@@ -59,6 +59,6 @@ class LightClickEvent() : LightEvent
 val defaultLight: LightComponents by lazy { _LightComponents() }
 
 @JTranscMethodBody(target = "js", value = """
-    return {% CONSTRUCTOR com.soywiz.korui.light.HtmlLightComponents:()V %}();
+    return {% CONSTRUCTOR com.soywiz.korui.light.html.HtmlLightComponents:()V %}();
 """)
 fun _LightComponents(): LightComponents = AwtLightComponents()

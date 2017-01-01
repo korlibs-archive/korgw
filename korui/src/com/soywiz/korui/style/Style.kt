@@ -5,25 +5,33 @@ import com.soywiz.korui.geom.len.Padding
 import com.soywiz.korui.geom.len.Position
 import com.soywiz.korui.geom.len.Size
 
-class Style(var parent: Style? = null) {
+class Style(var parent: Style? = null) : Styled {
 	var position = Position(null, null)
 	val size = Size(null, null)
 	val padding = Padding(null)
 
-	var width: Length? get() = size.width; set(v) = run  { size.width = v }
-	var height: Length? get() = size.height; set(v) = run  { size.height = v }
-
-	val computedPaddingTop: Length get() = padding.top ?: parent?.computedPaddingTop ?: Length.AUTO
-	val computedPaddingRight: Length get() = padding.right ?: parent?.computedPaddingRight ?: Length.AUTO
-	val computedPaddingBottom: Length get() = padding.bottom ?: parent?.computedPaddingBottom ?: Length.AUTO
-	val computedPaddingLeft: Length get() = padding.left ?: parent?.computedPaddingLeft ?: Length.AUTO
-
-	val computedX: Length get() = position.x ?: parent?.computedX ?: Length.ZERO
-	val computedY: Length get() = position.y ?: parent?.computedY ?: Length.ZERO
-
-	val computedWidth: Length get() = size.width ?: parent?.computedWidth ?: Length.AUTO
-	val computedHeight: Length get() = size.height ?: parent?.computedHeight ?: Length.AUTO
+	override val style: Style = this
 }
 
-fun Style(callback: Style.() -> Unit): Style = Style(callback).apply(callback)
+fun Style(callback: Style.() -> Unit): Style = Style().apply(callback)
 
+interface Styled {
+	val style: Style
+}
+
+val Styled.computedX: Length get() = style.position.x ?: style.parent?.computedX ?: Length.ZERO
+val Styled.computedY: Length get() = style.position.y ?: style.parent?.computedY ?: Length.ZERO
+
+var Styled.width: Length? get() = style.size.width; set(v) = run { style.size.width = v }
+var Styled.height: Length? get() = style.size.height; set(v) = run { style.size.height = v }
+
+var Styled.padding: Padding get() = style.padding; set(value) = run { style.padding.setTo(value) }
+
+val Styled.computedPaddingTop: Length get() = padding.top ?: style.parent?.computedPaddingTop ?: Length.ZERO
+val Styled.computedPaddingRight: Length get() = padding.right ?: style.parent?.computedPaddingRight ?: Length.ZERO
+val Styled.computedPaddingBottom: Length get() = padding.bottom ?: style.parent?.computedPaddingBottom ?: Length.ZERO
+val Styled.computedPaddingLeft: Length get() = padding.left ?: style.parent?.computedPaddingLeft ?: Length.ZERO
+val Styled.computedPaddingLeftPlusRight: Length get() = computedPaddingLeft + computedPaddingRight
+val Styled.computedPaddingTopPlusBottom: Length get() = computedPaddingTop + computedPaddingBottom
+val Styled.computedWidth: Length get() = style.size.width ?: style.parent?.computedWidth ?: Length.AUTO
+val Styled.computedHeight: Length get() = style.size.height ?: style.parent?.computedHeight ?: Length.AUTO
