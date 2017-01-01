@@ -1,6 +1,6 @@
-package com.soywiz.korui.log
+package com.soywiz.korui.light.log
 
-import com.soywiz.korui.LightComponents
+import com.soywiz.korui.light.LightComponents
 
 class LogLightComponents : LightComponents() {
     val log = arrayListOf<String>()

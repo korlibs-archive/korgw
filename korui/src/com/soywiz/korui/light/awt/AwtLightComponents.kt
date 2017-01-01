@@ -1,14 +1,14 @@
-package com.soywiz.korui.awt
+package com.soywiz.korui.light.awt
 
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korui.LightClickEvent
-import com.soywiz.korui.LightComponents
-import com.soywiz.korui.LightEvent
-import com.soywiz.korui.LightResizeEvent
+import com.soywiz.korui.light.LightClickEvent
+import com.soywiz.korui.light.LightComponents
+import com.soywiz.korui.light.LightEvent
+import com.soywiz.korui.light.LightResizeEvent
 import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent

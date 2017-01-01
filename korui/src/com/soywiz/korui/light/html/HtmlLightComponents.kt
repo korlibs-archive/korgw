@@ -1,4 +1,4 @@
-package com.soywiz.korui.html
+package com.soywiz.korui.light.html
 
 import com.jtransc.annotation.JTranscMethodBody
 import com.soywiz.korim.bitmap.Bitmap
@@ -12,10 +12,10 @@ import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
 import com.soywiz.korio.vfs.js.JsStat
-import com.soywiz.korui.LightClickEvent
-import com.soywiz.korui.LightComponents
-import com.soywiz.korui.LightEvent
-import com.soywiz.korui.LightResizeEvent
+import com.soywiz.korui.light.LightClickEvent
+import com.soywiz.korui.light.LightComponents
+import com.soywiz.korui.light.LightEvent
+import com.soywiz.korui.light.LightResizeEvent
 import java.io.FileNotFoundException
 import kotlin.coroutines.CoroutineIntrinsics
 
@@ -92,14 +92,14 @@ class HtmlLightComponents : LightComponents() {
             var arg = null;
             switch (type) {
                 case 'click':
-                    arg = {% CONSTRUCTOR com.soywiz.korui.LightClickEvent:()V %}();
+                    arg = {% CONSTRUCTOR com.soywiz.korui.light.LightClickEvent:()V %}();
                     break;
                 case 'resize':
 					if (window.mainFrame) {
 						window.mainFrame.style.width = '' + window.innerWidth + 'px';
 						window.mainFrame.style.height = '' + window.innerHeight + 'px';
 					}
-                    arg = {% CONSTRUCTOR com.soywiz.korui.LightResizeEvent:(II)V %}(window.innerWidth, window.innerHeight);
+                    arg = {% CONSTRUCTOR com.soywiz.korui.light.LightResizeEvent:(II)V %}(window.innerWidth, window.innerHeight);
                     break;
             }
             handler['{% METHOD kotlin.jvm.functions.Function1:invoke %}'](arg);
@@ -298,11 +298,11 @@ internal object SelectedFilesVfs : Vfs() {
     """)
 	external private fun jsstat(file: Any?): JsStat
 
-	private fun locate(path: String): Any? = _locate(path.trim('/'))
+	private fun locate(path: String): Any? = SelectedFilesVfs._locate(path.trim('/'))
 
 	suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
-		val jsfile = locate(path) ?: throw FileNotFoundException(path)
-		val jsstat = jsstat(jsfile)
+		val jsfile = SelectedFilesVfs.locate(path) ?: throw FileNotFoundException(path)
+		val jsstat = SelectedFilesVfs.jsstat(jsfile)
 		return object : AsyncStreamBase() {
 			@JTranscMethodBody(target = "js", value = """
 				var file = p0, position = p1, len = p2, continuation = p3;
@@ -341,6 +341,6 @@ internal object SelectedFilesVfs : Vfs() {
 	}
 
 	suspend override fun stat(path: String): VfsStat {
-		return jsstat(locate(path)).toStat(path, this)
+		return SelectedFilesVfs.jsstat(locate(path)).toStat(path, this)
 	}
 }

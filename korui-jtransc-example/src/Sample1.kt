@@ -5,7 +5,11 @@ import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.async
 import com.soywiz.korio.async.sleep
 import com.soywiz.korio.vfs.ResourcesVfs
-import com.soywiz.korui.*
+import com.soywiz.korui.Application
+import com.soywiz.korui.frame
+import com.soywiz.korui.geom.len.percent
+import com.soywiz.korui.geom.len.px
+import com.soywiz.korui.ui.*
 import java.util.concurrent.CancellationException
 
 fun main(args: Array<String>) = EventLoop.main {
@@ -27,7 +31,7 @@ fun main(args: Array<String>) = EventLoop.main {
 			button("Alert!") {
 				alert("hello")
 			}.apply {
-				width = 50.percent
+				style.width = 50.percent
 			}
 			horizontal {
 				button("Hi")
@@ -49,7 +53,7 @@ fun main(args: Array<String>) = EventLoop.main {
 				}
 			}
 			image(image).apply {
-				setSize(width.scale(0.5), height.scale(0.5))
+				style.size.setToScale(0.5, 0.5)
 			}
 			spacer()
 			button("Load Image...") {

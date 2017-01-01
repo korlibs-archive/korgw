@@ -1,9 +1,9 @@
-package com.soywiz.korui
+package com.soywiz.korui.light
 
 import com.jtransc.annotation.JTranscMethodBody
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korui.awt.AwtLightComponents
+import com.soywiz.korui.light.awt.AwtLightComponents
 
 open class LightComponents {
 	companion object {
@@ -59,6 +59,6 @@ class LightClickEvent() : LightEvent
 val defaultLight: LightComponents by lazy { _LightComponents() }
 
 @JTranscMethodBody(target = "js", value = """
-    return {% CONSTRUCTOR com.soywiz.korui.html.HtmlLightComponents:()V %}();
+    return {% CONSTRUCTOR com.soywiz.korui.light.HtmlLightComponents:()V %}();
 """)
 fun _LightComponents(): LightComponents = AwtLightComponents()
