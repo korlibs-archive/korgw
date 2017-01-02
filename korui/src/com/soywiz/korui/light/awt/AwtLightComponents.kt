@@ -29,6 +29,7 @@ class AwtLightComponents : LightComponents() {
 	override fun create(type: String): Any = when (type) {
 		TYPE_FRAME -> JFrame().apply {
 			layout = null
+			defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 		}
 		TYPE_CONTAINER -> JPanel2().apply {
 			layout = null

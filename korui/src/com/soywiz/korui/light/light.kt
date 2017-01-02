@@ -61,7 +61,5 @@ class LightOverEvent(var x: Int, var y: Int) : LightEvent
 
 val defaultLight: LightComponents by lazy { _LightComponents() }
 
-@JTranscMethodBody(target = "js", value = """
-    return {% CONSTRUCTOR com.soywiz.korui.light.html.HtmlLightComponents:()V %}();
-""")
+@JTranscMethodBody(target = "js", value = "return {% CONSTRUCTOR com.soywiz.korui.light.html.HtmlLightComponents:()V %}();")
 fun _LightComponents(): LightComponents = AwtLightComponents()

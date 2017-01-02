@@ -25,7 +25,6 @@ import kotlin.coroutines.suspendCoroutine
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
 	init {
-
 		addStyles("""
 			.myButton {
 				-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
@@ -290,18 +289,18 @@ class HtmlLightComponents : LightComponents() {
 
 		inputFile["value"] = ""
 
-		inputFile["onclick"] = jsFunction { e: Any? ->
-			document["body"]["onfocus"] = jsFunction { e: JsDynamic? ->
+		inputFile["onclick"] = jsFunctionRaw1 { e ->
+			document["body"]["onfocus"] = jsFunctionRaw1 { e ->
 				document["body"]["onfocus"] = null
-				global.methods["setTimeout"](jsFunction { e: JsDynamic? ->
+				global.methods["setTimeout"](jsFunctionRaw1 { e ->
 					completed()
 				}, 2000)
 			}
 			Unit
 		}
 
-		inputFile["onchange"] = jsFunction { e: Any? ->
-			files = e.toJsDynamic()["target"]["files"]
+		inputFile["onchange"] = jsFunctionRaw1 { e ->
+			files = e["target"]["files"]
 			//var v = this.value;
 			//console.log(v);
 			completed()
@@ -341,18 +340,18 @@ internal object SelectedFilesVfs : Vfs() {
 				val reader = jsNew("FileReader")
 				val slice = jsfile.method("slice")(position, position + len)
 
-				reader["onload"] = { e: JsDynamic ->
+				reader["onload"] = jsFunctionRaw1 { e ->
 					val result = reader["result"]
 					//val u8array = window["Uint8Array"].new2(result)
 					val u8array = jsNew("Uint8Array", result)
 					val out = ByteArray(u8array["length"].toInt())
 					(out.asJsDynamic()).method("setArraySlice")(0, u8array)
 					c.resume(out)
-				}.toJsDynamic2()
+				}
 
-				reader["onerror"] = { e: JsDynamic ->
+				reader["onerror"] = jsFunctionRaw1 { e ->
 					c.resumeWithException(RuntimeException("error reading file"))
-				}.toJsDynamic2()
+				}
 				reader.method("readAsArrayBuffer")(slice)
 			}
 
