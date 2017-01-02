@@ -1,6 +1,5 @@
 package com.soywiz.korui.light.html
 
-import com.jtransc.annotation.JTranscMethodBody
 import com.jtransc.js.*
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
@@ -26,106 +25,112 @@ import kotlin.coroutines.suspendCoroutine
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
 	init {
-		_init()
+
+		addStyles("""
+			.myButton {
+				-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
+				-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
+				box-shadow:inset 0px 1px 0px 0px #ffffff;
+				background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #ffffff), color-stop(1, #f6f6f6));
+				background:-moz-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+				background:-webkit-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+				background:-o-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+				background:-ms-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);
+				background:linear-gradient(to bottom, #ffffff 5%, #f6f6f6 100%);
+				filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f6f6f6',GradientType=0);
+				background-color:#ffffff;
+				-moz-border-radius:6px;
+				-webkit-border-radius:6px;
+				border-radius:6px;
+				border:1px solid #dcdcdc;
+				display:inline-block;
+				cursor:pointer;
+				color:#666666;
+				font-family:Arial;
+				font-size:15px;
+				font-weight:bold;
+				padding:6px 24px;
+				text-decoration:none;
+				text-shadow:0px 1px 0px #ffffff;
+			}
+			.myButton:hover {
+				background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f6f6f6), color-stop(1, #ffffff));
+				background:-moz-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+				background:-webkit-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+				background:-o-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+				background:-ms-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
+				background:linear-gradient(to bottom, #f6f6f6 5%, #ffffff 100%);
+				filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f6f6f6', endColorstr='#ffffff',GradientType=0);
+				background-color:#f6f6f6;
+			}
+			.myButton:active {
+				position:relative;
+				top:1px;
+			}
+		""")
+
+		document["body"]["style"]["background"] = "#f0f0f0"
+		val inputFile = document.methods["createElement"]("input")
+		inputFile["type"] = "file"
+		window["inputFile"] = inputFile
+		window["selectedFiles"] = jsArray()
+		document["body"].methods["appendChild"](inputFile)
 	}
 
-	@JTranscMethodBody(target = "js", value = """
-		function addStyles(css) {
-			var head = document.head || document.getElementsByTagName('head')[0];
-			var style = document.createElement('style');
+	fun addStyles(css: String) {
+		val head = document["head"] ?: document.method("getElementsByTagName")("head")[0]
+		val style = document.method("createElement")("style")
 
-			style.type = 'text/css';
-			if (style.styleSheet){
-				style.styleSheet.cssText = css;
-			} else {
-				style.appendChild(document.createTextNode(css));
-			}
-
-			head.appendChild(style);
+		style["type"] = "text/css"
+		if (style["styleSheet"] != null) {
+			style["styleSheet"]["cssText"] = css
+		} else {
+			style.method("appendChild")(document.method("createTextNode")(css))
 		}
 
-		var css = [
-			".myButton {",
-			"	-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;",
-			"	-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;",
-			"	box-shadow:inset 0px 1px 0px 0px #ffffff;",
-			"	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #ffffff), color-stop(1, #f6f6f6));",
-			"	background:-moz-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);",
-			"	background:-webkit-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);",
-			"	background:-o-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);",
-			"	background:-ms-linear-gradient(top, #ffffff 5%, #f6f6f6 100%);",
-			"	background:linear-gradient(to bottom, #ffffff 5%, #f6f6f6 100%);",
-			"	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f6f6f6',GradientType=0);",
-			"	background-color:#ffffff;",
-			"	-moz-border-radius:6px;",
-			"	-webkit-border-radius:6px;",
-			"	border-radius:6px;",
-			"	border:1px solid #dcdcdc;",
-			"	display:inline-block;",
-			"	cursor:pointer;",
-			"	color:#666666;",
-			"	font-family:Arial;",
-			"	font-size:15px;",
-			"	font-weight:bold;",
-			"	padding:6px 24px;",
-			"	text-decoration:none;",
-			"	text-shadow:0px 1px 0px #ffffff;",
-			"}",
-			".myButton:hover {",
-			"	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f6f6f6), color-stop(1, #ffffff));",
-			"	background:-moz-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);",
-			"	background:-webkit-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);",
-			"	background:-o-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);",
-			"	background:-ms-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);",
-			"	background:linear-gradient(to bottom, #f6f6f6 5%, #ffffff 100%);",
-			"	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f6f6f6', endColorstr='#ffffff',GradientType=0);",
-			"	background-color:#f6f6f6;",
-			"}",
-			".myButton:active {",
-			"	position:relative;",
-			"	top:1px;",
-			"}"
-		].join('\n')
+		head.method("appendChild")(style)
+	}
 
-		//addStyles('input, progress { -webkit-appearance: none; }');
-		addStyles(css);
+	override fun create(type: String): Any {
+		var e: JsDynamic? = null
+		when (type) {
+			TYPE_FRAME -> {
+				e = document.method("createElement")("article")
+				document["body"].method("appendChild")(e)
+				window["mainFrame"] = e
+			}
+			TYPE_CONTAINER -> {
+				e = document.method("createElement")("div")
+			}
+			TYPE_BUTTON -> {
+				e = document.method("createElement")("input")
+				e["className"] = "myButton"
+				e["type"] = "button"
+			}
+			TYPE_PROGRESS -> {
+				e = document.method("createElement")("progress")
+			}
+			TYPE_IMAGE -> {
+				e = document.method("createElement")("canvas")
+				e["style"]["imageRendering"] = "pixelated"
+			}
+			TYPE_LABEL -> {
+				e = document.method("createElement")("div")
+			}
+			else -> {
+				e = document.method("createElement")("div")
+			}
+		}
 
-		document.body.style.background = '#f0f0f0';
-		var inputFile = document.createElement('input');
-		inputFile.type = 'file';
-		//inputFile.style.display = 'none';
-		window.inputFile = inputFile;
-		window.selectedFiles = [];
-		document.body.appendChild(inputFile);
-	""")
-	external private fun _init()
+		e["style"]["position"] = "absolute"
+		e["style"]["overflow"] = "hidden"
+		e["style"]["left"] = "0px"
+		e["style"]["top"] = "0px"
+		e["style"]["width"] = "100px"
+		e["style"]["height"] = "100px"
 
-	@JTranscMethodBody(target = "js", value = """
-        var type = N.istr(p0);
-        var e;
-        switch (type) {
-            case 'frame':
-                e = document.createElement('article');
-				document.body.appendChild(e);
-				window.mainFrame = e;
-				break;
-            case 'container': e = document.createElement('div'); break;
-            case 'button': e = document.createElement('input'); e.className = 'myButton'; e.type = 'button'; break;
-			case 'progress': e = document.createElement('progress'); break;
-            case 'image':
-                e = document.createElement('canvas');
-				e.style.imageRendering = 'pixelated';
-				break;
-            case 'label': e = document.createElement('div'); break;
-            default: e = document.createElement('div'); break;
-        }
-        e.style.position = 'absolute';
-		e.style.overflow = 'hidden';
-        e.style.left = e.style.top = '0px';
-        e.style.width = e.style.height = '100px';
-        return e;
-    """)
-	external override fun create(type: String): Any
+		return e!!
+	}
 
 	override fun setParent(c: Any, parent: Any?) {
 		val child = c.asJsDynamic()
@@ -137,36 +142,30 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, type = N.istr(p1), handler = p2;
-		var node = (type == 'resize') ? window : child;
-		function dispatch(e) {
-            var arg = null;
-            switch (type) {
-                case 'click':
-                    arg = {% CONSTRUCTOR com.soywiz.korui.light.LightClickEvent:(II)V %}(e.offsetX, e.offsetY);
-                    break;
-                case 'resize':
-					if (window.mainFrame) {
-						window.mainFrame.style.width = '' + window.innerWidth + 'px';
-						window.mainFrame.style.height = '' + window.innerHeight + 'px';
-					}
-                    arg = {% CONSTRUCTOR com.soywiz.korui.light.LightResizeEvent:(II)V %}(window.innerWidth, window.innerHeight);
-                    break;
-            }
-            handler['{% METHOD kotlin.jvm.functions.Function1:invoke %}'](arg);
-        }
-        node.addEventListener(type, dispatch);
-		if (type == 'resize') dispatch();
-    """)
-	external fun _setEventHandler(c: Any, type: String, handler: (Any) -> Unit)
-
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
-		_setEventHandler(c, when (type) {
+		val typeName = when (type) {
 			LightClickEvent::class.java -> "click"
 			LightResizeEvent::class.java -> "resize"
-			else -> ""
-		}, handler as (Any) -> Unit)
+			else -> "unknown"
+		}
+
+		val node = if (type == LightResizeEvent::class.java) window else c.asJsDynamic()
+		val dispatch = { e: JsDynamic? ->
+			when (type) {
+				LightClickEvent::class.java -> {
+					handler(LightClickEvent(e["offsetX"].toInt(), e["offsetY"].toInt()) as T)
+				}
+				LightResizeEvent::class.java -> {
+					if (window["mainFrame"] != null) {
+						window["mainFrame"]["style"]["width"] = "${window["innerWidth"].toInt()}px"
+						window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
+					}
+					handler(LightResizeEvent(window["innerWidth"].toInt(), window["innerHeight"].toInt()) as T)
+				}
+			}
+		}
+		node.method("addEventListener")(typeName, jsFunction(dispatch))
+		if (type == LightResizeEvent::class.java) dispatch(null)
 	}
 
 	override fun setText(c: Any, text: String) {
@@ -182,7 +181,6 @@ class HtmlLightComponents : LightComponents() {
 		val child = c.asJsDynamic()
 		when (child["nodeName"].toJavaString().toLowerCase()) {
 			"progress" -> {
-
 			}
 		}
 	}
@@ -242,10 +240,10 @@ class HtmlLightComponents : LightComponents() {
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
 		val child = c.asJsDynamic()
 		val childStyle = child["style"]
-		childStyle["left"] = "${x}px";
-		childStyle["top"] = "${y}px";
-		childStyle["width"] = "${width}px";
-		childStyle["height"] = "${height}px";
+		childStyle["left"] = "${x}px"
+		childStyle["top"] = "${y}px"
+		childStyle["width"] = "${width}px"
+		childStyle["height"] = "${height}px"
 	}
 
 	override fun repaint(c: Any) {
@@ -269,52 +267,47 @@ class HtmlLightComponents : LightComponents() {
 		}.toJsDynamic(), 0)
 	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, message = N.istr(p1), continuation = p2;
-		var inputFile = window.inputFile;
-		var files = [];
-		var completedOnce = false;
+	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = suspendCoroutine { continuation ->
+		val inputFile = window["inputFile"]
+		var completedOnce = false
+		var files = jsArray()
 
-		function completed() {
-			if (completedOnce) return;
-			completedOnce = true;
-			window.selectedFiles = files;
-			//console.log('completed', files);
-			if (files.length > 0) {
-				continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](N.str(files[0].name));
-			} else {
-				continuation['{% METHOD kotlin.coroutines.Continuation:resumeWithException %}']({% CONSTRUCTOR java.util.concurrent.CancellationException:()V %}());
+		val completed = {
+			if (!completedOnce) {
+				completedOnce = true
+
+				window["selectedFiles"] = files
+
+				//console.log('completed', files);
+				if (files["length"].toInt() > 0) {
+					val fileName = files[0]["name"].toJavaString()
+					continuation.resume(SelectedFilesVfs[fileName])
+				} else {
+					continuation.resumeWithException(CancellationException())
+				}
 			}
 		}
 
-		inputFile.value = '';
+		inputFile["value"] = ""
 
-		inputFile.onclick = function() {
-			//console.log('onclick!');
-
-			document.body.onfocus = function() {
-				document.body.onfocus = null;
-				setTimeout(function() {
+		inputFile["onclick"] = jsFunction { e: Any? ->
+			document["body"]["onfocus"] = jsFunction { e: JsDynamic? ->
+				document["body"]["onfocus"] = null
+				global.methods["setTimeout"](jsFunction { e: JsDynamic? ->
 					completed()
-				}, 2000);
-			};
-		};
+				}, 2000)
+			}
+			Unit
+		}
 
-		inputFile.onchange = function (e) {
-			files = e.target.files;
+		inputFile["onchange"] = jsFunction { e: Any? ->
+			files = e.toJsDynamic()["target"]["files"]
 			//var v = this.value;
 			//console.log(v);
-			completed();
-		};
+			completed()
+		}
 
-		inputFile.click();
-
-		return this['{% METHOD #CLASS:getSuspended %}']();
-    """)
-	external suspend fun _dialogOpenFile(c: Any, filter: String): String
-
-	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = asyncFun {
-		SelectedFilesVfs[_dialogOpenFile(c, filter)]
+		inputFile.methods["click"]()
 	}
 
 	@Suppress("unused")
@@ -322,51 +315,46 @@ class HtmlLightComponents : LightComponents() {
 }
 
 internal object SelectedFilesVfs : Vfs() {
-	@JTranscMethodBody(target = "js", value = """
-		var name = N.istr(p0);
-		var selectedFiles = window.selectedFiles;
-		for (var n = 0; n < selectedFiles.length; n++) {
-			var file = selectedFiles[n];
-			if (file.name == name) return file;
+	private fun _locate(name: String): JsDynamic? {
+		val selectedFiles = window["selectedFiles"]
+		val length = selectedFiles["length"].toInt()
+		for (n in 0 until length) {
+			val file = selectedFiles[n]
+			if (file["name"]!!.eq(name.toJavaScriptString())) {
+				return file
+			}
 		}
-		return null;
-    """)
-	external private fun _locate(name: String): Any?
+		return null
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-		var file = p0 || { size : -1 };
-		var stat = {% CONSTRUCTOR com.soywiz.korio.vfs.js.JsStat:(D)V %}(file.size);
-		return stat;
-    """)
-	external private fun jsstat(file: Any?): JsStat
+	private fun jsstat(file: JsDynamic?): JsStat {
+		return JsStat(file["size"].toDouble())
+	}
 
-	private fun locate(path: String): Any? = SelectedFilesVfs._locate(path.trim('/'))
+	private fun locate(path: String): JsDynamic? = SelectedFilesVfs._locate(path.trim('/'))
 
 	suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
 		val jsfile = SelectedFilesVfs.locate(path) ?: throw FileNotFoundException(path)
 		val jsstat = SelectedFilesVfs.jsstat(jsfile)
 		return object : AsyncStreamBase() {
-			@JTranscMethodBody(target = "js", value = """
-				var file = p0, position = p1, len = p2, continuation = p3;
-				var reader = new FileReader();
-				var slice = file.slice(position, position + len);
-				reader.onload = function(e) {
-					var result = reader.result;
-					var u8array = new Uint8Array(result);
-					var out = new JA_B(u8array.length);
-					out.setArraySlice(0, u8array);
+			suspend fun _read(jsfile: JsDynamic, position: Double, len: Int): ByteArray = suspendCoroutine { c ->
+				val reader = jsNew("FileReader")
+				val slice = jsfile.method("slice")(position, position + len)
 
-					//console.log('read', result, slice, e, position, len, continuation);
-					//console.log(result);
-					continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](out);
-				};
-				reader.onerror = function(e) {
-					continuation['{% METHOD kotlin.coroutines.Continuation:resumeWithException %}'](N.createRuntimeException('error reading file'));
-				};
-				reader.readAsArrayBuffer(slice);
-				return this['{% METHOD #CLASS:getSuspended %}']();
-		    """)
-			external suspend fun _read(jsfile: Any, position: Double, len: Int): ByteArray
+				reader["onload"] = { e: JsDynamic ->
+					val result = reader["result"]
+					//val u8array = window["Uint8Array"].new2(result)
+					val u8array = jsNew("Uint8Array", result)
+					val out = ByteArray(u8array["length"].toInt())
+					(out.asJsDynamic()).method("setArraySlice")(0, u8array)
+					c.resume(out)
+				}.toJsDynamic2()
+
+				reader["onerror"] = { e: JsDynamic ->
+					c.resumeWithException(RuntimeException("error reading file"))
+				}.toJsDynamic2()
+				reader.method("readAsArrayBuffer")(slice)
+			}
 
 			suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int = asyncFun {
 				val data = _read(jsfile, position.toDouble(), len)

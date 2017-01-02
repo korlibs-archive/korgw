@@ -43,8 +43,8 @@ dependencies {
 
 jtransc {
     assets = ["korui-jtransc-example/resources"]
-    minimizeNames = true
-    //minimizeNames = false
+    //minimizeNames = true
+    minimizeNames = false
     treeshaking = true
     //treeshaking = false
 }
