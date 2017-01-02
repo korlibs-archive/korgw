@@ -124,6 +124,18 @@ class AwtLightComponents : LightComponents() {
 		//label?.icon = if (bmp != null) ImageIcon(bmp.toBMP32().toAwt()) else null
 	}
 
+	override fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) {
+		when (handle) {
+			is JFrame -> {
+				when (key) {
+					"icon" -> {
+						handle.iconImage = value?.toBMP32()?.toAwt()
+					}
+				}
+			}
+		}
+	}
+
 	override fun repaint(c: Any) {
 		(c as? Component)?.repaint()
 	}

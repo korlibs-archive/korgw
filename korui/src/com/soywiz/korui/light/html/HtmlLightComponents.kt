@@ -1,8 +1,10 @@
 package com.soywiz.korui.light.html
 
 import com.jtransc.annotation.JTranscMethodBody
+import com.jtransc.js.*
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korim.html.HtmlImage
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
@@ -17,7 +19,9 @@ import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightEvent
 import com.soywiz.korui.light.LightResizeEvent
 import java.io.FileNotFoundException
+import java.util.concurrent.CancellationException
 import kotlin.coroutines.CoroutineIntrinsics
+import kotlin.coroutines.suspendCoroutine
 
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
@@ -123,12 +127,15 @@ class HtmlLightComponents : LightComponents() {
     """)
 	external override fun create(type: String): Any
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, newParent = p1;
-        if (child.parentNode) child.parentNode.removeChild(child);
-        if (newParent) newParent.appendChild(child);
-    """)
-	external override fun setParent(c: Any, parent: Any?)
+	override fun setParent(c: Any, parent: Any?) {
+		val child = c.asJsDynamic()
+		if (child["parentNode"] != null) {
+			child["parentNode"].method("removeChild")(child)
+		}
+		if (parent != null) {
+			(parent.asJsDynamic()).method("appendChild")(child)
+		}
+	}
 
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, type = N.istr(p1), handler = p2;
@@ -162,117 +169,105 @@ class HtmlLightComponents : LightComponents() {
 		}, handler as (Any) -> Unit)
 	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, text = N.istr(p1);
-		if (child.nodeName.toLowerCase() == 'article') {
-			document.title = text;
+	override fun setText(c: Any, text: String) {
+		val child = c.asJsDynamic()
+		if (child["nodeName"].toJavaString().toLowerCase() == "article") {
+			document["title"] = text
 		} else {
-        	child.value = text;
+			child["value"] = text
 		}
-    """)
-	external override fun setText(c: Any, text: String)
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, key = N.istr(p1), value = N.istr(p2);
-		switch (child.nodeName.toLowerCase()) {
-			case 'progress':
-			break;
+	override fun setAttributeString(c: Any, key: String, value: String) {
+		val child = c.asJsDynamic()
+		when (child["nodeName"].toJavaString().toLowerCase()) {
+			"progress" -> {
+
+			}
 		}
-    """)
-	external override fun setAttributeString(c: Any, key: String, value: String)
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, key = N.istr(p1), value = p2;
-		switch (child.nodeName.toLowerCase()) {
-			case 'progress':
-				switch (key) {
-					case 'current': child.value = value; break;
-					case 'max': child.max = value; break;
+	override fun setAttributeInt(c: Any, key: String, value: Int) {
+		val child = c.asJsDynamic()
+		when (child["nodeName"].toJavaString().toLowerCase()) {
+			"progress" -> {
+				when (key) {
+					"current" -> child["value"] = value
+					"max" -> child["max"] = value
 				}
-			break;
+			}
 		}
-    """)
-	external override fun setAttributeInt(c: Any, key: String, value: Int)
+	}
 
+	override fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) {
+		val child = handle.asJsDynamic()
+		when (child["nodeName"].toJavaString().toLowerCase()) {
+			"article" -> {
+				when (key) {
+					"icon" -> {
+						if (value != null) {
+							val href = HtmlImage.htmlCanvasToDataUrl(HtmlImage.bitmapToHtmlCanvas(value.toBMP32()))
+
+							var link = document.getMethod("querySelector")("link[rel*='icon']")
+							if (link == null) {
+								link = document.getMethod("createElement")("link")
+							}
+							link["type"] = "image/x-icon"
+							link["rel"] = "shortcut icon"
+							link["href"] = href
+							document.getMethod("getElementsByTagName")("head")[0].getMethod("appendChild")(link)
+						}
+					}
+				}
+			}
+		}
+	}
 
 	override fun setImage(c: Any, bmp: Bitmap?) = setImage32(c, bmp?.toBMP32())
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, bmp = p1;
-		if (child.getContext) { // Canvas
-			var width = child.width;
-			var height = child.height;
-			var ctx = child.getContext('2d');
-			ctx.clearRect(0, 0, width, height);
-			if (bmp != null) {
-				var bmpWidth = bmp["{% METHOD com.soywiz.korim.bitmap.Bitmap:getWidth %}"](); // int
-				var bmpHeight = bmp["{% METHOD com.soywiz.korim.bitmap.Bitmap:getHeight %}"](); // int
-				var bmpData = bmp["{% METHOD com.soywiz.korim.bitmap.Bitmap32:getData %}"](); // int[]
-				child.width = bmpWidth;
-				child.height = bmpHeight;
-				//console.log(bmpData, bmpWidth, bmpHeight);
-				var pixelCount = bmpData.length;
-				var idata = ctx.createImageData(bmpWidth, bmpHeight);
-				var idataData = idata.data;
-				var m = 0;
-				for (var n = 0; n < pixelCount; n++) {
-					var c = bmpData.data[n];
-					idataData[m++] = (c >>  0) & 0xFF;
-					idataData[m++] = (c >>  8) & 0xFF;
-					idataData[m++] = (c >> 16) & 0xFF;
-					idataData[m++] = (c >> 24) & 0xFF;
-				}
-				ctx.putImageData(idata, 0, 0);
-			}
+	private fun setImage32(c: Any, bmp: Bitmap32?) {
+		if (bmp != null) {
+			HtmlImage.htmlCanvasSetSize(c.asJsDynamic()!!, bmp.width, bmp.height)
+			HtmlImage.renderToHtmlCanvas(bmp, c.asJsDynamic()!!)
 		} else {
+			HtmlImage.htmlCanvasClear(c.asJsDynamic()!!)
 		}
-    """)
-	external private fun setImage32(c: Any, bmp: Bitmap32?)
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, visible = p1;
+	override fun setVisible(c: Any, visible: Boolean) {
+		val child = c.asJsDynamic()
+		if (child != null) child["style"]["display"] = if (visible) "block" else "none"
+	}
 
-		if (child) child.style.display = visible ? 'block' : 'none';
-    """)
-	external override fun setVisible(c: Any, visible: Boolean)
+	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
+		val child = c.asJsDynamic()
+		val childStyle = child["style"]
+		childStyle["left"] = "${x}px";
+		childStyle["top"] = "${y}px";
+		childStyle["width"] = "${width}px";
+		childStyle["height"] = "${height}px";
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, x = p1, y = p2, width = p3, height = p4;
-        child.style.left = '' + x + 'px';
-        child.style.top = '' + y + 'px';
-        child.style.width = '' + width + 'px';
-        child.style.height = '' + height + 'px';
-    """)
-	external override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int)
+	override fun repaint(c: Any) {
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0;
-    """)
-	external override fun repaint(c: Any)
+	suspend override fun dialogAlert(c: Any, message: String) = suspendCoroutine<Unit> { c ->
+		window.getMethod("alert")(message)
+		window.getMethod("setTimeout")({
+			c.resume(Unit)
+		}.toJsDynamic(), 0)
+	}
 
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, message = N.istr(p1), continuation = p2;
-        alert(message); // @TODO: Synchronous
-		setTimeout(function() {
-			continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](null);
-		}, 0);
-		return this['{% METHOD #CLASS:getSuspended %}']();
-    """)
-	external suspend override fun dialogAlert(c: Any, message: String)
-
-	@JTranscMethodBody(target = "js", value = """
-        var child = p0, message = N.istr(p1), continuation = p2;
-		var result = prompt(message); // @TODO: Synchronous
-		setTimeout(function() {
-			if (result === null) {
-				continuation['{% METHOD kotlin.coroutines.Continuation:resumeWithException %}']({% CONSTRUCTOR java.util.concurrent.CancellationException:()V %}());
+	suspend override fun dialogPrompt(c: Any, message: String): String = suspendCoroutine { c ->
+		val result = window.getMethod("prompt")(message).toJavaStringOrNull()
+		window.getMethod("setTimeout")({
+			if (result == null) {
+				c.resumeWithException(CancellationException())
 			} else {
-				continuation['{% METHOD kotlin.coroutines.Continuation:resume %}'](N.str(result));
+				c.resume(result)
 			}
-		}, 0);
-		return this['{% METHOD #CLASS:getSuspended %}']();
-    """)
-	external suspend override fun dialogPrompt(c: Any, message: String): String
+		}.toJsDynamic(), 0)
+	}
 
 	@JTranscMethodBody(target = "js", value = """
         var child = p0, message = N.istr(p1), continuation = p2;

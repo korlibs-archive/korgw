@@ -108,6 +108,12 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, L
 			lc.setText(handle, value)
 		}
 
+	var icon: Bitmap? = null
+		get() = field
+		set(value) {
+			lc.setAttributeBitmap(handle, "icon", value)
+		}
+
 	init {
 		this.title = title
 	}

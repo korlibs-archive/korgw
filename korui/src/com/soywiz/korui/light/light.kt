@@ -43,11 +43,13 @@ open class LightComponents {
 	open fun setText(c: Any, text: String): Unit = throw UnsupportedOperationException()
 	open fun setAttributeString(c: Any, key: String, value: String): Unit = Unit
 	open fun setAttributeInt(c: Any, key: String, value: Int): Unit = Unit
-	open fun setImage(c: Any, bmp: Bitmap?): Unit = throw UnsupportedOperationException()
-	open fun setVisible(c: Any, visible: Boolean): Unit = throw UnsupportedOperationException()
-	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = throw UnsupportedOperationException()
+	open fun setAttributeDouble(c: Any, key: String, value: Int): Unit = Unit
+	open fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) = Unit
+	open fun setImage(c: Any, bmp: Bitmap?): Unit = Unit
+	open fun setVisible(c: Any, visible: Boolean): Unit = Unit
+	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = Unit
 	open fun repaint(c: Any): Unit = Unit
-	open suspend fun dialogAlert(c: Any, message: String): Unit = throw UnsupportedOperationException()
+	open suspend fun dialogAlert(c: Any, message: String): Unit = Unit
 	open suspend fun dialogPrompt(c: Any, message: String): String = throw UnsupportedOperationException()
 	open suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = throw UnsupportedOperationException()
 }
