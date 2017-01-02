@@ -131,6 +131,10 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, L
 		lc.dialogAlert(handle, message)
 	}
 
+	open fun openURL(url: String): Unit {
+		lc.openURL(url)
+	}
+
 	override fun setBoundsInternal(bounds: IRectangle) {
 	}
 }

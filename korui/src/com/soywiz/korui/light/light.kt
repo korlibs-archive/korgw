@@ -52,6 +52,7 @@ open class LightComponents {
 	open suspend fun dialogAlert(c: Any, message: String): Unit = Unit
 	open suspend fun dialogPrompt(c: Any, message: String): String = throw UnsupportedOperationException()
 	open suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = throw UnsupportedOperationException()
+	open fun openURL(url: String): Unit = throw UnsupportedOperationException()
 }
 
 interface LightEvent

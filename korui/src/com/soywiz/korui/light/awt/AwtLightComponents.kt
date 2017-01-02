@@ -14,6 +14,7 @@ import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.net.URI
 import java.util.concurrent.CancellationException
 import javax.swing.*
 import javax.swing.event.AncestorEvent
@@ -153,6 +154,11 @@ class AwtLightComponents : LightComponents() {
 				}
 			}
 		}
+	}
+
+	override fun openURL(url: String): Unit {
+		val desktop = Desktop.getDesktop()
+		desktop.browse(URI(url))
 	}
 }
 

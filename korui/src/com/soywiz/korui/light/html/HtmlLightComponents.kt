@@ -309,8 +309,9 @@ class HtmlLightComponents : LightComponents() {
 		inputFile.methods["click"]()
 	}
 
-	@Suppress("unused")
-	private fun getSuspended() = CoroutineIntrinsics.SUSPENDED
+	override fun openURL(url: String): Unit {
+		window.methods["open"](url, "_blank")
+	}
 }
 
 internal object SelectedFilesVfs : Vfs() {
@@ -363,9 +364,6 @@ internal object SelectedFilesVfs : Vfs() {
 
 			suspend override fun getLength(): Long = jsstat.size.toLong()
 			suspend override fun close() = Unit
-
-			@Suppress("unused")
-			private fun getSuspended() = CoroutineIntrinsics.SUSPENDED
 		}.toAsyncStream()
 	}
 
