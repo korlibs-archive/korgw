@@ -29,8 +29,7 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun create(type: String): Any = when (type) {
-		TYPE_FRAME -> JFrame().apply {
-			layout = null
+		TYPE_FRAME -> JFrame2().apply {
 			defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 		}
 		TYPE_CONTAINER -> JPanel2().apply {
@@ -54,28 +53,26 @@ class AwtLightComponents : LightComponents() {
 			LightResizeEvent::class.java -> {
 				(c as Frame).addComponentListener(object : ComponentAdapter() {
 					override fun componentResized(e: ComponentEvent) {
-						val c = e.component
-						if (c is JFrame) {
-							c.contentPane.setSize(c.size)
-							//println("Resized!: ${c.size}")
-						}
-						handler(LightResizeEvent(e.component.width, e.component.height) as T)
+						val cc = e.component.actualComponent
+						handler(LightResizeEvent(cc.width, cc.height) as T)
 					}
 				})
 			}
 		}
 	}
 
+	val Any.actualComponent: Component get() = if (this is JFrame2) this.panel else (this as Component)
+	val Any.actualContainer: Container? get() = if (this is JFrame2) this.panel else (this as? Container)
+
 	override fun setParent(c: Any, parent: Any?) {
-		(parent as? Container)?.add((c as Component), 0)
-		(parent as? JFrame)?.pack()
+		parent?.actualContainer?.add((c as Component), 0)
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
 		when (c) {
-			is JFrame -> {
-				c.contentPane.preferredSize = Dimension(width, height)
-				c.preferredSize = Dimension(width, height)
+			is JFrame2 -> {
+				c.panel.preferredSize = Dimension(width, height)
+				//c.preferredSize = Dimension(width, height)
 				c.pack()
 				//c.contentPane.setBounds(x, y, width, height)
 			}
@@ -90,7 +87,7 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun setVisible(c: Any, visible: Boolean) {
-		if (c is JFrame) {
+		if (c is JFrame2) {
 			if (!c.isVisible && visible) {
 				c.setLocationRelativeTo(null)
 			}
@@ -139,7 +136,7 @@ class AwtLightComponents : LightComponents() {
 
 	override fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) {
 		when (handle) {
-			is JFrame -> {
+			is JFrame2 -> {
 				when (key) {
 					"icon" -> {
 						handle.iconImage = value?.toBMP32()?.toAwt()
@@ -156,7 +153,23 @@ class AwtLightComponents : LightComponents() {
 	override fun setAttributeString(c: Any, key: String, value: String) {
 	}
 
+	override fun setAttributeBoolean(c: Any, key: String, value: Boolean) {
+		when (c) {
+			is JImage -> {
+				when (key) {
+					"smooth" -> c.smooth = value
+				}
+			}
+		}
+	}
+
 	override fun setAttributeInt(c: Any, key: String, value: Int) {
+		when (key) {
+			"background" -> {
+				(c as? Component)?.background = Color(value, true)
+			}
+		}
+
 		when (c) {
 			is JProgressBar -> {
 				when (key) {
@@ -173,6 +186,16 @@ class AwtLightComponents : LightComponents() {
 	}
 }
 
+class JFrame2 : JFrame() {
+	val panel = JPanel2().apply {
+		layout = null
+	}
+
+	init {
+		add(panel)
+	}
+}
+
 class JPanel2 : JPanel() {
 	override fun paintComponent(g: Graphics) {
 	}
@@ -180,9 +203,12 @@ class JPanel2 : JPanel() {
 
 class JImage : JComponent() {
 	var image: Image? = null
+	var smooth: Boolean = false
 
 	override fun paintComponent(g: Graphics) {
+		val g2 = (g as? Graphics2D)
 		if (image != null) {
+			g2?.setRenderingHint(RenderingHints.KEY_INTERPOLATION, if (smooth) RenderingHints.VALUE_INTERPOLATION_BILINEAR else RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
 			g.drawImage(image, 0, 0, width, height, null)
 		}
 		//super.paintComponent(g)

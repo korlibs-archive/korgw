@@ -1,6 +1,8 @@
 package com.soywiz.korui.ui
 
-import com.soywiz.korui.geom.IRectangle
+import com.soywiz.korim.geom.Anchor
+import com.soywiz.korim.geom.IRectangle
+import com.soywiz.korim.geom.ISize
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.setBounds
@@ -52,6 +54,25 @@ object LayeredLayout : Layout() {
 	}
 }
 
+class LayeredKeepAspectLayout(val anchor: Anchor) : Layout() {
+	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
+		val actualBounds = IRectangle().setBounds(
+			bounds,
+			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
+			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
+		)
+
+		for (child in children) {
+			val width = child.computedWidth.calc(actualBounds.width)
+			val height = child.computedHeight.calc(actualBounds.height)
+
+			val asize = ISize(width, height).fitTo(actualBounds.size)
+
+			child.actualBounds.set(asize.anchoredIn(actualBounds, anchor))
+		}
+	}
+}
+
 abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
 	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
 		val (_, _, width, height) = bounds
@@ -92,7 +113,7 @@ abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
 		//parent.actualBounds.width =
 		if (vertical) {
 			parent.actualBounds.width = width
-		} else{
+		} else {
 			parent.actualBounds.height = height
 		}
 

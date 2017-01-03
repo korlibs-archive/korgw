@@ -41,6 +41,7 @@ open class LightComponents {
 	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun setText(c: Any, text: String): Unit = throw UnsupportedOperationException()
 	open fun setAttributeString(c: Any, key: String, value: String): Unit = Unit
+	open fun setAttributeBoolean(c: Any, key: String, value: Boolean): Unit = Unit
 	open fun setAttributeInt(c: Any, key: String, value: Int): Unit = Unit
 	open fun setAttributeDouble(c: Any, key: String, value: Int): Unit = Unit
 	open fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) = Unit

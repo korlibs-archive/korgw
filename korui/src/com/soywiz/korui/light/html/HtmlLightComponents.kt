@@ -4,6 +4,7 @@ import com.jtransc.js.*
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.NativeImage
+import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.html.HtmlImage
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.stream.AsyncStream
@@ -18,8 +19,10 @@ import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightEvent
 import com.soywiz.korui.light.LightResizeEvent
+import java.awt.Color
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
+import javax.swing.JComponent
 import kotlin.coroutines.suspendCoroutine
 
 @Suppress("unused")
@@ -187,11 +190,32 @@ class HtmlLightComponents : LightComponents() {
 
 	override fun setAttributeInt(c: Any, key: String, value: Int) {
 		val child = c.asJsDynamic()
+		val childOrDocumentBody = if (child["nodeName"].toJavaString().toLowerCase() == "article") document["body"] else child
 		when (child["nodeName"].toJavaString().toLowerCase()) {
 			"progress" -> {
 				when (key) {
 					"current" -> child["value"] = value
 					"max" -> child["max"] = value
+				}
+			}
+		}
+		when (key) {
+			"background" -> {
+				childOrDocumentBody["style"]["background"] = colorString(value)
+			}
+		}
+	}
+
+	fun colorString(c: Int) = "RGBA(${RGBA.getR(c)},${RGBA.getG(c)},${RGBA.getB(c)},${RGBA.getAf(c)})"
+
+	override fun setAttributeBoolean(c: Any, key: String, value: Boolean) {
+		val child = c.asJsDynamic()
+		when (child["nodeName"].toJavaString().toLowerCase()) {
+			"canvas" -> {
+				when (key) {
+					"smooth" -> {
+						child["style"]["imageRendering"] = if (value) "auto" else "pixelated"
+					}
 				}
 			}
 		}

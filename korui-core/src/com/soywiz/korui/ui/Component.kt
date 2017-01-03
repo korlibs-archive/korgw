@@ -1,11 +1,13 @@
 package com.soywiz.korui.ui
 
 import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.color.RGBA
+import com.soywiz.korim.geom.Anchor
+import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korui.geom.IRectangle
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.LightClickEvent
@@ -103,15 +105,21 @@ open class Container(lc: LightComponents, var layout: Layout, type: String = Lig
 
 class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, LightComponents.TYPE_FRAME) {
 	var title: String = ""
-		get() = field
 		set(value) {
+			field = value
 			lc.setText(handle, value)
 		}
 
 	var icon: Bitmap? = null
-		get() = field
 		set(value) {
+			field = value
 			lc.setAttributeBitmap(handle, "icon", value)
+		}
+
+	var bgcolor: Int = RGBA(0xf0, 0xf0, 0xf0, 0xff)
+		set(value) {
+			field = value
+			lc.setAttributeInt(handle, "background", value)
 		}
 
 	init {
@@ -196,6 +204,12 @@ class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_
 			invalidate()
 		}
 
+	var smooth: Boolean = false
+		set(value) {
+			field = value
+			lc.setAttributeBoolean(handle, "smooth", value)
+		}
+
 	fun refreshImage() {
 		this.image = image
 		//lc.setImage(handle, image)
@@ -220,6 +234,7 @@ inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = 
 inline fun Container.spacer() = add(Spacer(this.lc))
 
 inline fun Container.layers(callback: Container.() -> Unit): Container = add(Container(this.lc, LayeredLayout).apply { callback() })
+inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, callback: Container.() -> Unit): Container = add(Container(this.lc, LayeredKeepAspectLayout(anchor)).apply { callback() })
 inline fun Container.vertical(callback: Container.() -> Unit): Container = add(Container(this.lc, VerticalLayout).apply { callback() })
 inline fun Container.horizontal(callback: Container.() -> Unit): Container = add(Container(this.lc, HorizontalLayout).apply {
 	style.height = 32.pt
