@@ -1,6 +1,7 @@
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.format.readBitmap
+import com.soywiz.korim.format.readNativeImage
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.async
 import com.soywiz.korio.async.sleep
@@ -10,7 +11,6 @@ import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.Padding
 import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.pt
-import com.soywiz.korui.style.Style
 import com.soywiz.korui.style.padding
 import com.soywiz.korui.style.width
 import com.soywiz.korui.ui.*
@@ -18,6 +18,8 @@ import java.util.concurrent.CancellationException
 
 fun main(args: Array<String>) = EventLoop.main {
 	val image = ResourcesVfs["kotlin.png"].readBitmap()
+
+	//val url = UrlVfs("http://127.0.0.1")
 
 	Application().frame("Hello Frame!") {
 		val c1 = RGBA(220, 220, 220, 255)
@@ -76,7 +78,7 @@ fun main(args: Array<String>) = EventLoop.main {
 					val file = dialogOpenFile()
 					println("File opened...")
 					println(file.stat())
-					loadImage?.image = file.readBitmap()
+					loadImage?.image = file.readNativeImage()
 				} catch (c: CancellationException) {
 					println("Cancelled!")
 					alert("Cancelled!")

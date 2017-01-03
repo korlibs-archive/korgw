@@ -2,6 +2,7 @@ package com.soywiz.korui.light.awt
 
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
@@ -14,12 +15,12 @@ import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.awt.image.BufferedImage
 import java.net.URI
 import java.util.concurrent.CancellationException
 import javax.swing.*
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
-
 
 class AwtLightComponents : LightComponents() {
 	init {
@@ -71,7 +72,17 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
-		(c as Component).setBounds(x, y, width, height)
+		when (c) {
+			is JFrame -> {
+				c.contentPane.preferredSize = Dimension(width, height)
+				c.preferredSize = Dimension(width, height)
+				c.pack()
+				//c.contentPane.setBounds(x, y, width, height)
+			}
+			is JComponent -> {
+				c.setBounds(x, y, width, height)
+			}
+		}
 		//(c as Component).repaint()
 		//(c as Component).preferredSize = Dimension(width, height)
 		//(c as Component).minimumSize = Dimension(width, height)
@@ -119,11 +130,11 @@ class AwtLightComponents : LightComponents() {
 
 	override fun setImage(c: Any, bmp: Bitmap?) {
 		val image = (c as? JImage)
-		image?.image = bmp?.toBMP32()?.toAwt()
-		//(c as? Component)?.repaint()
-		//label?.horizontalTextPosition = SwingConstants.LEFT
-		//label?.verticalTextPosition = SwingConstants.TOP
-		//label?.icon = if (bmp != null) ImageIcon(bmp.toBMP32().toAwt()) else null
+		if (bmp is NativeImage) {
+			image?.image = bmp.data as BufferedImage
+		} else {
+			image?.image = bmp?.toBMP32()?.toAwt()
+		}
 	}
 
 	override fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) {

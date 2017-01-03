@@ -1,0 +1,2 @@
+com.soywiz.korui.light.awt.AwtLightComponents # <target=java>
+com.soywiz.korui.light.html.HtmlLightComponents # <target=js>

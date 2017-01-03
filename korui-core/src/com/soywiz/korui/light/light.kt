@@ -1,9 +1,8 @@
 package com.soywiz.korui.light
 
-import com.jtransc.annotation.JTranscMethodBody
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korui.light.awt.AwtLightComponents
+import java.util.*
 
 open class LightComponents {
 	companion object {
@@ -60,7 +59,7 @@ class LightResizeEvent(var width: Int, var height: Int) : LightEvent
 class LightClickEvent(var x: Int, var y: Int) : LightEvent
 class LightOverEvent(var x: Int, var y: Int) : LightEvent
 
-val defaultLight: LightComponents by lazy { _LightComponents() }
-
-@JTranscMethodBody(target = "js", value = "return {% CONSTRUCTOR com.soywiz.korui.light.html.HtmlLightComponents:()V %}();")
-fun _LightComponents(): LightComponents = AwtLightComponents()
+val defaultLight: LightComponents by lazy {
+	ServiceLoader.load(LightComponents::class.java).firstOrNull()
+		?: throw UnsupportedOperationException("LightComponents not defined")
+}

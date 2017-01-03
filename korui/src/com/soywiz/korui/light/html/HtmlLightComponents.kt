@@ -3,6 +3,7 @@ package com.soywiz.korui.light.html
 import com.jtransc.js.*
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.html.HtmlImage
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.stream.AsyncStream
@@ -19,7 +20,6 @@ import com.soywiz.korui.light.LightEvent
 import com.soywiz.korui.light.LightResizeEvent
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
-import kotlin.coroutines.CoroutineIntrinsics
 import kotlin.coroutines.suspendCoroutine
 
 @Suppress("unused")
@@ -71,6 +71,7 @@ class HtmlLightComponents : LightComponents() {
 		document["body"]["style"]["background"] = "#f0f0f0"
 		val inputFile = document.methods["createElement"]("input")
 		inputFile["type"] = "file"
+		inputFile["style"]["visibility"] = "hidden"
 		window["inputFile"] = inputFile
 		window["selectedFiles"] = jsArray()
 		document["body"].methods["appendChild"](inputFile)
@@ -220,7 +221,26 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
-	override fun setImage(c: Any, bmp: Bitmap?) = setImage32(c, bmp?.toBMP32())
+	override fun setImage(c: Any, bmp: Bitmap?) {
+		if (bmp is NativeImage) {
+			setCanvas(c, bmp.data.asJsDynamic())
+		} else {
+			setImage32(c, bmp?.toBMP32())
+		}
+	}
+
+	private fun setCanvas(c: Any, bmp: JsDynamic?) {
+		val targetCanvas = c.asJsDynamic()!!
+		if (bmp != null) {
+			targetCanvas["width"] = bmp["width"]
+			targetCanvas["height"] = bmp["height"]
+			val ctx = targetCanvas.methods["getContext"]("2d")
+			HtmlImage.htmlCanvasClear(targetCanvas)
+			ctx.methods["drawImage"](bmp, 0, 0)
+		} else {
+			HtmlImage.htmlCanvasClear(targetCanvas)
+		}
+	}
 
 	private fun setImage32(c: Any, bmp: Bitmap32?) {
 		if (bmp != null) {
@@ -331,11 +351,11 @@ internal object SelectedFilesVfs : Vfs() {
 		return JsStat(file["size"].toDouble())
 	}
 
-	private fun locate(path: String): JsDynamic? = SelectedFilesVfs._locate(path.trim('/'))
+	private fun locate(path: String): JsDynamic? = _locate(path.trim('/'))
 
 	suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
-		val jsfile = SelectedFilesVfs.locate(path) ?: throw FileNotFoundException(path)
-		val jsstat = SelectedFilesVfs.jsstat(jsfile)
+		val jsfile = locate(path) ?: throw FileNotFoundException(path)
+		val jsstat = jsstat(jsfile)
 		return object : AsyncStreamBase() {
 			suspend fun _read(jsfile: JsDynamic, position: Double, len: Int): ByteArray = suspendCoroutine { c ->
 				val reader = jsNew("FileReader")
@@ -368,6 +388,6 @@ internal object SelectedFilesVfs : Vfs() {
 	}
 
 	suspend override fun stat(path: String): VfsStat {
-		return SelectedFilesVfs.jsstat(locate(path)).toStat(path, this)
+		return jsstat(locate(path)).toStat(path, this)
 	}
 }

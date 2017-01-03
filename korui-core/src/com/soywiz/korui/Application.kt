@@ -6,7 +6,6 @@ import com.soywiz.korui.light.LightResizeEvent
 import com.soywiz.korui.light.defaultLight
 import com.soywiz.korui.ui.Frame
 
-
 class Application(val light: LightComponents = defaultLight) {
 	val frames = arrayListOf<Frame>()
 
