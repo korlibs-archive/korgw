@@ -1,13 +1,11 @@
 package com.soywiz.korui.style
 
-import com.soywiz.korui.geom.len.Length
-import com.soywiz.korui.geom.len.Padding
-import com.soywiz.korui.geom.len.Position
-import com.soywiz.korui.geom.len.Size
+import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.ui.Component
 
 class Style(var parent: Style? = null) : Styled {
 	var position = Position(null, null)
+	val defaultSize = Size(120.pt, 32.pt)
 	val size = Size(null, null)
 	val minSize = Size(null, null)
 	val maxSize = Size(null, null)
@@ -24,6 +22,8 @@ class Style(var parent: Style? = null) : Styled {
 }
 
 fun Style(callback: Style.() -> Unit): Style = Style().apply(callback)
+
+var Styled.classStyle: Style?; get() = style.parent; set(value) = run { style.parent = value }
 
 interface Styled {
 	val style: Style
@@ -59,6 +59,9 @@ val Styled.computedPaddingTopPlusBottom: Length get() = computedPaddingTop + com
 val Styled.computedWidth: Length? get() = style.size.width ?: style.parent?.computedWidth
 val Styled.computedHeight: Length? get() = style.size.height ?: style.parent?.computedHeight
 
+val Styled.computedDefaultWidth: Length get() = style.defaultSize.width ?: 120.pt
+val Styled.computedDefaultHeight: Length get() = style.defaultSize.height ?: 32.pt
+
 val Styled.computedMinWidth: Length? get() = style.minSize.width ?: style.parent?.computedMinWidth
 val Styled.computedMinHeight: Length? get() = style.minSize.height ?: style.parent?.computedMinHeight
 
@@ -71,4 +74,8 @@ val Styled.computedTop: Length? get() = style.top ?: style.parent?.computedTop
 val Styled.computedBottom: Length? get() = style.bottom ?: style.parent?.computedBottom
 val Styled.computedLeft: Length? get() = style.left ?: style.parent?.computedLeft
 val Styled.computedRight: Length? get() = style.right ?: style.parent?.computedRight
+
+
+fun Styled.computedCalcWidth(length: Int): Int = Length.calc(length, computedDefaultWidth, computedWidth, computedMinWidth, computedMaxWidth)
+fun Styled.computedCalcHeight(length: Int): Int = Length.calc(length, computedDefaultHeight, computedHeight, computedMinHeight, computedMaxHeight)
 

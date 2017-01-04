@@ -43,10 +43,10 @@ sealed class Length {
 	companion object {
 		val ZERO = PT(0)
 
-		fun calc(length: Int, size: Length?, min: Length? = null, max: Length? = null): Int {
-			val sizeCalc = size.calcMax(length)
+		fun calc(length: Int, default: Length, size: Length?, min: Length? = null, max: Length? = null): Int {
+			val sizeCalc = size?.calc(length) ?: default.calc(length)
 			val minCalc = min.calcMin(length)
-			val maxCalc = min.calcMax(length)
+			val maxCalc = max.calcMax(length)
 			return sizeCalc.clamp(minCalc, maxCalc)
 		}
 	}

@@ -2,6 +2,8 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.format.readBitmap
 import com.soywiz.korim.format.readNativeImage
+import com.soywiz.korim.geom.Anchor
+import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.async
 import com.soywiz.korio.async.sleep
@@ -26,9 +28,11 @@ fun main(args: Array<String>) = EventLoop.main {
 		val c1 = RGBA(220, 220, 220, 255)
 		val c2 = RGBA(255, 255, 255, 255)
 
-		image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
-			smooth = false
-			setSize(100.percent, 100.percent)
+		layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.COVER) {
+			image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
+				smooth = false
+				setSize(100.percent, 100.percent)
+			}
 		}
 
 		var askButton: Button? = null

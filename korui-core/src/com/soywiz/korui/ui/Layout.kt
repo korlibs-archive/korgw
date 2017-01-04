@@ -3,7 +3,11 @@ package com.soywiz.korui.ui
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korim.geom.ISize
-import com.soywiz.korui.geom.len.*
+import com.soywiz.korim.geom.ScaleMode
+import com.soywiz.korui.geom.len.Length
+import com.soywiz.korui.geom.len.calcMax
+import com.soywiz.korui.geom.len.percent
+import com.soywiz.korui.geom.len.setBounds
 import com.soywiz.korui.style.*
 
 open class Layout {
@@ -15,15 +19,15 @@ open class Layout {
 	open fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
 	}
 
-	enum class ScaleMode { NEVER, SHRINK, ALWAYS }
+	enum class ScaleMode2 { NEVER, SHRINK, ALWAYS }
 
-	fun <T> genAxisBounds(size: Int, list: Iterable<T>, itemSize: T.() -> Length?, paddingPrev: T.() -> Length?, paddingNext: T.() -> Length?, scaled: ScaleMode): List<Pair<T, IntRange>> {
+	fun <T> genAxisBounds(size: Int, list: Iterable<T>, itemSize: T.(Int) -> Int, paddingPrev: T.() -> Length?, paddingNext: T.() -> Length?, scaled: ScaleMode2): List<Pair<T, IntRange>> {
 		var pos = 0
 		var lastPadding = 0
 		val out = arrayListOf<Pair<T, IntRange>>()
 		for (item in list) {
 			val itemPaddingPrev = Math.max(lastPadding, item.paddingPrev().calcMax(size))
-			val itemSizeSize = item.itemSize().calcMax(size)
+			val itemSizeSize = item.itemSize(size)
 			if (lastPadding != 0) pos += itemPaddingPrev
 			val start = pos
 			pos += itemSizeSize
@@ -35,9 +39,9 @@ open class Layout {
 		val scaleFit = size.toDouble() / pos.toDouble()
 
 		val scale = when (scaled) {
-			ScaleMode.SHRINK -> if (pos > size) scaleFit else 1.0
-			ScaleMode.ALWAYS -> scaleFit
-			ScaleMode.NEVER -> 1.0
+			ScaleMode2.SHRINK -> if (pos > size) scaleFit else 1.0
+			ScaleMode2.ALWAYS -> scaleFit
+			ScaleMode2.NEVER -> 1.0
 		}
 
 		return out.map { (item, range) ->
@@ -60,7 +64,7 @@ object LayeredLayout : Layout() {
 	}
 }
 
-class LayeredKeepAspectLayout(val anchor: Anchor) : Layout() {
+class LayeredKeepAspectLayout(val anchor: Anchor, val scaleMode: ScaleMode = ScaleMode.SHOW_ALL) : Layout() {
 	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
 		val actualBounds = IRectangle().setBounds(
 			bounds,
@@ -72,7 +76,7 @@ class LayeredKeepAspectLayout(val anchor: Anchor) : Layout() {
 			val width = child.computedWidth.calcMax(actualBounds.width)
 			val height = child.computedHeight.calcMax(actualBounds.height)
 
-			val asize = ISize(width, height).fitTo(actualBounds.size)
+			val asize = ISize(width, height).applyScaleMode(actualBounds.size, scaleMode)
 
 			child.actualBounds.set(asize.anchoredIn(actualBounds, anchor))
 		}
@@ -91,10 +95,10 @@ abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
 
 		val posList = genAxisBounds(
 			width, children,
-			{ if (vertical) this.style.computedHeight else this.style.computedWidth },
+			{ if (vertical) this.computedCalcHeight(it) else this.computedCalcWidth(it) },
 			{ paddingPrev },
 			{ paddingNext },
-			scaled = if (vertical) ScaleMode.SHRINK else ScaleMode.ALWAYS
+			scaled = if (vertical) ScaleMode2.SHRINK else ScaleMode2.ALWAYS
 		)
 		//val maxSide: Int = children.map {
 		//	if (vertical) {
@@ -135,10 +139,10 @@ object InlineLayout : Layout() {
 
 		val posList = genAxisBounds(
 			width, children,
-			{ this.style.computedWidth },
+			{ this.computedCalcWidth(it) },
 			{ parent.style.computedPaddingLeft },
 			{ parent.style.computedPaddingRight },
-			scaled = ScaleMode.NEVER
+			scaled = ScaleMode2.NEVER
 		)
 
 		var maxheight = 0
@@ -168,8 +172,8 @@ object RelativeLayout : Layout() {
 			if (c !in childrenSet) return c
 
 			val relativeTo = c.computedRelativeTo
-			val cw = Length.calc(bounds.width, c.computedWidth, c.computedMinWidth, c.computedMaxWidth)
-			val ch = Length.calc(bounds.height, c.computedHeight, c.computedMinHeight, c.computedMaxHeight)
+			val cw = c.computedCalcWidth(bounds.width)
+			val ch = c.computedCalcHeight(bounds.width)
 			val cComputedLeft = c.computedLeft
 			val cComputedTop = c.computedTop
 			val cComputedRight = c.computedRight
