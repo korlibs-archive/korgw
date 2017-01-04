@@ -28,16 +28,16 @@ class AwtLightComponents : LightComponents() {
 		//UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
 	}
 
-	override fun create(type: String): Any = when (type) {
-		TYPE_FRAME -> JFrame2().apply {
+	override fun create(type: Type): Any = when (type) {
+		Type.FRAME -> JFrame2().apply {
 			defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 		}
-		TYPE_CONTAINER -> JPanel2().apply {
+		Type.CONTAINER -> JPanel2().apply {
 			layout = null
 		}
-		TYPE_BUTTON -> JButton()
-		TYPE_IMAGE -> JImage()
-		TYPE_PROGRESS -> JProgressBar(0, 100)
+		Type.BUTTON -> JButton()
+		Type.IMAGE -> JImage()
+		Type.PROGRESS -> JProgressBar(0, 100)
 		else -> throw UnsupportedOperationException()
 	}
 
@@ -51,12 +51,17 @@ class AwtLightComponents : LightComponents() {
 				})
 			}
 			LightResizeEvent::class.java -> {
+				fun send() {
+					val cc = (c as Frame)
+					handler(LightResizeEvent(cc.width, cc.height) as T)
+				}
+
 				(c as Frame).addComponentListener(object : ComponentAdapter() {
 					override fun componentResized(e: ComponentEvent) {
-						val cc = e.component.actualComponent
-						handler(LightResizeEvent(cc.width, cc.height) as T)
+						send()
 					}
 				})
+				send()
 			}
 		}
 	}

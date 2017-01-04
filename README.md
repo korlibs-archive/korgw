@@ -1,4 +1,6 @@
-## Korui : Kotlin cORoutines User Interfaces : korio + kimage + korui for JVM, Node.JS and Browser
+## Korui : Kotlin cORoutines User Interfaces : korio + kimage + korui for JVM, Kotlin-JS, Android, Jtransc+Browser
+
+With Korui you can create your UI once, and run it in HTML5, Java AWT and Android.
 
 [![Build Status](https://travis-ci.org/soywiz/korui.svg?branch=master)](https://travis-ci.org/soywiz/korui)
 [![Maven Version](https://img.shields.io/github/tag/soywiz/korui.svg?style=flat&label=maven)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22korui%22)
@@ -21,6 +23,8 @@ maven { url "https://dl.bintray.com/soywiz/soywiz-maven" }
 ### Online Example:
 
 [https://soywiz.github.io/korio_samples/korui1/index.html](https://soywiz.github.io/korio_samples/korui1/index.html)
+
+![](docs/android.png)
 
 ![](docs/korui.png)
 

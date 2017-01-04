@@ -91,7 +91,7 @@ open class Component(val lc: LightComponents, val handle: Any) : Styled {
 	override fun toString(): String = javaClass.simpleName
 }
 
-open class Container(lc: LightComponents, var layout: Layout, type: String = LightComponents.TYPE_CONTAINER) : Component(lc, lc.create(type)) {
+open class Container(lc: LightComponents, var layout: Layout, type: LightComponents.Type = LightComponents.Type.CONTAINER) : Component(lc, lc.create(type)) {
 	fun <T : Component> add(other: T): T {
 		other.parent = this
 		return other
@@ -103,7 +103,7 @@ open class Container(lc: LightComponents, var layout: Layout, type: String = Lig
 	}
 }
 
-class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, LightComponents.TYPE_FRAME) {
+class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, LightComponents.Type.FRAME) {
 	var title: String = ""
 		set(value) {
 			field = value
@@ -147,7 +147,7 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, L
 	}
 }
 
-class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightComponents.TYPE_BUTTON)) {
+class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightComponents.Type.BUTTON)) {
 	var text: String = ""
 		get() = field
 		set(value) {
@@ -162,7 +162,7 @@ class Button(lc: LightComponents, text: String) : Component(lc, lc.create(LightC
 	}
 }
 
-class Progress(lc: LightComponents, current: Int, max: Int) : Component(lc, lc.create(LightComponents.TYPE_PROGRESS)) {
+class Progress(lc: LightComponents, current: Int = 0, max: Int = 100) : Component(lc, lc.create(LightComponents.Type.PROGRESS)) {
 	var current: Int = 0
 		get() = field
 		set(value) {
@@ -188,13 +188,13 @@ class Progress(lc: LightComponents, current: Int, max: Int) : Component(lc, lc.c
 	}
 }
 
-class Spacer(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_CONTAINER)) {
+class Spacer(lc: LightComponents) : Component(lc, lc.create(LightComponents.Type.CONTAINER)) {
 	init {
 		style.size.setTo(32.pt, 32.pt)
 	}
 }
 
-class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_IMAGE)) {
+class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.Type.IMAGE)) {
 	var image: Bitmap? = null
 		set(newImage) {
 			if (newImage != null) {
@@ -221,22 +221,24 @@ class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.TYPE_
 
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
-fun Container.button(text: String) = add(Button(this.lc, text))
-inline fun Container.button(text: String, clickHandler: suspend Button.() -> Unit) = add(Button(this.lc, text).apply {
+suspend fun Container.button(text: String) = add(Button(this.lc, text))
+suspend inline fun Container.button(text: String, clickHandler: suspend Button.() -> Unit) = add(Button(this.lc, text).apply {
 	onClick {
 		clickHandler.await(this@apply)
 	}
 })
 
-inline fun Container.progress(current: Int, max: Int) = add(Progress(this.lc, current, max))
-inline fun Container.image(bitmap: Bitmap, callback: Image.() -> Unit) = add(Image(this.lc).apply { image = bitmap; callback() })
-inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
-inline fun Container.spacer() = add(Spacer(this.lc))
+suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.lc, current, max))
+suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.lc).apply { image = bitmap; callback.await(this) }) }
+suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply { image = bitmap })
+suspend inline fun Container.spacer() = add(Spacer(this.lc))
 
-inline fun Container.layers(callback: Container.() -> Unit): Container = add(Container(this.lc, LayeredLayout).apply { callback() })
-inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, callback: Container.() -> Unit): Container = add(Container(this.lc, LayeredKeepAspectLayout(anchor)).apply { callback() })
-inline fun Container.vertical(callback: Container.() -> Unit): Container = add(Container(this.lc, VerticalLayout).apply { callback() })
-inline fun Container.horizontal(callback: Container.() -> Unit): Container = add(Container(this.lc, HorizontalLayout).apply {
-	style.height = 32.pt
-	callback()
-})
+suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, LayeredLayout).apply { callback.await(this) }) }
+suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, LayeredKeepAspectLayout(anchor)).apply { callback.await(this) }) }
+suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, VerticalLayout).apply { callback.await(this) }) }
+suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container = asyncFun {
+	add(Container(this.lc, HorizontalLayout).apply {
+		style.height = 32.pt
+		callback.await(this)
+	})
+}

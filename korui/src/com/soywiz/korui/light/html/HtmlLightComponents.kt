@@ -19,10 +19,8 @@ import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightEvent
 import com.soywiz.korui.light.LightResizeEvent
-import java.awt.Color
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
-import javax.swing.JComponent
 import kotlin.coroutines.suspendCoroutine
 
 @Suppress("unused")
@@ -94,30 +92,30 @@ class HtmlLightComponents : LightComponents() {
 		head.method("appendChild")(style)
 	}
 
-	override fun create(type: String): Any {
+	override fun create(type: Type): Any {
 		var e: JsDynamic? = null
 		when (type) {
-			TYPE_FRAME -> {
+			Type.FRAME -> {
 				e = document.method("createElement")("article")
 				document["body"].method("appendChild")(e)
 				window["mainFrame"] = e
 			}
-			TYPE_CONTAINER -> {
+			Type.CONTAINER -> {
 				e = document.method("createElement")("div")
 			}
-			TYPE_BUTTON -> {
+			Type.BUTTON -> {
 				e = document.method("createElement")("input")
 				e["className"] = "myButton"
 				e["type"] = "button"
 			}
-			TYPE_PROGRESS -> {
+			Type.PROGRESS -> {
 				e = document.method("createElement")("progress")
 			}
-			TYPE_IMAGE -> {
+			Type.IMAGE -> {
 				e = document.method("createElement")("canvas")
 				e["style"]["imageRendering"] = "pixelated"
 			}
-			TYPE_LABEL -> {
+			Type.LABEL -> {
 				e = document.method("createElement")("div")
 			}
 			else -> {
@@ -153,22 +151,28 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		val node = if (type == LightResizeEvent::class.java) window else c.asJsDynamic()
-		val dispatch = { e: JsDynamic? ->
-			when (type) {
-				LightClickEvent::class.java -> {
+
+		when (type) {
+			LightClickEvent::class.java -> {
+				node.method("addEventListener")(typeName, jsFunctionRaw1({ e ->
 					handler(LightClickEvent(e["offsetX"].toInt(), e["offsetY"].toInt()) as T)
-				}
-				LightResizeEvent::class.java -> {
+				}))
+			}
+			LightResizeEvent::class.java -> {
+				fun send() {
 					if (window["mainFrame"] != null) {
 						window["mainFrame"]["style"]["width"] = "${window["innerWidth"].toInt()}px"
 						window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
 					}
 					handler(LightResizeEvent(window["innerWidth"].toInt(), window["innerHeight"].toInt()) as T)
 				}
+
+				send()
+				node.method("addEventListener")(typeName, jsFunctionRaw1 { e ->
+					send()
+				})
 			}
 		}
-		node.method("addEventListener")(typeName, jsFunction(dispatch))
-		if (type == LightResizeEvent::class.java) dispatch(null)
 	}
 
 	override fun setText(c: Any, text: String) {
