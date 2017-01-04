@@ -22,6 +22,7 @@ import javax.swing.*
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
 
+
 class AwtLightComponents : LightComponents() {
 	init {
 		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
@@ -52,8 +53,9 @@ class AwtLightComponents : LightComponents() {
 			}
 			LightResizeEvent::class.java -> {
 				fun send() {
-					val cc = (c as Frame)
-					handler(LightResizeEvent(cc.width, cc.height) as T)
+					val cc = (c as JFrame2)
+					val cp = cc.contentPane
+					handler(LightResizeEvent(cp.width, cp.height) as T)
 				}
 
 				(c as Frame).addComponentListener(object : ComponentAdapter() {
@@ -121,10 +123,10 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = asyncFun {
-		val fc = JFileChooser()
-		val result = fc.showOpenDialog((c as Component))
-		if (result == JFileChooser.APPROVE_OPTION) {
-			LocalVfs(fc.selectedFile)
+		val fd = FileDialog(c as JFrame2, "Open file", FileDialog.LOAD)
+		fd.isVisible = true
+		if (fd.files.isNotEmpty()) {
+			LocalVfs(fd.files.first())
 		} else {
 			throw CancellationException()
 		}

@@ -1,7 +1,5 @@
 package korui.soywiz.com.koruiandroidexample1
 
-import android.widget.Button
-import android.widget.LinearLayout
 import com.soywiz.korim.android.androidShowImage
 import com.soywiz.korim.format.readBitmap
 import com.soywiz.korio.async.asyncFun
@@ -9,7 +7,9 @@ import com.soywiz.korio.async.sleep
 import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
+import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.android.KoruiActivity
+import com.soywiz.korui.style.height
 import com.soywiz.korui.ui.button
 import com.soywiz.korui.ui.horizontal
 import com.soywiz.korui.ui.progress
@@ -29,6 +29,7 @@ class MainActivity : KoruiActivity() {
 			//}
 			vertical {
 				horizontal {
+					height = 40.pt
 					button("hello from korui") {
 						for (file in ResourcesVfs.listRecursive()) {
 							println(file)
@@ -41,6 +42,7 @@ class MainActivity : KoruiActivity() {
 				}
 				val progress = progress(0, 100)
 				horizontal {
+					height = 40.pt
 					button("start") {
 						while (progress.current < progress.max) {
 							progress.current++

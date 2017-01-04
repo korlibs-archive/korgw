@@ -4,11 +4,21 @@ import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.Padding
 import com.soywiz.korui.geom.len.Position
 import com.soywiz.korui.geom.len.Size
+import com.soywiz.korui.ui.Component
 
 class Style(var parent: Style? = null) : Styled {
 	var position = Position(null, null)
 	val size = Size(null, null)
+	val minSize = Size(null, null)
+	val maxSize = Size(null, null)
 	val padding = Padding(null)
+
+	var relativeTo: Component? = null
+
+	var top: Length? = null
+	var bottom: Length? = null
+	var left: Length? = null
+	var right: Length? = null
 
 	override val style: Style = this
 }
@@ -25,7 +35,19 @@ val Styled.computedY: Length get() = style.position.y ?: style.parent?.computedY
 var Styled.width: Length? get() = style.size.width; set(v) = run { style.size.width = v }
 var Styled.height: Length? get() = style.size.height; set(v) = run { style.size.height = v }
 
+var Styled.minWidth: Length? get() = style.minSize.width; set(v) = run { style.minSize.width = v }
+var Styled.minHeight: Length? get() = style.minSize.height; set(v) = run { style.minSize.height = v }
+
+var Styled.maxWidth: Length? get() = style.maxSize.width; set(v) = run { style.maxSize.width = v }
+var Styled.maxHeight: Length? get() = style.maxSize.height; set(v) = run { style.maxSize.height = v }
+
 var Styled.padding: Padding get() = style.padding; set(value) = run { style.padding.setTo(value) }
+
+var Styled.relativeTo: Component? get() = style.relativeTo; set(value) = run { style.relativeTo = value }
+var Styled.top: Length? get() = style.top; set(value) = run { style.top = value }
+var Styled.bottom: Length? get() = style.bottom; set(value) = run { style.bottom = value }
+var Styled.left: Length? get() = style.left; set(value) = run { style.left = value }
+var Styled.right: Length? get() = style.right; set(value) = run { style.right = value }
 
 val Styled.computedPaddingTop: Length get() = padding.top ?: style.parent?.computedPaddingTop ?: Length.ZERO
 val Styled.computedPaddingRight: Length get() = padding.right ?: style.parent?.computedPaddingRight ?: Length.ZERO
@@ -33,5 +55,20 @@ val Styled.computedPaddingBottom: Length get() = padding.bottom ?: style.parent?
 val Styled.computedPaddingLeft: Length get() = padding.left ?: style.parent?.computedPaddingLeft ?: Length.ZERO
 val Styled.computedPaddingLeftPlusRight: Length get() = computedPaddingLeft + computedPaddingRight
 val Styled.computedPaddingTopPlusBottom: Length get() = computedPaddingTop + computedPaddingBottom
-val Styled.computedWidth: Length get() = style.size.width ?: style.parent?.computedWidth ?: Length.AUTO
-val Styled.computedHeight: Length get() = style.size.height ?: style.parent?.computedHeight ?: Length.AUTO
+
+val Styled.computedWidth: Length? get() = style.size.width ?: style.parent?.computedWidth
+val Styled.computedHeight: Length? get() = style.size.height ?: style.parent?.computedHeight
+
+val Styled.computedMinWidth: Length? get() = style.minSize.width ?: style.parent?.computedMinWidth
+val Styled.computedMinHeight: Length? get() = style.minSize.height ?: style.parent?.computedMinHeight
+
+val Styled.computedMaxWidth: Length? get() = style.maxSize.width ?: style.parent?.computedMaxWidth
+val Styled.computedMaxHeight: Length? get() = style.maxSize.height ?: style.parent?.computedMaxHeight
+
+val Styled.computedRelativeTo: Component? get() = style.relativeTo ?: style.parent?.computedRelativeTo
+
+val Styled.computedTop: Length? get() = style.top ?: style.parent?.computedTop
+val Styled.computedBottom: Length? get() = style.bottom ?: style.parent?.computedBottom
+val Styled.computedLeft: Length? get() = style.left ?: style.parent?.computedLeft
+val Styled.computedRight: Length? get() = style.right ?: style.parent?.computedRight
+

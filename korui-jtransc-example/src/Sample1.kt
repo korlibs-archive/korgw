@@ -22,10 +22,12 @@ fun main(args: Array<String>) = EventLoop.main {
 	//val url = UrlVfs("http://127.0.0.1")
 
 	Application().frame("Hello Frame!") {
+		icon = image
 		val c1 = RGBA(220, 220, 220, 255)
 		val c2 = RGBA(255, 255, 255, 255)
 
 		image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
+			smooth = false
 			setSize(100.percent, 100.percent)
 		}
 
@@ -50,7 +52,13 @@ fun main(args: Array<String>) = EventLoop.main {
 			horizontal {
 				padding.setTo(8.pt)
 				button("Hi").apply { width = 100.pt }
-				button("Hello")
+				button("Hello").apply { width = 200.pt  }
+				button("World")
+			}
+			inline {
+				padding.setTo(8.pt)
+				button("Hi").apply { width = 100.pt }
+				button("Hello").apply { width = 200.pt  }
 				button("World")
 			}
 			val p = progress(0, 100)
@@ -86,7 +94,7 @@ fun main(args: Array<String>) = EventLoop.main {
 				}
 				loadImage?.setSize(200.pt, 200.pt)
 			}
-			horizontal {
+			inline {
 				loadImage = image(image)
 			}
 		}

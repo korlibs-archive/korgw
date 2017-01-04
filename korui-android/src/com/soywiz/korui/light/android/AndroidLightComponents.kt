@@ -12,10 +12,6 @@ import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightEvent
 import com.soywiz.korui.light.LightResizeEvent
-import org.intellij.lang.annotations.Language
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
-import java.io.StringReader
 import kotlin.coroutines.suspendCoroutine
 
 class AndroidLightComponents : LightComponents() {

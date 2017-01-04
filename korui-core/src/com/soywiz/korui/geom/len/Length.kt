@@ -1,6 +1,7 @@
 package com.soywiz.korui.geom.len
 
 import com.soywiz.korim.geom.IRectangle
+import com.soywiz.korio.util.clamp
 
 //sealed class Length : Comparable<Length> {
 sealed class Length {
@@ -32,16 +33,22 @@ sealed class Length {
 		override fun toString() = "($a $op $b)"
 	}
 
-	data class Scale(val a: Length, val scale: Double) : Length() {
-		override fun calc(size: Int): Int = (a.calc(size) * scale).toInt()
+	data class Scale(val a: Length?, val scale: Double) : Length() {
+		override fun calc(size: Int): Int = (a.calcMax(size) * scale).toInt()
 		override fun toString() = "($a * $scale)"
 	}
 
 	abstract fun calc(size: Int): Int
 
 	companion object {
-		val AUTO = Ratio(1.0)
 		val ZERO = PT(0)
+
+		fun calc(length: Int, size: Length?, min: Length? = null, max: Length? = null): Int {
+			val sizeCalc = size.calcMax(length)
+			val minCalc = min.calcMin(length)
+			val maxCalc = min.calcMax(length)
+			return sizeCalc.clamp(minCalc, maxCalc)
+		}
 	}
 
 	operator fun plus(that: Length): Length = Length.Binop(this, that, "+") { a, b -> a + b }
@@ -60,7 +67,7 @@ fun Length?.calcMax(size: Int): Int = this?.calc(size) ?: size
 
 //operator fun Length?.plus(that: Length?): Length? = Length.Binop(this, that, "+") { a, b -> a + b }
 //operator fun Length?.minus(that: Length?): Length? = Length.Binop(this, that, "-") { a, b -> a - b }
-operator fun Length?.times(that: Double): Length? = Length.Scale(this ?: Length.AUTO, that)
+operator fun Length?.times(that: Double): Length? = Length.Scale(this, that)
 
 fun IRectangle.set(bounds: IRectangle, x: Length?, y: Length?, width: Length?, height: Length?) = this.set(
 	x?.calc(bounds.width) ?: bounds.x,

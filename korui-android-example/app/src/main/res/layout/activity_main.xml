@@ -10,8 +10,23 @@
 	android:paddingTop="@dimen/activity_vertical_margin"
 	tools:context="korui.soywiz.com.koruiandroidexample1.MainActivity">
 
-	<TextView
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:text="Hello World!" />
+	<FrameLayout
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+
+		<RelativeLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content">
+
+			<Button
+				android:text="Button"
+				android:layout_width="100pt"
+				android:layout_height="50pt"
+				android:id="@+id/button23"
+				android:layout_marginBottom="70dp"
+				android:layout_marginEnd="23dp"
+				android:layout_alignParentBottom="true"
+				android:layout_alignParentEnd="true" />
+		</RelativeLayout>
+	</FrameLayout>
 </RelativeLayout>

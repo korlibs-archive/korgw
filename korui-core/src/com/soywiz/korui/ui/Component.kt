@@ -204,11 +204,15 @@ class Image(lc: LightComponents) : Component(lc, lc.create(LightComponents.Type.
 			invalidate()
 		}
 
-	var smooth: Boolean = false
+	var smooth: Boolean = true
 		set(value) {
 			field = value
 			lc.setAttributeBoolean(handle, "smooth", value)
 		}
+
+	init {
+		smooth = true
+	}
 
 	fun refreshImage() {
 		this.image = image
@@ -239,6 +243,19 @@ suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): C
 suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container = asyncFun {
 	add(Container(this.lc, HorizontalLayout).apply {
 		style.height = 32.pt
+		callback.await(this)
+	})
+}
+
+suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Container = asyncFun {
+	add(Container(this.lc, InlineLayout).apply {
+		style.height = 32.pt
+		callback.await(this)
+	})
+}
+
+suspend inline fun Container.relative(callback: suspend Container.() -> Unit): Container = asyncFun {
+	add(Container(this.lc, RelativeLayout).apply {
 		callback.await(this)
 	})
 }

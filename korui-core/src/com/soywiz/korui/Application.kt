@@ -1,5 +1,6 @@
 package com.soywiz.korui
 
+import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
@@ -22,11 +23,12 @@ class Application(val light: LightComponents = defaultLight) {
 	}
 }
 
-suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480, callback: suspend Frame.() -> Unit = {}): Frame = asyncFun {
+suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, callback: suspend Frame.() -> Unit = {}): Frame = asyncFun {
 	val frame = Frame(this.light, title).apply {
 		actualBounds.width = width
 		actualBounds.height = height
 	}
+	frame.icon = icon
 	callback.await(frame)
 	light.setBounds(frame.handle, 0, 0, frame.actualBounds.width, frame.actualBounds.height)
 	light.setEventHandler<LightResizeEvent>(frame.handle) { e ->
