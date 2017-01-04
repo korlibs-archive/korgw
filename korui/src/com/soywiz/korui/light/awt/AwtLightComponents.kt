@@ -6,10 +6,7 @@ import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
-import com.soywiz.korui.light.LightClickEvent
-import com.soywiz.korui.light.LightComponents
-import com.soywiz.korui.light.LightEvent
-import com.soywiz.korui.light.LightResizeEvent
+import com.soywiz.korui.light.*
 import java.awt.*
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -29,16 +26,16 @@ class AwtLightComponents : LightComponents() {
 		//UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
 	}
 
-	override fun create(type: Type): Any = when (type) {
-		Type.FRAME -> JFrame2().apply {
+	override fun create(type: LightType): Any = when (type) {
+		LightType.FRAME -> JFrame2().apply {
 			defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 		}
-		Type.CONTAINER -> JPanel2().apply {
+		LightType.CONTAINER -> JPanel2().apply {
 			layout = null
 		}
-		Type.BUTTON -> JButton()
-		Type.IMAGE -> JImage()
-		Type.PROGRESS -> JProgressBar(0, 100)
+		LightType.BUTTON -> JButton()
+		LightType.IMAGE -> JImage()
+		LightType.PROGRESS -> JProgressBar(0, 100)
 		else -> throw UnsupportedOperationException()
 	}
 
@@ -87,24 +84,61 @@ class AwtLightComponents : LightComponents() {
 				c.setBounds(x, y, width, height)
 			}
 		}
-		//(c as Component).repaint()
-		//(c as Component).preferredSize = Dimension(width, height)
-		//(c as Component).minimumSize = Dimension(width, height)
-		//(c as Component).maximumSize = Dimension(width, height)
 	}
 
-	override fun setVisible(c: Any, visible: Boolean) {
-		if (c is JFrame2) {
-			if (!c.isVisible && visible) {
-				c.setLocationRelativeTo(null)
+	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
+		when (key) {
+			LightProperty.VISIBLE -> {
+				val visible = value as Boolean
+				if (c is JFrame2) {
+					if (!c.isVisible && visible) {
+						c.setLocationRelativeTo(null)
+					}
+				}
+				(c as Component).isVisible = visible
+			}
+			LightProperty.TEXT -> {
+				val text = value as String
+				(c as? JButton)?.text = text
+				(c as? Frame)?.title = text
+			}
+			LightProperty.IMAGE -> {
+				val bmp = value as Bitmap?
+				val image = (c as? JImage)
+				if (bmp is NativeImage) {
+					image?.image = bmp.data as BufferedImage
+				} else {
+					image?.image = bmp?.toBMP32()?.toAwt()
+				}
+			}
+			LightProperty.ICON -> {
+				val bmp = value as Bitmap?
+				when (c) {
+					is JFrame2 -> {
+						c.iconImage = bmp?.toBMP32()?.toAwt()
+					}
+				}
+			}
+			LightProperty.IMAGE_SMOOTH -> {
+				val value = value as Boolean
+				when (c) {
+					is JImage -> {
+						c.smooth = value
+					}
+				}
+			}
+			LightProperty.BGCOLOR -> {
+				val value = value as Int
+				(c as? Component)?.background = Color(value, true)
+			}
+			LightProperty.PROGRESS_CURRENT -> {
+				(c as? JProgressBar)?.value = value as Int
+			}
+			LightProperty.PROGRESS_MAX -> {
+				(c as? JProgressBar)?.maximum = value as Int
 			}
 		}
-		(c as Component).isVisible = visible
-	}
-
-	override fun setText(c: Any, text: String) {
-		(c as? JButton)?.text = text
-		(c as? Frame)?.title = text
+		super.setProperty(c, key, value)
 	}
 
 	suspend override fun dialogAlert(c: Any, message: String) = asyncFun {
@@ -132,59 +166,8 @@ class AwtLightComponents : LightComponents() {
 		}
 	}
 
-	override fun setImage(c: Any, bmp: Bitmap?) {
-		val image = (c as? JImage)
-		if (bmp is NativeImage) {
-			image?.image = bmp.data as BufferedImage
-		} else {
-			image?.image = bmp?.toBMP32()?.toAwt()
-		}
-	}
-
-	override fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) {
-		when (handle) {
-			is JFrame2 -> {
-				when (key) {
-					"icon" -> {
-						handle.iconImage = value?.toBMP32()?.toAwt()
-					}
-				}
-			}
-		}
-	}
-
 	override fun repaint(c: Any) {
 		(c as? Component)?.repaint()
-	}
-
-	override fun setAttributeString(c: Any, key: String, value: String) {
-	}
-
-	override fun setAttributeBoolean(c: Any, key: String, value: Boolean) {
-		when (c) {
-			is JImage -> {
-				when (key) {
-					"smooth" -> c.smooth = value
-				}
-			}
-		}
-	}
-
-	override fun setAttributeInt(c: Any, key: String, value: Int) {
-		when (key) {
-			"background" -> {
-				(c as? Component)?.background = Color(value, true)
-			}
-		}
-
-		when (c) {
-			is JProgressBar -> {
-				when (key) {
-					"current" -> c.value = value
-					"max" -> c.maximum = value
-				}
-			}
-		}
 	}
 
 	override fun openURL(url: String): Unit {

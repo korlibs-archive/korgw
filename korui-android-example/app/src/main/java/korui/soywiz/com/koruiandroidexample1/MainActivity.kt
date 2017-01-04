@@ -9,11 +9,11 @@ import com.soywiz.korui.Application
 import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.android.KoruiActivity
+import com.soywiz.korui.style.bottom
 import com.soywiz.korui.style.height
-import com.soywiz.korui.ui.button
-import com.soywiz.korui.ui.horizontal
-import com.soywiz.korui.ui.progress
-import com.soywiz.korui.ui.vertical
+import com.soywiz.korui.style.relativeTo
+import com.soywiz.korui.style.right
+import com.soywiz.korui.ui.*
 
 class MainActivity : KoruiActivity() {
 	suspend override fun main(args: Array<String>) = asyncFun {
@@ -51,6 +51,22 @@ class MainActivity : KoruiActivity() {
 						alert("done!")
 						progress.current = 0
 					}
+				}
+			}
+
+			relative {
+				val hello = button("hello") {
+
+				}.apply {
+					right = 10.pt
+					bottom = 10.pt
+				}
+
+				val world = button("world") {
+
+				}.apply {
+					relativeTo = hello
+					right = 10.pt
 				}
 			}
 			//button("hello from korui")

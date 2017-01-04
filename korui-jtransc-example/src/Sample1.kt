@@ -31,7 +31,7 @@ fun main(args: Array<String>) = EventLoop.main {
 		layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.COVER) {
 			image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
 				smooth = false
-				setSize(100.percent, 100.percent)
+				//setSize(100.percent, 100.percent)
 			}
 		}
 
@@ -56,13 +56,13 @@ fun main(args: Array<String>) = EventLoop.main {
 			horizontal {
 				padding.setTo(8.pt)
 				button("Hi").apply { width = 100.pt }
-				button("Hello").apply { width = 200.pt  }
+				button("Hello").apply { width = 200.pt }
 				button("World")
 			}
 			inline {
 				padding.setTo(8.pt)
 				button("Hi").apply { width = 100.pt }
-				button("Hello").apply { width = 200.pt  }
+				button("Hello").apply { width = 200.pt }
 				button("World")
 			}
 			val p = progress(0, 100)
@@ -79,7 +79,7 @@ fun main(args: Array<String>) = EventLoop.main {
 					askButton?.text = "What's your name again...?"
 				}
 			}
-			horizontal {
+			inline {
 				image(image).apply {
 					style.size.setToScale(0.5, 0.5)
 				}

@@ -15,10 +15,7 @@ import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
 import com.soywiz.korio.vfs.js.JsStat
-import com.soywiz.korui.light.LightClickEvent
-import com.soywiz.korui.light.LightComponents
-import com.soywiz.korui.light.LightEvent
-import com.soywiz.korui.light.LightResizeEvent
+import com.soywiz.korui.light.*
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.suspendCoroutine
@@ -92,34 +89,34 @@ class HtmlLightComponents : LightComponents() {
 		head.method("appendChild")(style)
 	}
 
-	override fun create(type: Type): Any {
-		var e: JsDynamic? = null
+	override fun create(type: LightType): JsDynamic {
+		val e: JsDynamic
 		when (type) {
-			Type.FRAME -> {
-				e = document.method("createElement")("article")
+			LightType.FRAME -> {
+				e = document.method("createElement")("article")!!
 				document["body"].method("appendChild")(e)
 				window["mainFrame"] = e
 			}
-			Type.CONTAINER -> {
-				e = document.method("createElement")("div")
+			LightType.CONTAINER -> {
+				e = document.method("createElement")("div")!!
 			}
-			Type.BUTTON -> {
-				e = document.method("createElement")("input")
+			LightType.BUTTON -> {
+				e = document.method("createElement")("input")!!
 				e["className"] = "myButton"
 				e["type"] = "button"
 			}
-			Type.PROGRESS -> {
-				e = document.method("createElement")("progress")
+			LightType.PROGRESS -> {
+				e = document.method("createElement")("progress")!!
 			}
-			Type.IMAGE -> {
-				e = document.method("createElement")("canvas")
+			LightType.IMAGE -> {
+				e = document.method("createElement")("canvas")!!
 				e["style"]["imageRendering"] = "pixelated"
 			}
-			Type.LABEL -> {
-				e = document.method("createElement")("div")
+			LightType.LABEL -> {
+				e = document.method("createElement")("div")!!
 			}
 			else -> {
-				e = document.method("createElement")("div")
+				e = document.method("createElement")("div")!!
 			}
 		}
 
@@ -130,7 +127,7 @@ class HtmlLightComponents : LightComponents() {
 		e["style"]["width"] = "100px"
 		e["style"]["height"] = "100px"
 
-		return e!!
+		return e
 	}
 
 	override fun setParent(c: Any, parent: Any?) {
@@ -175,87 +172,66 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
-	override fun setText(c: Any, text: String) {
-		val child = c.asJsDynamic()
-		if (child["nodeName"].toJavaString().toLowerCase() == "article") {
-			document["title"] = text
-		} else {
-			child["value"] = text
-		}
-	}
-
-	override fun setAttributeString(c: Any, key: String, value: String) {
-		val child = c.asJsDynamic()
-		when (child["nodeName"].toJavaString().toLowerCase()) {
-			"progress" -> {
-			}
-		}
-	}
-
-	override fun setAttributeInt(c: Any, key: String, value: Int) {
+	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
 		val child = c.asJsDynamic()
 		val childOrDocumentBody = if (child["nodeName"].toJavaString().toLowerCase() == "article") document["body"] else child
-		when (child["nodeName"].toJavaString().toLowerCase()) {
-			"progress" -> {
-				when (key) {
-					"current" -> child["value"] = value
-					"max" -> child["max"] = value
+		val nodeName = child["nodeName"].toJavaString().toLowerCase()
+		when (key) {
+			LightProperty.TEXT -> {
+				val v = value as String
+				if (nodeName == "article") {
+					document["title"] = v
+				} else {
+					child["value"] = v
 				}
 			}
-		}
-		when (key) {
-			"background" -> {
-				childOrDocumentBody["style"]["background"] = colorString(value)
+			LightProperty.PROGRESS_CURRENT -> {
+				val v = (value as Int).toInt()
+				child["value"] = v
+			}
+			LightProperty.PROGRESS_MAX -> {
+				val v = (value as Int).toInt()
+				child["max"] = v
+			}
+			LightProperty.BGCOLOR -> {
+				val v = (value as Int).toInt()
+				childOrDocumentBody["style"]["background"] = colorString(v)
+			}
+			LightProperty.IMAGE_SMOOTH -> {
+				val v = !!(value as Boolean)
+				child["style"]["imageRendering"] = if (v) "auto" else "pixelated"
+			}
+			LightProperty.ICON -> {
+				val v = (value as Bitmap?)
+				if (v != null) {
+					val href = HtmlImage.htmlCanvasToDataUrl(HtmlImage.bitmapToHtmlCanvas(v.toBMP32()))
+
+					var link = document.getMethod("querySelector")("link[rel*='icon']")
+					if (link == null) {
+						link = document.getMethod("createElement")("link")
+					}
+					link["type"] = "image/x-icon"
+					link["rel"] = "shortcut icon"
+					link["href"] = href
+					document.getMethod("getElementsByTagName")("head")[0].getMethod("appendChild")(link)
+				}
+			}
+			LightProperty.IMAGE -> {
+				val bmp = value as Bitmap?
+				if (bmp is NativeImage) {
+					setCanvas(c, bmp.data.asJsDynamic())
+				} else {
+					setImage32(c, bmp?.toBMP32())
+				}
+			}
+			LightProperty.VISIBLE -> {
+				val v = value as Boolean
+				if (child != null) child["style"]["display"] = if (v) "block" else "none"
 			}
 		}
 	}
 
 	fun colorString(c: Int) = "RGBA(${RGBA.getR(c)},${RGBA.getG(c)},${RGBA.getB(c)},${RGBA.getAf(c)})"
-
-	override fun setAttributeBoolean(c: Any, key: String, value: Boolean) {
-		val child = c.asJsDynamic()
-		when (child["nodeName"].toJavaString().toLowerCase()) {
-			"canvas" -> {
-				when (key) {
-					"smooth" -> {
-						child["style"]["imageRendering"] = if (value) "auto" else "pixelated"
-					}
-				}
-			}
-		}
-	}
-
-	override fun setAttributeBitmap(handle: Any, key: String, value: Bitmap?) {
-		val child = handle.asJsDynamic()
-		when (child["nodeName"].toJavaString().toLowerCase()) {
-			"article" -> {
-				when (key) {
-					"icon" -> {
-						if (value != null) {
-							val href = HtmlImage.htmlCanvasToDataUrl(HtmlImage.bitmapToHtmlCanvas(value.toBMP32()))
-
-							var link = document.getMethod("querySelector")("link[rel*='icon']")
-							if (link == null) {
-								link = document.getMethod("createElement")("link")
-							}
-							link["type"] = "image/x-icon"
-							link["rel"] = "shortcut icon"
-							link["href"] = href
-							document.getMethod("getElementsByTagName")("head")[0].getMethod("appendChild")(link)
-						}
-					}
-				}
-			}
-		}
-	}
-
-	override fun setImage(c: Any, bmp: Bitmap?) {
-		if (bmp is NativeImage) {
-			setCanvas(c, bmp.data.asJsDynamic())
-		} else {
-			setImage32(c, bmp?.toBMP32())
-		}
-	}
 
 	private fun setCanvas(c: Any, bmp: JsDynamic?) {
 		val targetCanvas = c.asJsDynamic()!!
@@ -277,11 +253,6 @@ class HtmlLightComponents : LightComponents() {
 		} else {
 			HtmlImage.htmlCanvasClear(c.asJsDynamic()!!)
 		}
-	}
-
-	override fun setVisible(c: Any, visible: Boolean) {
-		val child = c.asJsDynamic()
-		if (child != null) child["style"]["display"] = if (visible) "block" else "none"
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {

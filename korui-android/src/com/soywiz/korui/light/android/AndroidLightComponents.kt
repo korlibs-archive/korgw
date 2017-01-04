@@ -1,55 +1,35 @@
 package com.soywiz.korui.light.android
 
 import android.app.AlertDialog
-import android.graphics.Point
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsoluteLayout
 import android.widget.Button
 import android.widget.ProgressBar
 import com.soywiz.korio.android.KorioAndroidContext
-import com.soywiz.korui.light.LightClickEvent
-import com.soywiz.korui.light.LightComponents
-import com.soywiz.korui.light.LightEvent
-import com.soywiz.korui.light.LightResizeEvent
+import com.soywiz.korui.light.*
 import kotlin.coroutines.suspendCoroutine
 
 class AndroidLightComponents : LightComponents() {
 	val activity = KorioAndroidContext
 	val scale = KorioAndroidContext.resources.displayMetrics.density
 
-	//fun xml(@Language("xml") xml: String): XmlPullParser {
-	//	val factory = XmlPullParserFactory.newInstance()
-	//	factory.isNamespaceAware = true
-	//	val xpp = factory.newPullParser()
-	//	xpp.setInput(StringReader(xml.trim()))
-	//	return xpp
-	//}
-//
-	//fun <T : View> createView(@Language("xml") xml: String): T = activity.layoutInflater.inflate(xml(xml), null) as T
-
-	override fun create(type: LightComponents.Type): View {
+	override fun create(type: LightType): View {
 		return when (type) {
-			LightComponents.Type.FRAME -> {
-				val activity = KorioAndroidContext
-				val view = RootKoruiAbsoluteLayout(KorioAndroidContext)
-				//val view = LinearLayout(KorioAndroidContext)
+			LightType.FRAME -> {
+				val view = RootKoruiAbsoluteLayout(activity)
+				view.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT)
 				activity.setContentView(view)
 				view
 			}
-			LightComponents.Type.BUTTON -> {
+			LightType.BUTTON -> {
 				Button(KorioAndroidContext)
 			}
-			LightComponents.Type.CONTAINER -> {
+			LightType.CONTAINER -> {
 				KoruiAbsoluteLayout(KorioAndroidContext)
-				//LinearLayout(KorioAndroidContext)
 			}
-			LightComponents.Type.PROGRESS -> {
-				ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal).apply {
-
-				}
-
-				//LinearLayout(KorioAndroidContext)
+			LightType.PROGRESS -> {
+				ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal)
 			}
 			else -> {
 				View(KorioAndroidContext)
@@ -64,8 +44,8 @@ class AndroidLightComponents : LightComponents() {
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
-		println("--------------------------")
-		println("setBounds: $c, $x, $y, $width, $height")
+		//println("--------------------------")
+		//println("setBounds: $c, $x, $y, $width, $height")
 		if (c is View) {
 			if (c is RootKoruiAbsoluteLayout) {
 
@@ -87,26 +67,22 @@ class AndroidLightComponents : LightComponents() {
 		(c as View).requestLayout()
 	}
 
-	override fun setText(c: Any, text: String) {
-		when (c) {
-			is Button -> {
-				c.text = text
-			}
-		}
-	}
-
-	override fun setAttributeInt(c: Any, key: String, value: Int) {
+	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
+		val c = c as View
 		when (key) {
-			"background" -> {
+			LightProperty.TEXT -> {
+				val v = value as String
+				(c as? Button)?.text = v
 			}
-		}
-
-		when (c) {
-			is ProgressBar -> {
-				when (key) {
-					"current" -> c.progress = value
-					"max" -> c.max = value
-				}
+			LightProperty.BGCOLOR -> {
+			}
+			LightProperty.PROGRESS_CURRENT -> {
+				val v = value as Int
+				(c as? ProgressBar)?.progress = v
+			}
+			LightProperty.PROGRESS_MAX -> {
+				val v = value as Int
+				(c as? ProgressBar)?.max = v
 			}
 		}
 	}
@@ -120,18 +96,16 @@ class AndroidLightComponents : LightComponents() {
 			}
 			LightResizeEvent::class.java -> {
 				val cc = (c as RootKoruiAbsoluteLayout)
-				val ctx = KorioAndroidContext as KoruiActivity
-				val viewSize = ctx.window.decorView
+				val ctx = activity as KoruiActivity
 
 				fun send() {
-					val display = ctx.windowManager.defaultDisplay
-					val size = Point()
-					display.getSize(size)
-					println("LightResizeEvent: ${size.x}x${size.y}")
-					handler(LightResizeEvent((size.x / scale).toInt(), (size.y / scale).toInt()) as T)
+					val sizeX = ((cc.parent as View).width / scale).toInt()
+					val sizeY = ((cc.parent as View).height / scale).toInt()
+					println("LightResizeEvent($sizeX, $sizeY)")
+					handler(LightResizeEvent(sizeX, sizeY) as T)
 				}
 
-				ctx.rotated { send() }
+				KuroiApp.resized { send() }
 				send()
 			}
 		}
