@@ -27,8 +27,6 @@ dependencies {
 		exclude group: 'com.android.support', module: 'support-annotations'
 	})
 	compile 'com.android.support:appcompat-v7:24.2.1'
-	compile('com.soywiz:korio-android:0.3.6')
-	compile('com.soywiz:korim-android:0.3.6')
-	compile('com.soywiz:korui-android:0.3.6')
+	compile "com.soywiz:korui-android:$koruiVersion"
 	testCompile 'junit:junit:4.12'
 }
