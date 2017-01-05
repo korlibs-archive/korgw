@@ -27,7 +27,9 @@ open class KoruiActivity : Activity() {
 
 	override fun onWindowFocusChanged(hasFocus: Boolean) {
 		super.onWindowFocusChanged(hasFocus)
-		KuroiApp.resized(Unit)
+		EventLoop.queue {
+			KuroiApp.resized(Unit)
+		}
 	}
 
 	/*

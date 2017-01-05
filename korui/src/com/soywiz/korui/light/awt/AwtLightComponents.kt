@@ -3,6 +3,7 @@ package com.soywiz.korui.light.awt
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.NativeImage
+import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
@@ -44,7 +45,9 @@ class AwtLightComponents : LightComponents() {
 			LightClickEvent::class.java -> {
 				(c as Component).addMouseListener(object : MouseAdapter() {
 					override fun mouseClicked(e: MouseEvent) {
-						handler(LightClickEvent(e.x, e.y) as T)
+						EventLoop.queue {
+							handler(LightClickEvent(e.x, e.y) as T)
+						}
 					}
 				})
 			}
@@ -52,7 +55,9 @@ class AwtLightComponents : LightComponents() {
 				fun send() {
 					val cc = (c as JFrame2)
 					val cp = cc.contentPane
-					handler(LightResizeEvent(cp.width, cp.height) as T)
+					EventLoop.queue {
+						handler(LightResizeEvent(cp.width, cp.height) as T)
+					}
 				}
 
 				(c as Frame).addComponentListener(object : ComponentAdapter() {
@@ -73,6 +78,7 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
+		//println("setBounds[${c.javaClass.simpleName}]($x, $y, $width, $height) : Thread(${Thread.currentThread().id})")
 		when (c) {
 			is JFrame2 -> {
 				c.panel.preferredSize = Dimension(width, height)
@@ -110,6 +116,7 @@ class AwtLightComponents : LightComponents() {
 				} else {
 					image?.image = bmp?.toBMP32()?.toAwt()
 				}
+				image?.repaint()
 			}
 			LightProperty.ICON -> {
 				val bmp = value as Bitmap?

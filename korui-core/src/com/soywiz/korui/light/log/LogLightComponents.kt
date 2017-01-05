@@ -14,6 +14,14 @@ class LogLightComponents : LightComponents() {
 		return id
 	}
 
+	override fun setParent(c: Any, parent: Any?) {
+		log += "setParent($c,$parent)"
+	}
+
+	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
+		log += "setBounds($c,$x,$y,$width,$height)"
+	}
+
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
 		log += "setProperty($c,$key,$value)"
 	}

@@ -56,15 +56,17 @@ enum class LightType {
 	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL
 }
 
-class LightProperty<out T>(val default: T) {
+class LightProperty<out T>(val name: String, val default: T) {
 	companion object {
-		val VISIBLE = LightProperty<Boolean>(true)
-		val TEXT = LightProperty<String>("")
-		val ICON = LightProperty<Bitmap?>(null)
-		val BGCOLOR = LightProperty<Int>(Colors.BLACK)
-		val PROGRESS_CURRENT = LightProperty<Int>(0)
-		val PROGRESS_MAX = LightProperty<Int>(100)
-		val IMAGE = LightProperty<Bitmap?>(null)
-		val IMAGE_SMOOTH = LightProperty<Boolean>(true)
+		val VISIBLE = LightProperty<Boolean>("VISIBLE", true)
+		val TEXT = LightProperty<String>("TEXT", "")
+		val ICON = LightProperty<Bitmap?>("ICON", null)
+		val BGCOLOR = LightProperty<Int>("BGCOLOR", Colors.BLACK)
+		val PROGRESS_CURRENT = LightProperty<Int>("PROGRESS_CURRENT", 0)
+		val PROGRESS_MAX = LightProperty<Int>("PROGRESS_MAX", 100)
+		val IMAGE = LightProperty<Bitmap?>("IMAGE", null)
+		val IMAGE_SMOOTH = LightProperty<Boolean>("IMAGE_SMOOTH", true)
 	}
+
+	override fun toString(): String = "LightProperty[$name]"
 }

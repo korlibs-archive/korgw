@@ -13,8 +13,7 @@ import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.Padding
 import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.pt
-import com.soywiz.korui.style.padding
-import com.soywiz.korui.style.width
+import com.soywiz.korui.style.*
 import com.soywiz.korui.ui.*
 import java.util.concurrent.CancellationException
 
@@ -48,21 +47,21 @@ fun main(args: Array<String>) = EventLoop.main {
 
 			horizontal {
 				button("Alert!") {
-					alert("hello")
-				}.apply {
 					width = 50.percent
+				}.click {
+					alert("hello")
 				}
 			}
 			horizontal {
 				padding.setTo(8.pt)
-				button("Hi").apply { width = 100.pt }
-				button("Hello").apply { width = 200.pt }
+				button("Hi") { width = 100.pt }
+				button("Hello") { width = 200.pt }
 				button("World")
 			}
 			inline {
 				padding.setTo(8.pt)
-				button("Hi").apply { width = 100.pt }
-				button("Hello").apply { width = 200.pt }
+				button("Hi") { width = 100.pt }
+				button("Hello") { width = 200.pt }
 				button("World")
 			}
 			val p = progress(0, 100)
@@ -72,7 +71,7 @@ fun main(args: Array<String>) = EventLoop.main {
 					sleep(16)
 				}
 			}
-			askButton = button("What's your name...?") {
+			askButton = button("What's your name...?").click {
 				try {
 					askButton?.text = prompt("My name is:")
 				} catch (c: CancellationException) {
@@ -80,12 +79,12 @@ fun main(args: Array<String>) = EventLoop.main {
 				}
 			}
 			inline {
-				image(image).apply {
-					style.size.setToScale(0.5, 0.5)
+				image(image) {
+					//style.size.setToScale(0.5, 0.5)
 				}
 			}
 			spacer()
-			button("Load Image...") {
+			button("Load Image...").click {
 				try {
 					val file = dialogOpenFile()
 					println("File opened...")
@@ -103,30 +102,17 @@ fun main(args: Array<String>) = EventLoop.main {
 			}
 		}
 
-		//image(Bitmap32(50, 50, { _, _ -> Colors.WHITE })) {
-		//    setBoundsInternal(0, 0, 100, 100)
-		//}
-		/*
-		button {
-			top = 50.percent
-			width = 50.percent
-			height = 50.percent
-			setBoundsInternal(0, 0, 100, 100)
-			onClick {
-				println("click!")
-				spawn {
-					println("click [work]!")
-					alert("Button pressed!")
-					try {
-						val file = dialogOpenFile()
-						println(file.readString())
-					} catch (t: CancellationException) {
-						println("cancelled!")
-					}
-				}
+		relative {
+			button("FLOATING") {
+				right = 16.pt
+				bottom = 16.pt
+				minHeight = 10.pt
+				maxHeight = 10.percent
+
+				minWidth = 50.pt
+				maxWidth = 20.percent
 			}
 		}
-		*/
 	}
 }
 

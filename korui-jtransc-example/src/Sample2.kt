@@ -8,6 +8,7 @@ import com.soywiz.korui.style.bottom
 import com.soywiz.korui.style.relativeTo
 import com.soywiz.korui.style.right
 import com.soywiz.korui.ui.button
+import com.soywiz.korui.ui.click
 import com.soywiz.korui.ui.relative
 
 fun main(args: Array<String>) = EventLoop.main {
@@ -15,13 +16,17 @@ fun main(args: Array<String>) = EventLoop.main {
 
 	Application().frame("Hello Frame!", icon = icon) {
 		relative {
-			val button1 = button("hello").apply {
+			val button1 = button("hello") {
 				right = 50.pt
 				bottom = 50.pt
+			}.click {
+				alert("hello")
 			}
-			val button2 = button("world").apply {
+			val button2 = button("world") {
 				relativeTo = button1
 				right = 50.pt
+			}.click {
+				alert("world")
 			}
 		}
 	}

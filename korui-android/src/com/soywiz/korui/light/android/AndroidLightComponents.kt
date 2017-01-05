@@ -45,7 +45,7 @@ class AndroidLightComponents : LightComponents() {
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
 		//println("--------------------------")
-		//println("setBounds: $c, $x, $y, $width, $height")
+		//println("setBounds[${c.javaClass.simpleName}]($x, $y, $width, $height)")
 		if (c is View) {
 			if (c is RootKoruiAbsoluteLayout) {
 

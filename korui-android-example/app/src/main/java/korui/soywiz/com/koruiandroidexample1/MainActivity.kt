@@ -30,20 +30,20 @@ class MainActivity : KoruiActivity() {
 			vertical {
 				horizontal {
 					height = 40.pt
-					button("hello from korui") {
+					button("hello from korui").click {
 						for (file in ResourcesVfs.listRecursive()) {
 							println(file)
 						}
 						alert("done!")
 					}
-					button("show image") {
+					button("show image").click {
 						androidShowImage(ResourcesVfs["kotlin.png"].readBitmap())
 					}
 				}
 				val progress = progress(0, 100)
 				horizontal {
 					height = 40.pt
-					button("start") {
+					button("start").click {
 						while (progress.current < progress.max) {
 							progress.current++
 							sleep(50)
@@ -56,17 +56,15 @@ class MainActivity : KoruiActivity() {
 
 			relative {
 				val hello = button("hello") {
-
-				}.apply {
 					right = 10.pt
 					bottom = 10.pt
+				}.click {
 				}
 
 				val world = button("world") {
-
-				}.apply {
 					relativeTo = hello
 					right = 10.pt
+				}.click {
 				}
 			}
 			//button("hello from korui")

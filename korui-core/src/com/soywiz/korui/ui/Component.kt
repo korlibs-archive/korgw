@@ -14,53 +14,49 @@ import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightProperty
 import com.soywiz.korui.light.LightType
-import com.soywiz.korui.style.Style
-import com.soywiz.korui.style.Styled
-import com.soywiz.korui.style.height
-import com.soywiz.korui.style.width
+import com.soywiz.korui.style.*
 import kotlin.reflect.KProperty
 
 open class Component(val lc: LightComponents, val type: LightType) : Styled {
 	class lightProperty<T>(val key: LightProperty<T>, val invalidate: Boolean = false) {
 		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T = thisRef.getProperty(key)
-		inline operator fun setValue(thisRef: Component, property: KProperty<*>, value: T): Unit = run { thisRef.setProperty(key, value); if (invalidate) thisRef.invalidate() }
+		inline operator fun setValue(thisRef: Component, property: KProperty<*>, value: T): Unit = run { thisRef.setProperty(key, value); if (invalidate) thisRef.invalidateDescendants() }
 	}
 
+	override var style = Style()
 	var handle = lc.create(type)
-	var nativeBounds = IRectangle()
 	val properties = hashMapOf<LightProperty<*>, Any?>()
+	var valid = false
+	protected var nativeBounds = IRectangle()
+	val actualBounds: IRectangle = IRectangle()
 
 	fun <T> setProperty(key: LightProperty<T>, value: T) {
-		properties[key] = value
-		lc.setProperty(handle, key, value)
+		if (properties[key] != value) {
+			properties[key] = value
+			lc.setProperty(handle, key, value)
+		}
 	}
 
 	fun <T> getProperty(key: LightProperty<T>): T = if (key in properties) properties[key] as T else key.default
 
-	open fun setBoundsInternal(bounds: IRectangle) {
-		nativeBounds.set(bounds)
-		lc.setBounds(handle, bounds.x, bounds.y, bounds.width, bounds.height)
+	fun setBoundsInternal(bounds: IRectangle) = setBoundsInternal(bounds.x, bounds.y, bounds.width, bounds.height)
+
+	fun setBoundsInternal(x: Int, y: Int, width: Int, height: Int): IRectangle {
+		nativeBounds.set(x, y, width, height)
+		actualBounds.set(x, y, width, height)
+		lc.setBounds(handle, x, y, width, height)
+		invalidateAncestors()
+		return actualBounds
 	}
 
-	fun recreate() {
+	open fun recreate() {
 		handle = lc.create(type)
 		lc.setBounds(handle, nativeBounds.x, nativeBounds.y, nativeBounds.width, nativeBounds.height)
 		for ((key, value) in properties) {
 			lc.setProperty(handle, key, value)
 		}
 		lc.setParent(handle, parent?.handle)
-		invalidate()
 	}
-
-	fun recreateTree() {
-		recreate()
-		for (child in children) child.recreateTree()
-	}
-
-	override var style = Style()
-
-	var valid = false
-	val actualBounds: IRectangle = IRectangle()
 
 	var parent: Container? = null
 		set(newParent) {
@@ -70,34 +66,30 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 			field = newParent
 			newParent?.children?.add(this)
 			lc.setParent(handle, newParent?.handle)
+			//invalidate()
 			newParent?.invalidate()
 		}
 
-	val children = arrayListOf<Component>()
-
-	fun relayout() {
-		if (valid) return
-		//println("$this: relayout")
-		valid = true
-		relayoutInternal()
-		for (child in children) child.relayout()
-		setBoundsInternal(actualBounds)
-	}
-
-	open protected fun relayoutInternal() {
-		//println("relayoutInternal: $this")
-	}
-
 	fun invalidate() {
-		valid = false
-		parent?.invalidate()
+		invalidateAncestors()
 		invalidateDescendants()
 	}
 
-	fun invalidateDescendants() {
+	open fun invalidateDescendants() {
 		valid = false
-		for (child in children) child.invalidateDescendants()
 	}
+
+	fun invalidateAncestors() {
+		if (valid) return
+		valid = false
+		parent?.invalidateAncestors()
+	}
+
+	open fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): IRectangle {
+		return setBoundsInternal(x, y, width, height)
+	}
+
+	fun setBoundsAndRelayout(rect: IRectangle) = setBoundsAndRelayout(rect.x, rect.y, rect.width, rect.height)
 
 	//fun onClick(handler: (LightClickEvent) -> Unit) {
 	//	lc.setEventHandler<LightClickEvent>(handle, handler)
@@ -106,7 +98,7 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 	var mouseX = 0
 	var mouseY = 0
 
-	fun onClick(handler: suspend Component.() -> Unit) {
+	fun _onClickHandler(handler: suspend Component.() -> Unit) {
 		lc.setEventHandler<LightClickEvent>(handle) { e ->
 			mouseX = e.x
 			mouseY = e.y
@@ -122,15 +114,31 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 }
 
 open class Container(lc: LightComponents, var layout: Layout, type: LightType = LightType.CONTAINER) : Component(lc, type) {
+	val children = arrayListOf<Component>()
+
+	override fun recreate() {
+		super.recreate()
+		for (child in children) child.recreate()
+	}
+
+	override fun invalidateDescendants() {
+		super.invalidateDescendants()
+		for (child in children) child.invalidateDescendants()
+	}
+
+	override fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): IRectangle {
+		//println("relayout:$valid")
+		if (valid) return actualBounds
+		//println("$this: relayout")
+		valid = true
+		return setBoundsInternal(layout.applyLayout(this, children, x, y, width, height, out = actualBounds))
+	}
+
 	fun <T : Component> add(other: T): T {
 		other.parent = this
 		return other
 	}
 
-	// @TODO: @FIXME: JTransc 0.5.3 treeshaking doesn't include this!
-	override final fun relayoutInternal() {
-		layout.applyLayout(actualBounds, this, children)
-	}
 }
 
 class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, LightType.FRAME) {
@@ -157,9 +165,6 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, L
 
 	open fun openURL(url: String): Unit {
 		lc.openURL(url)
-	}
-
-	override fun setBoundsInternal(bounds: IRectangle) {
 	}
 }
 
@@ -212,18 +217,18 @@ class Image(lc: LightComponents) : Component(lc, LightType.IMAGE) {
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
 suspend fun Container.button(text: String) = add(Button(this.lc, text))
-suspend inline fun Container.button(text: String, clickHandler: suspend Button.() -> Unit) = add(Button(this.lc, text).apply {
-	onClick {
-		clickHandler.await(this@apply)
-	}
-})
+suspend inline fun Container.button(text: String, callback: suspend Button.() -> Unit) = asyncFun {
+	add(Button(this.lc, text).apply {
+		callback.await(this@apply)
+	})
+}
 
 suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.lc, current, max))
 suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.lc).apply { image = bitmap; callback.await(this) }) }
 suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply {
 	image = bitmap
-	this.width = bitmap.width.pt
-	this.height = bitmap.height.pt
+	this.style.defaultSize.width = bitmap.width.pt
+	this.style.defaultSize.height = bitmap.height.pt
 })
 
 suspend inline fun Container.spacer() = add(Spacer(this.lc))
@@ -236,14 +241,12 @@ suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDL
 suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, VerticalLayout).apply { callback.await(this) }) }
 suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container = asyncFun {
 	add(Container(this.lc, HorizontalLayout).apply {
-		style.height = 32.pt
 		callback.await(this)
 	})
 }
 
 suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Container = asyncFun {
 	add(Container(this.lc, InlineLayout).apply {
-		style.height = 32.pt
 		callback.await(this)
 	})
 }
@@ -253,3 +256,5 @@ suspend inline fun Container.relative(callback: suspend Container.() -> Unit): C
 		callback.await(this)
 	})
 }
+
+fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { _onClickHandler(handler) }

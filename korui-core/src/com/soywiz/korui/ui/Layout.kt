@@ -11,12 +11,17 @@ import com.soywiz.korui.geom.len.setBounds
 import com.soywiz.korui.style.*
 
 open class Layout {
-	open fun calculateSize(parent: Component, out: ISize = ISize(0, 0)): ISize {
-		//parent.children
-		return out
+	//open fun calculateSize(parent: Component, out: ISize = ISize(0, 0)): ISize {
+	//	//parent.children
+	//	return out
+	//}
+
+	open fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 	}
 
-	open fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
+	fun applyLayout(parent: Component, children: Iterable<Component>, x: Int, y: Int, width: Int, height: Int, out: IRectangle = IRectangle()): IRectangle {
+		applyLayout(parent, children, out.set(x, y, width, height))
+		return out
 	}
 
 	enum class ScaleMode2 { NEVER, SHRINK, ALWAYS }
@@ -51,23 +56,23 @@ open class Layout {
 }
 
 object LayeredLayout : Layout() {
-	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
+	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val actualBounds = IRectangle().setBounds(
-			bounds,
+			inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
 
 		for (child in children) {
-			child.actualBounds.set(actualBounds)
+			child.setBoundsAndRelayout(actualBounds)
 		}
 	}
 }
 
 class LayeredKeepAspectLayout(val anchor: Anchor, val scaleMode: ScaleMode = ScaleMode.SHOW_ALL) : Layout() {
-	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
+	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val actualBounds = IRectangle().setBounds(
-			bounds,
+			inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
@@ -78,50 +83,44 @@ class LayeredKeepAspectLayout(val anchor: Anchor, val scaleMode: ScaleMode = Sca
 
 			val asize = ISize(width, height).applyScaleMode(actualBounds.size, scaleMode)
 
-			child.actualBounds.set(asize.anchoredIn(actualBounds, anchor))
+			val endSize = asize.anchoredIn(actualBounds, anchor)
+			child.setBoundsAndRelayout(endSize)
+			child.setBoundsInternal(endSize)
 		}
 	}
 }
 
 abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
-	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
-		val (_, _, width, height) = bounds
+	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		//val width2 = width - parent.style.computedPaddingRight.calc(width)
 		//val height2 = height - parent.style.computedPaddingBottom.calc(height)
 
 		val paddingPrev = if (vertical) parent.style.computedPaddingTop else parent.style.computedPaddingLeft
 		val paddingNext = if (vertical) parent.style.computedPaddingBottom else parent.style.computedPaddingRight
-		val side = if (vertical) height else width
+		val inboundsSide = if (vertical) inoutBounds.height else inoutBounds.width
 
 		val posList = genAxisBounds(
-			width, children,
+			inboundsSide, children,
 			{ if (vertical) this.computedCalcHeight(it) else this.computedCalcWidth(it) },
 			{ paddingPrev },
 			{ paddingNext },
 			scaled = if (vertical) ScaleMode2.SHRINK else ScaleMode2.ALWAYS
 		)
-		//val maxSide: Int = children.map {
-		//	if (vertical) {
-		//		parent.style.computedPaddingLeftPlusRight.calc(width) + parent.style.computedWidth.calc(width)
-		//	} else {
-		//		parent.style.computedPaddingTopPlusBottom.calc(height) + parent.style.computedHeight.calc(height)
-		//	}
-		//}.max() ?: 0
 
 		for ((child, range) in posList) {
 			val rangeStart = range.start
 			val rangeLen = range.endInclusive - range.start
 			if (vertical) {
-				child.actualBounds.set(0, rangeStart, width, rangeLen)
+				child.setBoundsAndRelayout(0, rangeStart, inoutBounds.width, rangeLen)
 			} else {
-				child.actualBounds.set(rangeStart, 0, rangeLen, height)
+				child.setBoundsAndRelayout(rangeStart, 0, rangeLen, inoutBounds.height)
 			}
 		}
 
 		if (vertical) {
-			parent.actualBounds.width = width
+			inoutBounds.setSize(inoutBounds.width, posList.last().second.endInclusive)
 		} else {
-			parent.actualBounds.height = height
+			inoutBounds.setSize(posList.last().second.endInclusive, inoutBounds.height)
 		}
 	}
 }
@@ -130,15 +129,12 @@ object VerticalLayout : VerticalHorizontalLayout(vertical = true) {
 }
 
 object HorizontalLayout : VerticalHorizontalLayout(vertical = false) {
-
 }
 
 object InlineLayout : Layout() {
-	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
-		val (_, _, width, height) = bounds
-
+	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val posList = genAxisBounds(
-			width, children,
+			inoutBounds.width, children,
 			{ this.computedCalcWidth(it) },
 			{ parent.style.computedPaddingLeft },
 			{ parent.style.computedPaddingRight },
@@ -149,66 +145,72 @@ object InlineLayout : Layout() {
 		for ((child, range) in posList) {
 			val rangeStart = range.start
 			val rangeLen = range.endInclusive - range.start
-			val cheight = child.computedHeight.calcMax(height)
+			val cheight = child.computedHeight.calcMax(inoutBounds.height)
 			maxheight = Math.max(maxheight, cheight)
-			child.actualBounds.set(rangeStart, 0, rangeLen, cheight)
+			child.setBoundsAndRelayout(rangeStart, 0, rangeLen, cheight)
 		}
 
-		parent.actualBounds.width = width
-		parent.actualBounds.height = maxheight
+		inoutBounds.set(inoutBounds.x, inoutBounds.y, inoutBounds.width, maxheight)
 	}
 }
 
 object RelativeLayout : Layout() {
-	override fun applyLayout(bounds: IRectangle, parent: Component, children: Iterable<Component>) {
-		val (_, _, parentWidth, parentHeight) = bounds
+	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+		val parentWidth = inoutBounds.width
+		val parentHeight = inoutBounds.height
 
 		val childrenSet = HashSet(children.toList())
 		val computed = hashSetOf<Component>()
 
-		fun compute(c: Component): Component {
-			if (c in computed) return c
+		var maxHeight = parentHeight
+
+		fun compute(c: Component): IRectangle {
+			if (c in computed) return c.actualBounds
 			computed += c
-			if (c !in childrenSet) return c
+			if (c !in childrenSet) return c.actualBounds
 
 			val relativeTo = c.computedRelativeTo
-			val cw = c.computedCalcWidth(bounds.width)
-			val ch = c.computedCalcHeight(bounds.width)
+			val cw = c.computedCalcWidth(parentWidth)
+			val ch = c.computedCalcHeight(parentHeight)
 			val cComputedLeft = c.computedLeft
 			val cComputedTop = c.computedTop
 			val cComputedRight = c.computedRight
 			val cComputedBottom = c.computedBottom
 
-			c.actualBounds.setSize(cw, ch)
+			val cActualBounds = c.actualBounds
+			cActualBounds.setSize(cw, ch)
 
 			if (cComputedLeft != null) {
-				val leftRelative = if (relativeTo != null) compute(relativeTo).actualBounds.right else 0
-				c.actualBounds.x = leftRelative + cComputedLeft.calc(parentWidth)
+				val leftRelative = if (relativeTo != null) compute(relativeTo).right else 0
+				cActualBounds.x = leftRelative + cComputedLeft.calc(parentWidth)
 			} else if (cComputedRight != null) {
-				val rightRelative = if (relativeTo != null) compute(relativeTo).actualBounds.left else parentWidth
-				c.actualBounds.x = rightRelative - cComputedRight.calc(parentWidth) - c.actualBounds.width
+				val rightRelative = if (relativeTo != null) compute(relativeTo).left else parentWidth
+				cActualBounds.x = rightRelative - cComputedRight.calc(parentWidth) - c.actualBounds.width
 			} else {
-				c.actualBounds.x = if (relativeTo != null) compute(relativeTo).actualBounds.x else 0
+				cActualBounds.x = if (relativeTo != null) compute(relativeTo).x else 0
 			}
 
 			if (cComputedTop != null) {
-				val topRelative = if (relativeTo != null) compute(relativeTo).actualBounds.bottom else 0
-				c.actualBounds.y = topRelative + cComputedTop.calc(parentHeight)
+				val topRelative = if (relativeTo != null) compute(relativeTo).bottom else 0
+				cActualBounds.y = topRelative + cComputedTop.calc(parentHeight)
 			} else if (cComputedBottom != null) {
-				val bottomRelative = if (relativeTo != null) compute(relativeTo).actualBounds.top else parentHeight
-				c.actualBounds.y = bottomRelative - cComputedBottom.calc(parentHeight) - c.actualBounds.height
+				val bottomRelative = if (relativeTo != null) compute(relativeTo).top else parentHeight
+				cActualBounds.y = bottomRelative - cComputedBottom.calc(parentHeight) - c.actualBounds.height
 			} else {
-				c.actualBounds.y = if (relativeTo != null) compute(relativeTo).actualBounds.y else 0
+				cActualBounds.y = if (relativeTo != null) compute(relativeTo).y else 0
 			}
 
-			return c
+			c.setBoundsAndRelayout(cActualBounds)
+
+			maxHeight = Math.max(maxHeight, cActualBounds.height)
+
+			return c.actualBounds
 		}
 
 		for (c in children) {
 			compute(c)
 		}
 
-		parent.actualBounds.width = parentWidth
-		parent.actualBounds.height = parentHeight
+		//inoutBounds.setSize(parentWidth, maxHeight)
 	}
 }
