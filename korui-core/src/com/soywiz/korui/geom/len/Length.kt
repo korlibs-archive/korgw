@@ -43,10 +43,10 @@ sealed class Length {
 	companion object {
 		val ZERO = PT(0)
 
-		fun calc(length: Int, default: Length, size: Length?, min: Length? = null, max: Length? = null): Int {
-			val sizeCalc = size?.calc(length) ?: default.calc(length)
-			val minCalc = min.calcMin(length)
-			val maxCalc = max.calcMax(length)
+		fun calc(length: Int, default: Length, size: Length?, min: Length? = null, max: Length? = null, ignoreBounds: Boolean = false): Int {
+			val sizeCalc = (size ?: default).calc(length)
+			val minCalc = min.calcMin(length, if (ignoreBounds) Int.MIN_VALUE else 0)
+			val maxCalc = max.calcMax(length, if (ignoreBounds) Int.MAX_VALUE else length)
 			return sizeCalc.clamp(minCalc, maxCalc)
 		}
 	}
@@ -62,21 +62,23 @@ object MathEx {
 	fun <T : Comparable<T>> max(a: T, b: T): T = if (a.compareTo(b) > 0) a else b
 }
 
-fun Length?.calcMin(size: Int): Int = this?.calc(size) ?: 0
-fun Length?.calcMax(size: Int): Int = this?.calc(size) ?: size
+//fun Length?.calc(size: Int, default: Int): Int = this?.calc(size) ?: default
+
+fun Length?.calcMin(size: Int, default: Int = 0): Int = this?.calc(size) ?: default
+fun Length?.calcMax(size: Int, default: Int = size): Int = this?.calc(size) ?: default
 
 //operator fun Length?.plus(that: Length?): Length? = Length.Binop(this, that, "+") { a, b -> a + b }
 //operator fun Length?.minus(that: Length?): Length? = Length.Binop(this, that, "-") { a, b -> a - b }
 operator fun Length?.times(that: Double): Length? = Length.Scale(this, that)
 
-fun IRectangle.set(bounds: IRectangle, x: Length?, y: Length?, width: Length?, height: Length?) = this.set(
+fun IRectangle.setTo(bounds: IRectangle, x: Length?, y: Length?, width: Length?, height: Length?) = this.setTo(
 	x?.calc(bounds.width) ?: bounds.x,
 	y?.calc(bounds.height) ?: bounds.y,
 	width?.calc(bounds.width) ?: bounds.width,
 	height?.calc(bounds.height) ?: bounds.height
 )
 
-fun IRectangle.setBounds(bounds: IRectangle, left: Length?, top: Length?, right: Length?, bottom: Length?) = this.setBounds(
+fun IRectangle.setBoundsTo(bounds: IRectangle, left: Length?, top: Length?, right: Length?, bottom: Length?) = this.setBoundsTo(
 	left?.calc(bounds.width) ?: bounds.left,
 	top?.calc(bounds.height) ?: bounds.top,
 	right?.calc(bounds.width) ?: bounds.right,

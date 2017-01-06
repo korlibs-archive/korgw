@@ -29,6 +29,8 @@ fun main(args: Array<String>) = EventLoop.main {
 
 		layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.COVER) {
 			image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
+				width = 50.pt
+				height = 50.pt
 				smooth = false
 				//setSize(100.percent, 100.percent)
 			}
@@ -73,17 +75,19 @@ fun main(args: Array<String>) = EventLoop.main {
 			}
 			askButton = button("What's your name...?").click {
 				try {
-					askButton?.text = prompt("My name is:")
+					askButton?.text = "Hello, " + prompt("My name is:") + "!"
 				} catch (c: CancellationException) {
 					askButton?.text = "What's your name again...?"
 				}
 			}
 			inline {
 				image(image) {
+					style.defaultSize.setToScale(0.5, 0.5)
+					//style.size.setTo(this.image!!.width.pt, this.image!!.height.pt).setToScale(0.5, 0.5)
 					//style.size.setToScale(0.5, 0.5)
 				}
 			}
-			spacer()
+			//spacer()
 			button("Load Image...").click {
 				try {
 					val file = dialogOpenFile()
@@ -95,7 +99,7 @@ fun main(args: Array<String>) = EventLoop.main {
 					alert("Cancelled!")
 					//loadImage?.image = null
 				}
-				loadImage?.setSize(200.pt, 200.pt)
+				//loadImage?.setSize(200.pt, 200.pt)
 			}
 			inline {
 				loadImage = image(image)

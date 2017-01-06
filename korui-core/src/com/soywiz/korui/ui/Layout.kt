@@ -2,12 +2,11 @@ package com.soywiz.korui.ui
 
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
-import com.soywiz.korim.geom.ISize
 import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.calcMax
 import com.soywiz.korui.geom.len.percent
-import com.soywiz.korui.geom.len.setBounds
+import com.soywiz.korui.geom.len.setBoundsTo
 import com.soywiz.korui.style.*
 
 open class Layout {
@@ -20,24 +19,34 @@ open class Layout {
 	}
 
 	fun applyLayout(parent: Component, children: Iterable<Component>, x: Int, y: Int, width: Int, height: Int, out: IRectangle = IRectangle()): IRectangle {
-		applyLayout(parent, children, out.set(x, y, width, height))
+		applyLayout(parent, children, out.setTo(x, y, width, height))
 		return out
 	}
 
 	enum class ScaleMode2 { NEVER, SHRINK, ALWAYS }
 
-	fun <T> genAxisBounds(size: Int, list: Iterable<T>, itemSize: T.(Int) -> Int, paddingPrev: T.() -> Length?, paddingNext: T.() -> Length?, scaled: ScaleMode2): List<Pair<T, IntRange>> {
+	data class ResultBounds<T>(
+		val child: T,
+	    val bounds: IntRange,
+		val padPrev: Int
+	) {
+		val len = bounds.endInclusive - bounds.start
+	}
+
+	fun <T> genAxisBounds(size: Int, list: Iterable<T>, itemSize: T.(Int) -> Int, paddingPrev: T.() -> Length?, paddingNext: T.() -> Length?, scaled: ScaleMode2): List<ResultBounds<T>> {
 		var pos = 0
 		var lastPadding = 0
-		val out = arrayListOf<Pair<T, IntRange>>()
+		val out = arrayListOf<ResultBounds<T>>()
+
 		for (item in list) {
 			val itemPaddingPrev = Math.max(lastPadding, item.paddingPrev().calcMax(size))
 			val itemSizeSize = item.itemSize(size)
-			if (lastPadding != 0) pos += itemPaddingPrev
+			val actualItemPaddingPrev = if (lastPadding != 0) itemPaddingPrev else 0
+			pos += actualItemPaddingPrev
 			val start = pos
 			pos += itemSizeSize
 			val end = pos
-			out += item to start..end
+			out += ResultBounds(item, start until end, actualItemPaddingPrev)
 			lastPadding = item.paddingNext().calcMax(size)
 		}
 
@@ -49,15 +58,18 @@ open class Layout {
 			ScaleMode2.NEVER -> 1.0
 		}
 
-		return out.map { (item, range) ->
-			item to IntRange((range.start * scale).toInt(), (range.endInclusive * scale).toInt())
+		return out.map { res ->
+			res.copy(
+				bounds = IntRange((res.bounds.start * scale).toInt(), (res.bounds.endInclusive * scale).toInt()),
+				padPrev = (res.padPrev * scale).toInt()
+			)
 		}
 	}
 }
 
 object LayeredLayout : Layout() {
 	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
-		val actualBounds = IRectangle().setBounds(
+		val actualBounds = IRectangle().setBoundsTo(
 			inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
@@ -71,17 +83,14 @@ object LayeredLayout : Layout() {
 
 class LayeredKeepAspectLayout(val anchor: Anchor, val scaleMode: ScaleMode = ScaleMode.SHOW_ALL) : Layout() {
 	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
-		val actualBounds = IRectangle().setBounds(
+		val actualBounds = IRectangle().setBoundsTo(
 			inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
 
 		for (child in children) {
-			val width = child.computedWidth.calcMax(actualBounds.width)
-			val height = child.computedHeight.calcMax(actualBounds.height)
-
-			val asize = ISize(width, height).applyScaleMode(actualBounds.size, scaleMode)
+			val asize = child.computedCalcSize(actualBounds.size).applyScaleMode(actualBounds.size, scaleMode)
 
 			val endSize = asize.anchoredIn(actualBounds, anchor)
 			child.setBoundsAndRelayout(endSize)
@@ -107,20 +116,22 @@ abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
 			scaled = if (vertical) ScaleMode2.SHRINK else ScaleMode2.ALWAYS
 		)
 
-		for ((child, range) in posList) {
-			val rangeStart = range.start
-			val rangeLen = range.endInclusive - range.start
+		var roffset = 0
+		for (pos in posList) {
+			roffset += pos.padPrev
 			if (vertical) {
-				child.setBoundsAndRelayout(0, rangeStart, inoutBounds.width, rangeLen)
+				val cbounds = pos.child.setBoundsAndRelayout(0, roffset, inoutBounds.width, pos.len)
+				roffset += cbounds.height
 			} else {
-				child.setBoundsAndRelayout(rangeStart, 0, rangeLen, inoutBounds.height)
+				val cbounds = pos.child.setBoundsAndRelayout(roffset, 0, pos.len, inoutBounds.height)
+				roffset += cbounds.width
 			}
 		}
 
 		if (vertical) {
-			inoutBounds.setSize(inoutBounds.width, posList.last().second.endInclusive)
+			inoutBounds.setSize(inoutBounds.width, roffset)
 		} else {
-			inoutBounds.setSize(posList.last().second.endInclusive, inoutBounds.height)
+			inoutBounds.setSize(roffset, inoutBounds.height)
 		}
 	}
 }
@@ -142,15 +153,16 @@ object InlineLayout : Layout() {
 		)
 
 		var maxheight = 0
-		for ((child, range) in posList) {
-			val rangeStart = range.start
-			val rangeLen = range.endInclusive - range.start
-			val cheight = child.computedHeight.calcMax(inoutBounds.height)
+		var xoffset = 0
+		for (pos in posList) {
+			val cheight = pos.child.computedCalcHeight(inoutBounds.height, ignoreBounds = true)
+			xoffset += pos.padPrev
 			maxheight = Math.max(maxheight, cheight)
-			child.setBoundsAndRelayout(rangeStart, 0, rangeLen, cheight)
+			val cbounds = pos.child.setBoundsAndRelayout(xoffset, 0, pos.len, cheight)
+			xoffset += cbounds.width
 		}
 
-		inoutBounds.set(inoutBounds.x, inoutBounds.y, inoutBounds.width, maxheight)
+		inoutBounds.setSize(inoutBounds.width, maxheight)
 	}
 }
 

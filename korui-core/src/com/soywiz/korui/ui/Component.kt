@@ -18,9 +18,13 @@ import com.soywiz.korui.style.*
 import kotlin.reflect.KProperty
 
 open class Component(val lc: LightComponents, val type: LightType) : Styled {
-	class lightProperty<T>(val key: LightProperty<T>, val invalidate: Boolean = false) {
+	class lightProperty<T>(val key: LightProperty<T>, val invalidate: Boolean = false, val setHandler: ((v: T) -> Unit)? = null) {
 		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T = thisRef.getProperty(key)
-		inline operator fun setValue(thisRef: Component, property: KProperty<*>, value: T): Unit = run { thisRef.setProperty(key, value); if (invalidate) thisRef.invalidateDescendants() }
+		inline operator fun setValue(thisRef: Component, property: KProperty<*>, value: T): Unit = run {
+			setHandler?.invoke(value)
+			thisRef.setProperty(key, value)
+			if (invalidate) thisRef.invalidate()
+		}
 	}
 
 	override var style = Style()
@@ -42,8 +46,8 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 	fun setBoundsInternal(bounds: IRectangle) = setBoundsInternal(bounds.x, bounds.y, bounds.width, bounds.height)
 
 	fun setBoundsInternal(x: Int, y: Int, width: Int, height: Int): IRectangle {
-		nativeBounds.set(x, y, width, height)
-		actualBounds.set(x, y, width, height)
+		nativeBounds.setTo(x, y, width, height)
+		actualBounds.setTo(x, y, width, height)
 		lc.setBounds(handle, x, y, width, height)
 		invalidateAncestors()
 		return actualBounds
@@ -80,7 +84,7 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 	}
 
 	fun invalidateAncestors() {
-		if (valid) return
+		if (!valid) return
 		valid = false
 		parent?.invalidateAncestors()
 	}
@@ -194,7 +198,12 @@ class Spacer(lc: LightComponents) : Component(lc, LightType.CONTAINER) {
 }
 
 class Image(lc: LightComponents) : Component(lc, LightType.IMAGE) {
-	var image by lightProperty(LightProperty.IMAGE, invalidate = true)
+	var image by lightProperty(LightProperty.IMAGE, invalidate = true) {
+		if (it != null) {
+			this.style.defaultSize.setTo(it.width.pt, it.height.pt)
+			invalidate()
+		}
+	}
 	var smooth by lightProperty(LightProperty.IMAGE_SMOOTH)
 	//var image: Bitmap? = null
 	//	set(newImage) {
