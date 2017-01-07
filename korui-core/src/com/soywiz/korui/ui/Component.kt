@@ -28,7 +28,7 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 
 	override var style = Style()
 	var handle = lc.create(type)
-	val properties = hashMapOf<LightProperty<*>, Any?>()
+	val properties = LinkedHashMap<LightProperty<*>, Any?>()
 	var valid = false
 	protected var nativeBounds = IRectangle()
 	val actualBounds: IRectangle = IRectangle()

@@ -172,7 +172,7 @@ object RelativeLayout : Layout() {
 		val parentHeight = inoutBounds.height
 
 		val childrenSet = HashSet(children.toList())
-		val computed = hashSetOf<Component>()
+		val computed = LinkedHashSet<Component>()
 
 		var maxHeight = parentHeight
 
