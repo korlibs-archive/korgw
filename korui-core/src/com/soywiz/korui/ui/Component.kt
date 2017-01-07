@@ -18,12 +18,11 @@ import com.soywiz.korui.style.*
 import kotlin.reflect.KProperty
 
 open class Component(val lc: LightComponents, val type: LightType) : Styled {
-	class lightProperty<T>(val key: LightProperty<T>, val invalidate: Boolean = false, val setHandler: ((v: T) -> Unit)? = null) {
+	class lightProperty<T>(val key: LightProperty<T>, val setHandler: ((v: T) -> Unit)? = null) {
 		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T = thisRef.getProperty(key)
 		inline operator fun setValue(thisRef: Component, property: KProperty<*>, value: T): Unit = run {
-			setHandler?.invoke(value)
 			thisRef.setProperty(key, value)
-			if (invalidate) thisRef.invalidate()
+			setHandler?.invoke(value)
 		}
 	}
 
@@ -34,8 +33,8 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 	protected var nativeBounds = IRectangle()
 	val actualBounds: IRectangle = IRectangle()
 
-	fun <T> setProperty(key: LightProperty<T>, value: T) {
-		if (properties[key] != value) {
+	fun <T> setProperty(key: LightProperty<T>, value: T, reset: Boolean = false) {
+		if (reset || (properties[key] != value)) {
 			properties[key] = value
 			lc.setProperty(handle, key, value)
 		}
@@ -49,7 +48,7 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 		nativeBounds.setTo(x, y, width, height)
 		actualBounds.setTo(x, y, width, height)
 		lc.setBounds(handle, x, y, width, height)
-		invalidateAncestors()
+		//invalidateAncestors()
 		return actualBounds
 	}
 
@@ -75,21 +74,26 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 		}
 
 	fun invalidate() {
+		//println("------invalidate")
 		invalidateAncestors()
 		invalidateDescendants()
 	}
 
 	open fun invalidateDescendants() {
+		//println("------invalidateDescendants")
 		valid = false
 	}
 
 	fun invalidateAncestors() {
+		//println("------invalidateAncestors")
 		if (!valid) return
 		valid = false
 		parent?.invalidateAncestors()
 	}
 
 	open fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): IRectangle {
+		if (valid) return actualBounds
+		valid = true
 		return setBoundsInternal(x, y, width, height)
 	}
 
@@ -198,26 +202,19 @@ class Spacer(lc: LightComponents) : Component(lc, LightType.CONTAINER) {
 }
 
 class Image(lc: LightComponents) : Component(lc, LightType.IMAGE) {
-	var image by lightProperty(LightProperty.IMAGE, invalidate = true) {
+	var image by lightProperty(LightProperty.IMAGE) {
 		if (it != null) {
-			this.style.defaultSize.setTo(it.width.pt, it.height.pt)
-			invalidate()
+			if (this.style.defaultSize.width != it.width.pt || this.style.defaultSize.height != it.height.pt) {
+				this.style.defaultSize.setTo(it.width.pt, it.height.pt)
+				invalidate()
+			}
 		}
 	}
+
 	var smooth by lightProperty(LightProperty.IMAGE_SMOOTH)
-	//var image: Bitmap? = null
-	//	set(newImage) {
-	//		if (newImage != null) {
-	//			style.size.setTo(newImage.width.pt, newImage.height.pt)
-	//		}
-	//		setProperty(LightProperty.IMAGE, newImage)
-	//		invalidate()
-	//	}
 
 	fun refreshImage() {
-		this.image = image
-		//lc.setImage(handle, image)
-		//invalidate()
+		setProperty(LightProperty.IMAGE, image, reset = true)
 	}
 }
 

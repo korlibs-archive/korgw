@@ -68,21 +68,21 @@ class AndroidLightComponents : LightComponents() {
 	}
 
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
-		val c = c as View
+		val cc = c as View
 		when (key) {
 			LightProperty.TEXT -> {
-				val v = value as String
-				(c as? Button)?.text = v
+				val v = key[value]
+				(cc as? Button)?.text = v
 			}
 			LightProperty.BGCOLOR -> {
 			}
 			LightProperty.PROGRESS_CURRENT -> {
-				val v = value as Int
-				(c as? ProgressBar)?.progress = v
+				val v = key[value]
+				(cc as? ProgressBar)?.progress = v
 			}
 			LightProperty.PROGRESS_MAX -> {
-				val v = value as Int
-				(c as? ProgressBar)?.max = v
+				val v = key[value]
+				(cc as? ProgressBar)?.max = v
 			}
 		}
 	}
@@ -96,7 +96,7 @@ class AndroidLightComponents : LightComponents() {
 			}
 			LightResizeEvent::class.java -> {
 				val cc = (c as RootKoruiAbsoluteLayout)
-				val ctx = activity as KoruiActivity
+				//val ctx = activity as KoruiActivity
 
 				fun send() {
 					val sizeX = ((cc.parent as View).width / scale).toInt()

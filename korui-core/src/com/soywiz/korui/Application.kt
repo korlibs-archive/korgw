@@ -13,7 +13,6 @@ class Application(val light: LightComponents = defaultLight) {
 	init {
 		spawn {
 			while (true) {
-				//println("step")
 				sleep(16)
 				for (frame in frames.filter { !it.valid }) {
 					if (!frame.valid) {

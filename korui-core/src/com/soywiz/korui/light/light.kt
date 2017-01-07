@@ -6,15 +6,6 @@ import com.soywiz.korio.vfs.VfsFile
 import java.util.*
 
 open class LightComponents {
-
-
-	//enum class Property {
-	//	VISIBLE, IMAGE, TEXT, VALUE, MAX
-	//}
-
-	//open fun destroy(obj: Any): Unit {
-	//}
-
 	open fun create(type: LightType): Any = Unit
 	open fun setParent(c: Any, parent: Any?): Unit = Unit
 	open protected fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit): Unit = Unit
@@ -68,5 +59,6 @@ class LightProperty<out T>(val name: String, val default: T) {
 		val IMAGE_SMOOTH = LightProperty<Boolean>("IMAGE_SMOOTH", true)
 	}
 
+	operator fun get(v: Any?) = v as T
 	override fun toString(): String = "LightProperty[$name]"
 }

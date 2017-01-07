@@ -178,7 +178,7 @@ class HtmlLightComponents : LightComponents() {
 		val nodeName = child["nodeName"].toJavaString().toLowerCase()
 		when (key) {
 			LightProperty.TEXT -> {
-				val v = value as String
+				val v = key[value]
 				if (nodeName == "article") {
 					document["title"] = v
 				} else {
@@ -186,23 +186,23 @@ class HtmlLightComponents : LightComponents() {
 				}
 			}
 			LightProperty.PROGRESS_CURRENT -> {
-				val v = (value as Int).toInt()
+				val v = key[value]
 				child["value"] = v
 			}
 			LightProperty.PROGRESS_MAX -> {
-				val v = (value as Int).toInt()
+				val v = key[value]
 				child["max"] = v
 			}
 			LightProperty.BGCOLOR -> {
-				val v = (value as Int).toInt()
+				val v = key[value]
 				childOrDocumentBody["style"]["background"] = colorString(v)
 			}
 			LightProperty.IMAGE_SMOOTH -> {
-				val v = !!(value as Boolean)
+				val v = key[value]
 				child["style"]["imageRendering"] = if (v) "auto" else "pixelated"
 			}
 			LightProperty.ICON -> {
-				val v = (value as Bitmap?)
+				val v = key[value]
 				if (v != null) {
 					val href = HtmlImage.htmlCanvasToDataUrl(HtmlImage.bitmapToHtmlCanvas(v.toBMP32()))
 
@@ -217,7 +217,7 @@ class HtmlLightComponents : LightComponents() {
 				}
 			}
 			LightProperty.IMAGE -> {
-				val bmp = value as Bitmap?
+				val bmp = key[value]
 				if (bmp is NativeImage) {
 					setCanvas(c, bmp.data.asJsDynamic())
 				} else {
@@ -225,7 +225,7 @@ class HtmlLightComponents : LightComponents() {
 				}
 			}
 			LightProperty.VISIBLE -> {
-				val v = value as Boolean
+				val v = key[value]
 				if (child != null) child["style"]["display"] = if (v) "block" else "none"
 			}
 		}

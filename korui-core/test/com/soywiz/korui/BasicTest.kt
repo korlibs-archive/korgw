@@ -1,5 +1,7 @@
 package com.soywiz.korui
 
+import com.soywiz.korio.async.EventLoop
+import com.soywiz.korio.async.EventLoopTest
 import com.soywiz.korio.async.sync
 import com.soywiz.korui.light.log.LogLightComponents
 import com.soywiz.korui.ui.button
@@ -7,6 +9,10 @@ import org.junit.Assert
 import org.junit.Test
 
 class BasicTest {
+	val eventLoop = EventLoopTest().apply {
+		EventLoop.impl = this
+	}
+
 	val lc = LogLightComponents()
 
 	@Test
@@ -14,6 +20,11 @@ class BasicTest {
 		val frame = Application(lc).frame("Title") {
 			button("Hello")
 		}
+		eventLoop.step(60)
+		eventLoop.step(60)
+		eventLoop.step(60)
+		eventLoop.step(60)
+
 		Assert.assertEquals(
 			"""
 				create(FRAME)=0

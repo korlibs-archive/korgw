@@ -1,8 +1,8 @@
 package com.soywiz.korui.light.awt
 
+import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.awt.toAwt
-import com.soywiz.korim.bitmap.Bitmap
-import com.soywiz.korim.bitmap.NativeImage
+import com.soywiz.korim.awt.transferTo
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
@@ -95,7 +95,7 @@ class AwtLightComponents : LightComponents() {
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
 		when (key) {
 			LightProperty.VISIBLE -> {
-				val visible = value as Boolean
+				val visible = key[value]
 				if (c is JFrame2) {
 					if (!c.isVisible && visible) {
 						c.setLocationRelativeTo(null)
@@ -104,22 +104,32 @@ class AwtLightComponents : LightComponents() {
 				(c as Component).isVisible = visible
 			}
 			LightProperty.TEXT -> {
-				val text = value as String
+				val text = key[value]
 				(c as? JButton)?.text = text
 				(c as? Frame)?.title = text
 			}
 			LightProperty.IMAGE -> {
-				val bmp = value as Bitmap?
+				val bmp = key[value]
 				val image = (c as? JImage)
-				if (bmp is NativeImage) {
-					image?.image = bmp.data as BufferedImage
-				} else {
-					image?.image = bmp?.toBMP32()?.toAwt()
+				if (image != null) {
+					if (bmp == null) {
+						image.image = null
+					} else {
+						if (bmp is AwtNativeImage) {
+							image.image = bmp.awtImage
+						} else {
+							if ((image.width != bmp.width) || (image.height != bmp.height)) {
+								//println("*********************** RECREATED NATIVE IMAGE!")
+								image.image = BufferedImage(bmp.width, bmp.height, BufferedImage.TYPE_INT_ARGB)
+							}
+							bmp.toBMP32().transferTo(image.image!!)
+						}
+					}
+					image.repaint()
 				}
-				image?.repaint()
 			}
 			LightProperty.ICON -> {
-				val bmp = value as Bitmap?
+				val bmp = key[value]
 				when (c) {
 					is JFrame2 -> {
 						c.iconImage = bmp?.toBMP32()?.toAwt()
@@ -127,7 +137,7 @@ class AwtLightComponents : LightComponents() {
 				}
 			}
 			LightProperty.IMAGE_SMOOTH -> {
-				val value = value as Boolean
+				val value = key[value]
 				when (c) {
 					is JImage -> {
 						c.smooth = value
@@ -135,17 +145,16 @@ class AwtLightComponents : LightComponents() {
 				}
 			}
 			LightProperty.BGCOLOR -> {
-				val value = value as Int
+				val value = key[value]
 				(c as? Component)?.background = Color(value, true)
 			}
 			LightProperty.PROGRESS_CURRENT -> {
-				(c as? JProgressBar)?.value = value as Int
+				(c as? JProgressBar)?.value = key[value]
 			}
 			LightProperty.PROGRESS_MAX -> {
-				(c as? JProgressBar)?.maximum = value as Int
+				(c as? JProgressBar)?.maximum = key[value]
 			}
 		}
-		super.setProperty(c, key, value)
 	}
 
 	suspend override fun dialogAlert(c: Any, message: String) = asyncFun {
@@ -199,7 +208,7 @@ class JPanel2 : JPanel() {
 }
 
 class JImage : JComponent() {
-	var image: Image? = null
+	var image: BufferedImage? = null
 	var smooth: Boolean = false
 
 	override fun paintComponent(g: Graphics) {
@@ -207,6 +216,8 @@ class JImage : JComponent() {
 		if (image != null) {
 			g2?.setRenderingHint(RenderingHints.KEY_INTERPOLATION, if (smooth) RenderingHints.VALUE_INTERPOLATION_BILINEAR else RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
 			g.drawImage(image, 0, 0, width, height, null)
+		} else {
+			g.clearRect(0, 0, width, height)
 		}
 		//super.paintComponent(g)
 	}
