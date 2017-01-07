@@ -47,7 +47,7 @@ val defaultLight: LightComponents by lazy {
 }
 
 enum class LightType {
-	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, CHECK_BOX
+	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, CHECK_BOX, SCROLL_PANE
 }
 
 class LightProperty<out T>(val name: String, val default: T) {

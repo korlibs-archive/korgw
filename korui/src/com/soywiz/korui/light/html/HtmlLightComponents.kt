@@ -26,7 +26,7 @@ class HtmlLightComponents : LightComponents() {
 			body {
 				font: 11pt Arial;
 			}
-			.myButton {
+			.BUTTON {
 				-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
 				-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
 				box-shadow:inset 0px 1px 0px 0px #ffffff;
@@ -52,7 +52,7 @@ class HtmlLightComponents : LightComponents() {
 				text-decoration:none;
 				text-shadow:0px 1px 0px #ffffff;
 			}
-			.myButton:hover {
+			.BUTTON:hover {
 				background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #f6f6f6), color-stop(1, #ffffff));
 				background:-moz-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
 				background:-webkit-linear-gradient(top, #f6f6f6 5%, #ffffff 100%);
@@ -62,7 +62,7 @@ class HtmlLightComponents : LightComponents() {
 				filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#f6f6f6', endColorstr='#ffffff',GradientType=0);
 				background-color:#f6f6f6;
 			}
-			.myButton:active {
+			.BUTTON:active {
 				position:relative;
 				top:1px;
 			}
@@ -95,52 +95,69 @@ class HtmlLightComponents : LightComponents() {
 		return when (type) {
 			LightType.FRAME -> {
 				document.method("createElement")("article")!!.apply {
+					this["className"] = "FRAME"
 					document["body"].method("appendChild")(this)
 					window["mainFrame"] = this
 				}
 			}
 			LightType.CONTAINER -> {
-				document.method("createElement")("div")!!
+				document.method("createElement")("div")!!.apply {
+					this["className"] = "CONTAINER"
+				}
+			}
+			LightType.SCROLL_PANE -> {
+				document.method("createElement")("div")!!.apply {
+					this["className"] = "SCROLL_PANE"
+				}
 			}
 			LightType.BUTTON -> {
 				document.method("createElement")("input")!!.apply {
-					this["className"] = "myButton"
+					this["className"] = "BUTTON"
 					this["type"] = "button"
 				}
 			}
 			LightType.PROGRESS -> {
-				document.method("createElement")("progress")!!
+				document.method("createElement")("progress")!!.apply {
+					this["className"] = "PROGRESS"
+				}
 			}
 			LightType.IMAGE -> {
 				document.method("createElement")("canvas")!!.apply {
+					this["className"] = "IMAGE"
 					this["style"]["imageRendering"] = "pixelated"
 				}
 			}
 			LightType.LABEL -> {
-				document.method("createElement")("label")!!
+				document.method("createElement")("label")!!.apply {
+					this["className"] = "LABEL"
+				}
 			}
 			LightType.TEXT_FIELD -> {
 				document.method("createElement")("input")!!.apply {
-					this["className"] = "textField"
+					this["className"] = "TEXT_FIELD"
 					this["type"] = "text"
 				}
 			}
 			LightType.CHECK_BOX -> {
 				document.method("createElement")("label")!!.apply {
+					this["className"] = "CHECK_BOX"
 					this["data-type"] = "checkbox"
 					this.methods["appendChild"](document.method("createElement")("input")!!.apply {
-						this["className"] = "textField"
+						this["className"] = "TEXT_FIELD"
 						this["type"] = "checkbox"
 					})
 					this.methods["appendChild"](document.method("createElement")("span")!!)
 				}
 			}
 			else -> {
-				document.method("createElement")("div")!!
+				document.method("createElement")("div")!!.apply {
+					this["className"] = "UNKNOWN"
+				}
 			}
 		}.apply {
 			this["style"]["position"] = "absolute"
-			this["style"]["overflow"] = "hidden"
+			this["style"]["overflow-y"] = if (type == LightType.SCROLL_PANE) "auto" else "hidden"
+			this["style"]["overflow-x"] = if (type == LightType.SCROLL_PANE) "hidden" else "hidden"
 			this["style"]["left"] = "0px"
 			this["style"]["top"] = "0px"
 			this["style"]["width"] = "100px"

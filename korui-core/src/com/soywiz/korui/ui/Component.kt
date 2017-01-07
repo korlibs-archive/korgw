@@ -153,6 +153,9 @@ open class Container(app: Application, var layout: Layout, type: LightType = Lig
 		other.parent = this
 		return other
 	}
+}
+
+open class ScrollPane(app: Application, layout: Layout) : Container(app, layout, LightType.SCROLL_PANE) {
 
 }
 
@@ -298,6 +301,12 @@ suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Con
 
 suspend inline fun Container.relative(callback: suspend Container.() -> Unit): Container = asyncFun {
 	add(Container(this.app, RelativeLayout(app)).apply {
+		callback.await(this)
+	})
+}
+
+suspend inline fun Container.scrollPane(callback: suspend ScrollPane.() -> Unit): ScrollPane = asyncFun {
+	add(ScrollPane(this.app, ScrollPaneLayout(app)).apply {
 		callback.await(this)
 	})
 }

@@ -1,11 +1,14 @@
 package com.soywiz.korui.light.android
 
 import android.app.AlertDialog
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korui.light.*
+import java.awt.Container
+import java.security.acl.Group
 import kotlin.coroutines.suspendCoroutine
 
 class AndroidLightComponents : LightComponents() {
@@ -47,6 +50,9 @@ class AndroidLightComponents : LightComponents() {
 			LightType.CHECK_BOX -> {
 				CheckBox(activity)
 			}
+			LightType.SCROLL_PANE -> {
+				ScrollView2(activity)
+			}
 			else -> {
 				View(KorioAndroidContext)
 			}
@@ -55,7 +61,8 @@ class AndroidLightComponents : LightComponents() {
 
 	override fun setParent(c: Any, parent: Any?) {
 		println("$parent.addView($c)")
-		(parent as ViewGroup).addView(c as View)
+		val actualParent = (parent as? ChildContainer)?.group ?: parent
+		(actualParent as ViewGroup).addView(c as View)
 		//(parent as ViewGroup).requestLayout()
 	}
 
@@ -163,5 +170,15 @@ class AndroidLightComponents : LightComponents() {
 	override fun getDpi(): Double {
 		val metrics = activity.resources.displayMetrics
 		return metrics.densityDpi.toDouble()
+	}
+}
+
+interface ChildContainer {
+	val group: ViewGroup
+}
+
+class ScrollView2(context: Context, override val group: KoruiAbsoluteLayout = KoruiAbsoluteLayout(context)) : ScrollView(context), ChildContainer {
+	init {
+		addView(group)
 	}
 }

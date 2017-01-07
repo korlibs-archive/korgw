@@ -37,7 +37,7 @@ open class Layout(val app: Application) {
 
 	data class ResultBounds<T>(
 		val child: T,
-	    val bounds: IntRange,
+		val bounds: IntRange,
 		val padPrev: Int
 	) {
 		val len = bounds.endInclusive - bounds.start
@@ -80,7 +80,7 @@ open class Layout(val app: Application) {
 class LayeredLayout(app: Application) : Layout(app) {
 	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val actualBounds = IRectangle().setBoundsTo(
-			ctx,inoutBounds,
+			ctx, inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
@@ -109,7 +109,7 @@ class LayeredKeepAspectLayout(app: Application, val anchor: Anchor, val scaleMod
 	}
 }
 
-abstract class VerticalHorizontalLayout(app: Application, val vertical: Boolean) : Layout(app) {
+abstract class VerticalHorizontalLayout(app: Application, val vertical: Boolean, val scaleMode: ScaleMode2, val resizeContainer: Boolean) : Layout(app) {
 	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		//val width2 = width - parent.style.computedPaddingRight.calc(width)
 		//val height2 = height - parent.style.computedPaddingBottom.calc(height)
@@ -123,7 +123,7 @@ abstract class VerticalHorizontalLayout(app: Application, val vertical: Boolean)
 			{ if (vertical) this.computedCalcHeight(ctx.setSize(it)) else this.computedCalcWidth(ctx.setSize(it)) },
 			{ paddingPrev },
 			{ paddingNext },
-			scaled = if (vertical) ScaleMode2.SHRINK else ScaleMode2.ALWAYS
+			scaled = scaleMode
 		)
 
 		var roffset = 0
@@ -138,19 +138,19 @@ abstract class VerticalHorizontalLayout(app: Application, val vertical: Boolean)
 			}
 		}
 
-		if (vertical) {
-			inoutBounds.setSize(inoutBounds.width, roffset)
-		} else {
-			inoutBounds.setSize(roffset, inoutBounds.height)
+		if (resizeContainer) {
+			if (vertical) {
+				inoutBounds.setSize(inoutBounds.width, roffset)
+			} else {
+				inoutBounds.setSize(roffset, inoutBounds.height)
+			}
 		}
 	}
 }
 
-class VerticalLayout(app: Application) : VerticalHorizontalLayout(app, vertical = true) {
-}
-
-class HorizontalLayout(app: Application) : VerticalHorizontalLayout(app, vertical = false) {
-}
+class VerticalLayout(app: Application) : VerticalHorizontalLayout(app, vertical = true, scaleMode = ScaleMode2.SHRINK, resizeContainer = true)
+class HorizontalLayout(app: Application) : VerticalHorizontalLayout(app, vertical = false, scaleMode = ScaleMode2.ALWAYS, resizeContainer = true)
+class ScrollPaneLayout(app: Application) : VerticalHorizontalLayout(app, vertical = true, scaleMode = ScaleMode2.NEVER, resizeContainer = false)
 
 class InlineLayout(app: Application) : Layout(app) {
 	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {

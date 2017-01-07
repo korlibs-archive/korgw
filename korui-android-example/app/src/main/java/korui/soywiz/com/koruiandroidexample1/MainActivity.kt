@@ -7,7 +7,8 @@ import com.soywiz.korio.async.sleep
 import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
-import com.soywiz.korui.geom.len.*
+import com.soywiz.korui.geom.len.cm
+import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.android.KoruiActivity
 import com.soywiz.korui.style.bottom
 import com.soywiz.korui.style.height
@@ -27,41 +28,43 @@ class MainActivity : KoruiActivity() {
 			//	}
 			//	alert("done!")
 			//}
-			vertical {
-				horizontal {
-					button("hello from korui").click {
-						for (file in ResourcesVfs.listRecursive()) {
-							println(file)
+			scrollPane {
+
+					horizontal {
+						button("hello from korui").click {
+							for (file in ResourcesVfs.listRecursive()) {
+								println(file)
+							}
+							alert("done!")
 						}
-						alert("done!")
-					}
-					button("show image").click {
-						androidShowImage(ResourcesVfs["kotlin.png"].readBitmap())
-					}
-				}
-				val progress = progress(0, 100)
-				horizontal {
-					button("start").click {
-						while (progress.current < progress.max) {
-							progress.current++
-							sleep(50)
+						button("show image").click {
+							androidShowImage(ResourcesVfs["kotlin.png"].readBitmap())
 						}
-						alert("done!")
-						progress.current = 0
 					}
-				}
-				label("Name:")
-				val name = textField("Test")
-				val adult = checkBox("I'm and adult", checked = true)
-				button("Apply") {
-					height = 15.vh
-				}.click {
-					if (adult.checked) {
-						alert("Hello ${name.text}!")
-					} else {
-						alert("Not an adult!")
+					val progress = progress(0, 100)
+					horizontal {
+						button("start").click {
+							while (progress.current < progress.max) {
+								progress.current++
+								sleep(50)
+							}
+							alert("done!")
+							progress.current = 0
+						}
 					}
-				}
+					label("Name:")
+					val name = textField("Test")
+					val adult = checkBox("I'm and adult", checked = true)
+					button("Apply") {
+						height = 10.cm
+					}.click {
+						if (adult.checked) {
+							alert("Hello ${name.text}!")
+						} else {
+							alert("Not an adult!")
+						}
+					}
+
 			}
 
 			relative {

@@ -17,6 +17,8 @@ import java.awt.image.BufferedImage
 import java.net.URI
 import java.util.concurrent.CancellationException
 import javax.swing.*
+import javax.swing.border.Border
+import javax.swing.border.EmptyBorder
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
 import javax.swing.text.JTextComponent
@@ -42,6 +44,7 @@ class AwtLightComponents : LightComponents() {
 		LightType.LABEL -> JLabel()
 		LightType.TEXT_FIELD -> JTextField()
 		LightType.CHECK_BOX -> JCheckBox()
+		LightType.SCROLL_PANE -> JScrollPane2()
 		else -> throw UnsupportedOperationException("Type: $type")
 	}
 
@@ -80,7 +83,8 @@ class AwtLightComponents : LightComponents() {
 	val Any.actualContainer: Container? get() = if (this is JFrame2) this.panel else (this as? Container)
 
 	override fun setParent(c: Any, parent: Any?) {
-		parent?.actualContainer?.add((c as Component), 0)
+		val actualParent = (parent as? ChildContainer)?.childContainer ?: parent?.actualContainer
+		actualParent?.add((c as Component), 0)
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
@@ -93,7 +97,18 @@ class AwtLightComponents : LightComponents() {
 				//c.contentPane.setBounds(x, y, width, height)
 			}
 			is JComponent -> {
-				c.setBounds(x, y, width, height)
+				if (c is JScrollPane2) {
+					//c.preferredSize = Dimension(100, 100)
+					//c.viewport.viewSize = Dimension(100, 100)
+					c.viewport.setSize(width, height)
+					val rightMost = c.childContainer.components.map { it.bounds.x + it.bounds.width }.max() ?: 0
+					val bottomMost = c.childContainer.components.map { it.bounds.y + it.bounds.height }.max() ?: 0
+					c.childContainer.preferredSize = Dimension(rightMost, bottomMost)
+					c.setBounds(x, y, width, height)
+					c.revalidate()
+				} else {
+					c.setBounds(x, y, width, height)
+				}
 			}
 		}
 	}
@@ -234,9 +249,25 @@ class JFrame2 : JFrame() {
 	}
 }
 
-class JPanel2 : JPanel() {
-	override fun paintComponent(g: Graphics) {
+interface ChildContainer {
+	val childContainer: Container
+}
+
+class JScrollPane2(override val childContainer: JPanel = JPanel().apply { layout = null }) : JScrollPane(childContainer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER), ChildContainer {
+	init {
+		border = EmptyBorder(0, 0, 0, 0)
 	}
+}
+
+class JPanelWithinScrollPane(val scrollPane: JScrollPane) : JPanel() {
+	init {
+		scrollPane.setViewportView(this)
+	}
+}
+
+class JPanel2 : JPanel() {
+	//override fun paintComponent(g: Graphics) {
+	//}
 }
 
 class JImage : JComponent() {
