@@ -375,6 +375,10 @@ class HtmlLightComponents : LightComponents() {
 	override fun openURL(url: String): Unit {
 		window.methods["open"](url, "_blank")
 	}
+
+	override fun getDpi(): Double {
+		return (window["devicePixelRatio"].toInt() * 96).toDouble()
+	}
 }
 
 internal object SelectedFilesVfs : Vfs() {

@@ -8,17 +8,19 @@ import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.korio.vfs.VfsFile
+import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.LightClickEvent
-import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightProperty
 import com.soywiz.korui.light.LightType
 import com.soywiz.korui.style.Style
 import com.soywiz.korui.style.Styled
 import kotlin.reflect.KProperty
 
-open class Component(val lc: LightComponents, val type: LightType) : Styled {
+open class Component(val app: Application, val type: LightType) : Styled {
+	val lc = app.light
+
 	class lightProperty<T>(val key: LightProperty<T>, val getable: Boolean = false, val setHandler: ((v: T) -> Unit)? = null) {
 		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T {
 			if (getable) return thisRef.lc.getProperty(thisRef.handle, key)
@@ -126,7 +128,7 @@ open class Component(val lc: LightComponents, val type: LightType) : Styled {
 	override fun toString(): String = javaClass.simpleName
 }
 
-open class Container(lc: LightComponents, var layout: Layout, type: LightType = LightType.CONTAINER) : Component(lc, type) {
+open class Container(app: Application, var layout: Layout, type: LightType = LightType.CONTAINER) : Component(app, type) {
 	val children = arrayListOf<Component>()
 
 	override fun recreate() {
@@ -154,7 +156,7 @@ open class Container(lc: LightComponents, var layout: Layout, type: LightType = 
 
 }
 
-class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, LightType.FRAME) {
+class Frame(app: Application, title: String) : Container(app, LayeredLayout(app), LightType.FRAME) {
 	var title by lightProperty(LightProperty.TEXT)
 	var icon by lightProperty(LightProperty.ICON)
 	var bgcolor by lightProperty(LightProperty.BGCOLOR)
@@ -181,7 +183,7 @@ class Frame(lc: LightComponents, title: String) : Container(lc, LayeredLayout, L
 	}
 }
 
-class Button(lc: LightComponents, text: String) : Component(lc, LightType.BUTTON) {
+class Button(app: Application, text: String) : Component(app, LightType.BUTTON) {
 	var text by lightProperty(LightProperty.TEXT)
 
 	init {
@@ -189,7 +191,7 @@ class Button(lc: LightComponents, text: String) : Component(lc, LightType.BUTTON
 	}
 }
 
-class Label(lc: LightComponents, text: String) : Component(lc, LightType.LABEL) {
+class Label(app: Application, text: String) : Component(app, LightType.LABEL) {
 	var text by lightProperty(LightProperty.TEXT)
 
 	init {
@@ -197,7 +199,7 @@ class Label(lc: LightComponents, text: String) : Component(lc, LightType.LABEL) 
 	}
 }
 
-class TextField(lc: LightComponents, text: String) : Component(lc, LightType.TEXT_FIELD) {
+class TextField(app: Application, text: String) : Component(app, LightType.TEXT_FIELD) {
 	var text by lightProperty(LightProperty.TEXT, getable = true)
 
 	init {
@@ -205,7 +207,7 @@ class TextField(lc: LightComponents, text: String) : Component(lc, LightType.TEX
 	}
 }
 
-class CheckBox(lc: LightComponents, text: String, initialChecked: Boolean) : Component(lc, LightType.CHECK_BOX) {
+class CheckBox(app: Application, text: String, initialChecked: Boolean) : Component(app, LightType.CHECK_BOX) {
 	var text by lightProperty(LightProperty.TEXT)
 	var checked by lightProperty(LightProperty.CHECKED, getable = true)
 
@@ -215,7 +217,7 @@ class CheckBox(lc: LightComponents, text: String, initialChecked: Boolean) : Com
 	}
 }
 
-class Progress(lc: LightComponents, current: Int = 0, max: Int = 100) : Component(lc, LightType.PROGRESS) {
+class Progress(app: Application, current: Int = 0, max: Int = 100) : Component(app, LightType.PROGRESS) {
 	var current by lightProperty(LightProperty.PROGRESS_CURRENT)
 	var max by lightProperty(LightProperty.PROGRESS_MAX)
 
@@ -229,10 +231,10 @@ class Progress(lc: LightComponents, current: Int = 0, max: Int = 100) : Componen
 	}
 }
 
-class Spacer(lc: LightComponents) : Component(lc, LightType.CONTAINER) {
+class Spacer(app: Application) : Component(app, LightType.CONTAINER) {
 }
 
-class Image(lc: LightComponents) : Component(lc, LightType.IMAGE) {
+class Image(app: Application) : Component(app, LightType.IMAGE) {
 	var image by lightProperty(LightProperty.IMAGE) {
 		if (it != null) {
 			if (this.style.defaultSize.width != it.width.pt || this.style.defaultSize.height != it.height.pt) {
@@ -253,49 +255,49 @@ class Image(lc: LightComponents) : Component(lc, LightType.IMAGE) {
 
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
-suspend fun Container.button(text: String) = add(Button(this.lc, text))
+suspend fun Container.button(text: String) = add(Button(this.app, text))
 suspend inline fun Container.button(text: String, callback: suspend Button.() -> Unit) = asyncFun {
-	add(Button(this.lc, text).apply {
+	add(Button(this.app, text).apply {
 		callback.await(this@apply)
 	})
 }
 
-suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.lc, current, max))
-suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.lc).apply { image = bitmap; callback.await(this) }) }
-suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply {
+suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.app, current, max))
+suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.app).apply { image = bitmap; callback.await(this) }) }
+suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 	image = bitmap
 	this.style.defaultSize.width = bitmap.width.pt
 	this.style.defaultSize.height = bitmap.height.pt
 })
 
-suspend inline fun Container.spacer() = add(Spacer(this.lc))
+suspend inline fun Container.spacer() = add(Spacer(this.app))
 
-suspend inline fun Container.label(text: String, callback: suspend Label.() -> Unit = {}) = asyncFun { add(Label(this.lc, text).apply { callback.await(this) }) }
+suspend inline fun Container.label(text: String, callback: suspend Label.() -> Unit = {}) = asyncFun { add(Label(this.app, text).apply { callback.await(this) }) }
 
-suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = asyncFun { add(CheckBox(this.lc, text, checked).apply { callback.await(this) }) }
+suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = asyncFun { add(CheckBox(this.app, text, checked).apply { callback.await(this) }) }
 
-suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = asyncFun { add(TextField(this.lc, text).apply { callback.await(this) }) }
+suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = asyncFun { add(TextField(this.app, text).apply { callback.await(this) }) }
 
-suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, LayeredLayout).apply { callback.await(this) }) }
+suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) }) }
 suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.lc, LayeredKeepAspectLayout(anchor, scaleMode)).apply { callback.await(this) })
+	add(Container(this.app, LayeredKeepAspectLayout(app, anchor, scaleMode)).apply { callback.await(this) })
 }
 
-suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, VerticalLayout).apply { callback.await(this) }) }
+suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) }) }
 suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.lc, HorizontalLayout).apply {
+	add(Container(this.app, HorizontalLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
 suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.lc, InlineLayout).apply {
+	add(Container(this.app, InlineLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
 suspend inline fun Container.relative(callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.lc, RelativeLayout).apply {
+	add(Container(this.app, RelativeLayout(app)).apply {
 		callback.await(this)
 	})
 }

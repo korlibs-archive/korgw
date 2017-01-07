@@ -10,7 +10,16 @@ import kotlin.coroutines.suspendCoroutine
 
 class AndroidLightComponents : LightComponents() {
 	val activity = KorioAndroidContext
-	val scale = KorioAndroidContext.resources.displayMetrics.density
+	//val scale = KorioAndroidContext.resources.displayMetrics.density
+	//fun scaled(v: Double): Double = v * scale + 0.5f
+	//fun scaled(v: Int): Double = v * scale + 0.5f
+	//fun scaled_rev(v: Double): Double = v / scale
+	//fun scaled_rev(v: Int): Int = v / scale
+
+	fun scaled(v: Double): Double = v
+	fun scaled(v: Int): Int = v
+	fun scaled_rev(v: Double): Double = v
+	fun scaled_rev(v: Int): Int = v
 
 	override fun create(type: LightType): View {
 		return when (type) {
@@ -50,6 +59,7 @@ class AndroidLightComponents : LightComponents() {
 		//(parent as ViewGroup).requestLayout()
 	}
 
+
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
 		//println("--------------------------")
 		//println("setBounds[${c.javaClass.simpleName}]($x, $y, $width, $height)")
@@ -60,11 +70,11 @@ class AndroidLightComponents : LightComponents() {
 				//println(" :::::::::::: $x,$y,$width,$height")
 				val layoutParams = c.layoutParams
 				if (layoutParams is AbsoluteLayout.LayoutParams) {
-					layoutParams.x = (x * scale + 0.5f).toInt()
-					layoutParams.y = (y * scale + 0.5f).toInt()
+					layoutParams.x = scaled(x).toInt()
+					layoutParams.y = scaled(y).toInt()
 				}
-				layoutParams.width = (width * scale + 0.5f).toInt()
-				layoutParams.height = (height * scale + 0.5f).toInt()
+				layoutParams.width = scaled(width).toInt()
+				layoutParams.height = scaled(height).toInt()
 				c.requestLayout()
 			}
 		}
@@ -119,8 +129,8 @@ class AndroidLightComponents : LightComponents() {
 				//val ctx = activity as KoruiActivity
 
 				fun send() {
-					val sizeX = ((cc.parent as View).width / scale).toInt()
-					val sizeY = ((cc.parent as View).height / scale).toInt()
+					val sizeX = scaled_rev((cc.parent as View).width).toInt()
+					val sizeY = scaled_rev((cc.parent as View).height).toInt()
 					println("LightResizeEvent($sizeX, $sizeY)")
 					handler(LightResizeEvent(sizeX, sizeY) as T)
 				}
@@ -148,5 +158,10 @@ class AndroidLightComponents : LightComponents() {
 
 			dialog.show()
 		}
+	}
+
+	override fun getDpi(): Double {
+		val metrics = activity.resources.displayMetrics
+		return metrics.densityDpi.toDouble()
 	}
 }

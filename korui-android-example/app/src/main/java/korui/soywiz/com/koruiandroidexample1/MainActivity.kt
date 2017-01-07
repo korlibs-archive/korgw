@@ -7,7 +7,7 @@ import com.soywiz.korio.async.sleep
 import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
-import com.soywiz.korui.geom.len.pt
+import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.light.android.KoruiActivity
 import com.soywiz.korui.style.bottom
 import com.soywiz.korui.style.height
@@ -29,7 +29,6 @@ class MainActivity : KoruiActivity() {
 			//}
 			vertical {
 				horizontal {
-					height = 40.pt
 					button("hello from korui").click {
 						for (file in ResourcesVfs.listRecursive()) {
 							println(file)
@@ -42,7 +41,6 @@ class MainActivity : KoruiActivity() {
 				}
 				val progress = progress(0, 100)
 				horizontal {
-					height = 40.pt
 					button("start").click {
 						while (progress.current < progress.max) {
 							progress.current++
@@ -55,7 +53,9 @@ class MainActivity : KoruiActivity() {
 				label("Name:")
 				val name = textField("Test")
 				val adult = checkBox("I'm and adult", checked = true)
-				button("Apply").click {
+				button("Apply") {
+					height = 15.vh
+				}.click {
 					if (adult.checked) {
 						alert("Hello ${name.text}!")
 					} else {

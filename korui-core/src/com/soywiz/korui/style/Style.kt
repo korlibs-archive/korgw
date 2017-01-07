@@ -6,7 +6,8 @@ import com.soywiz.korui.ui.Component
 
 class Style(var parent: Style? = null) : Styled {
 	var position = Position(null, null)
-	val defaultSize = Size(120.pt, 52.pt)
+	val defaultSize = Size(3.cm, 0.8.cm)
+	//val defaultSize = Size(140.pt, 52.pt)
 	val size = Size(null, null)
 	val minSize = Size(null, null)
 	val maxSize = Size(null, null)
@@ -77,8 +78,11 @@ val Styled.computedLeft: Length? get() = style.left ?: style.parent?.computedLef
 val Styled.computedRight: Length? get() = style.right ?: style.parent?.computedRight
 
 
-fun Styled.computedCalcWidth(length: Int, ignoreBounds: Boolean = false): Int = Length.calc(length, computedDefaultWidth, computedWidth, computedMinWidth, computedMaxWidth, ignoreBounds)
-fun Styled.computedCalcHeight(length: Int, ignoreBounds: Boolean = false): Int = Length.calc(length, computedDefaultHeight, computedHeight, computedMinHeight, computedMaxHeight, ignoreBounds)
+fun Styled.computedCalcWidth(ctx: Length.Context, ignoreBounds: Boolean = false): Int = Length.calc(ctx, computedDefaultWidth, computedWidth, computedMinWidth, computedMaxWidth, ignoreBounds)
+fun Styled.computedCalcHeight(ctx: Length.Context, ignoreBounds: Boolean = false): Int = Length.calc(ctx, computedDefaultHeight, computedHeight, computedMinHeight, computedMaxHeight, ignoreBounds)
 
-fun Styled.computedCalcSize(size: ISize, out: ISize = ISize(), ignoreBounds: Boolean = false): ISize = out.setTo(this.computedCalcWidth(size.width, ignoreBounds), this.computedCalcHeight(size.height, ignoreBounds))
+fun Styled.computedCalcSize(ctx: Length.Context, size: ISize, out: ISize = ISize(), ignoreBounds: Boolean = false): ISize = out.setTo(
+	this.computedCalcWidth(ctx.setSize(size.width), ignoreBounds),
+	this.computedCalcHeight(ctx.setSize(size.height), ignoreBounds)
+)
 

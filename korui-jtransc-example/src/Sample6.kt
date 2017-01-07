@@ -4,6 +4,8 @@ import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.pt
+import com.soywiz.korui.geom.len.vmin
+import com.soywiz.korui.style.height
 import com.soywiz.korui.style.padding
 import com.soywiz.korui.ui.*
 
@@ -33,7 +35,9 @@ object Sample6 {
 					}
 				}
 				spacer()
-				button("Submit!").click {
+				button("Submit!") {
+					height = 10.vmin
+				}.click {
 					if (!adult.checked) {
 						alert("Not an adult!")
 					} else {

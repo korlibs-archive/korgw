@@ -3,19 +3,29 @@ package com.soywiz.korui.ui
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korim.geom.ScaleMode
+import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.calcMax
 import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.setBoundsTo
 import com.soywiz.korui.style.*
 
-open class Layout {
+open class Layout(val app: Application) {
+	val ctx = app.lengthContext
 	//open fun calculateSize(parent: Component, out: ISize = ISize(0, 0)): ISize {
 	//	//parent.children
 	//	return out
 	//}
 
-	open fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+	fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+		ctx.keep {
+			viewportWidth = inoutBounds.width.toDouble()
+			viewportHeight = inoutBounds.height.toDouble()
+			applyLayoutInternal(parent, children, inoutBounds)
+		}
+	}
+
+	open protected fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 	}
 
 	fun applyLayout(parent: Component, children: Iterable<Component>, x: Int, y: Int, width: Int, height: Int, out: IRectangle = IRectangle()): IRectangle {
@@ -39,7 +49,7 @@ open class Layout {
 		val out = arrayListOf<ResultBounds<T>>()
 
 		for (item in list) {
-			val itemPaddingPrev = Math.max(lastPadding, item.paddingPrev().calcMax(size))
+			val itemPaddingPrev = Math.max(lastPadding, item.paddingPrev().calcMax(ctx.setSize(size)))
 			val itemSizeSize = item.itemSize(size)
 			val actualItemPaddingPrev = if (lastPadding != 0) itemPaddingPrev else 0
 			pos += actualItemPaddingPrev
@@ -47,7 +57,7 @@ open class Layout {
 			pos += itemSizeSize
 			val end = pos
 			out += ResultBounds(item, start until end, actualItemPaddingPrev)
-			lastPadding = item.paddingNext().calcMax(size)
+			lastPadding = item.paddingNext().calcMax(ctx.setSize(size))
 		}
 
 		val scaleFit = size.toDouble() / pos.toDouble()
@@ -67,10 +77,10 @@ open class Layout {
 	}
 }
 
-object LayeredLayout : Layout() {
-	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+class LayeredLayout(app: Application) : Layout(app) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val actualBounds = IRectangle().setBoundsTo(
-			inoutBounds,
+			ctx,inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
@@ -81,16 +91,16 @@ object LayeredLayout : Layout() {
 	}
 }
 
-class LayeredKeepAspectLayout(val anchor: Anchor, val scaleMode: ScaleMode = ScaleMode.SHOW_ALL) : Layout() {
-	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+class LayeredKeepAspectLayout(app: Application, val anchor: Anchor, val scaleMode: ScaleMode = ScaleMode.SHOW_ALL) : Layout(app) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val actualBounds = IRectangle().setBoundsTo(
-			inoutBounds,
+			ctx, inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
 
 		for (child in children) {
-			val asize = child.computedCalcSize(actualBounds.size).applyScaleMode(actualBounds.size, scaleMode)
+			val asize = child.computedCalcSize(ctx, actualBounds.size).applyScaleMode(actualBounds.size, scaleMode)
 
 			val endSize = asize.anchoredIn(actualBounds, anchor)
 			child.setBoundsAndRelayout(endSize)
@@ -99,8 +109,8 @@ class LayeredKeepAspectLayout(val anchor: Anchor, val scaleMode: ScaleMode = Sca
 	}
 }
 
-abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
-	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+abstract class VerticalHorizontalLayout(app: Application, val vertical: Boolean) : Layout(app) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		//val width2 = width - parent.style.computedPaddingRight.calc(width)
 		//val height2 = height - parent.style.computedPaddingBottom.calc(height)
 
@@ -110,7 +120,7 @@ abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
 
 		val posList = genAxisBounds(
 			inboundsSide, children,
-			{ if (vertical) this.computedCalcHeight(it) else this.computedCalcWidth(it) },
+			{ if (vertical) this.computedCalcHeight(ctx.setSize(it)) else this.computedCalcWidth(ctx.setSize(it)) },
 			{ paddingPrev },
 			{ paddingNext },
 			scaled = if (vertical) ScaleMode2.SHRINK else ScaleMode2.ALWAYS
@@ -136,17 +146,17 @@ abstract class VerticalHorizontalLayout(val vertical: Boolean) : Layout() {
 	}
 }
 
-object VerticalLayout : VerticalHorizontalLayout(vertical = true) {
+class VerticalLayout(app: Application) : VerticalHorizontalLayout(app, vertical = true) {
 }
 
-object HorizontalLayout : VerticalHorizontalLayout(vertical = false) {
+class HorizontalLayout(app: Application) : VerticalHorizontalLayout(app, vertical = false) {
 }
 
-object InlineLayout : Layout() {
-	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+class InlineLayout(app: Application) : Layout(app) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val posList = genAxisBounds(
 			inoutBounds.width, children,
-			{ this.computedCalcWidth(it) },
+			{ this.computedCalcWidth(ctx.setSize(it)) },
 			{ parent.style.computedPaddingLeft },
 			{ parent.style.computedPaddingRight },
 			scaled = ScaleMode2.NEVER
@@ -155,7 +165,7 @@ object InlineLayout : Layout() {
 		var maxheight = 0
 		var xoffset = 0
 		for (pos in posList) {
-			val cheight = pos.child.computedCalcHeight(inoutBounds.height, ignoreBounds = true)
+			val cheight = pos.child.computedCalcHeight(ctx.setSize(inoutBounds.height), ignoreBounds = true)
 			xoffset += pos.padPrev
 			maxheight = Math.max(maxheight, cheight)
 			val cbounds = pos.child.setBoundsAndRelayout(xoffset, 0, pos.len, cheight)
@@ -166,8 +176,8 @@ object InlineLayout : Layout() {
 	}
 }
 
-object RelativeLayout : Layout() {
-	override fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+class RelativeLayout(app: Application) : Layout(app) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
 		val parentWidth = inoutBounds.width
 		val parentHeight = inoutBounds.height
 
@@ -182,8 +192,8 @@ object RelativeLayout : Layout() {
 			if (c !in childrenSet) return c.actualBounds
 
 			val relativeTo = c.computedRelativeTo
-			val cw = c.computedCalcWidth(parentWidth)
-			val ch = c.computedCalcHeight(parentHeight)
+			val cw = c.computedCalcWidth(ctx.setSize(parentWidth))
+			val ch = c.computedCalcHeight(ctx.setSize(parentHeight))
 			val cComputedLeft = c.computedLeft
 			val cComputedTop = c.computedTop
 			val cComputedRight = c.computedRight
@@ -194,20 +204,20 @@ object RelativeLayout : Layout() {
 
 			if (cComputedLeft != null) {
 				val leftRelative = if (relativeTo != null) compute(relativeTo).right else 0
-				cActualBounds.x = leftRelative + cComputedLeft.calc(parentWidth)
+				cActualBounds.x = leftRelative + cComputedLeft.calc(ctx.setSize(parentWidth))
 			} else if (cComputedRight != null) {
 				val rightRelative = if (relativeTo != null) compute(relativeTo).left else parentWidth
-				cActualBounds.x = rightRelative - cComputedRight.calc(parentWidth) - c.actualBounds.width
+				cActualBounds.x = rightRelative - cComputedRight.calc(ctx.setSize(parentWidth)) - c.actualBounds.width
 			} else {
 				cActualBounds.x = if (relativeTo != null) compute(relativeTo).x else 0
 			}
 
 			if (cComputedTop != null) {
 				val topRelative = if (relativeTo != null) compute(relativeTo).bottom else 0
-				cActualBounds.y = topRelative + cComputedTop.calc(parentHeight)
+				cActualBounds.y = topRelative + cComputedTop.calc(ctx.setSize(parentHeight))
 			} else if (cComputedBottom != null) {
 				val bottomRelative = if (relativeTo != null) compute(relativeTo).top else parentHeight
-				cActualBounds.y = bottomRelative - cComputedBottom.calc(parentHeight) - c.actualBounds.height
+				cActualBounds.y = bottomRelative - cComputedBottom.calc(ctx.setSize(parentHeight)) - c.actualBounds.height
 			} else {
 				cActualBounds.y = if (relativeTo != null) compute(relativeTo).y else 0
 			}

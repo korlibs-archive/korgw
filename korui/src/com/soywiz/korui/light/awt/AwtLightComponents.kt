@@ -217,6 +217,11 @@ class AwtLightComponents : LightComponents() {
 		val desktop = Desktop.getDesktop()
 		desktop.browse(URI(url))
 	}
+
+	override fun getDpi(): Double {
+		val sr = Toolkit.getDefaultToolkit().screenResolution
+		return sr.toDouble()
+	}
 }
 
 class JFrame2 : JFrame() {

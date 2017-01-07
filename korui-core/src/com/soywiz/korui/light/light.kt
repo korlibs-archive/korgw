@@ -23,6 +23,8 @@ open class LightComponents {
 		})
 	}
 
+	open fun getDpi(): Double = 96.0
+
 	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun <T> setProperty(c: Any, key: LightProperty<T>, value: T): Unit = Unit
 	open fun <T> getProperty(c: Any, key: LightProperty<T>): T = key.default
