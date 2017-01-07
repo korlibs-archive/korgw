@@ -257,17 +257,15 @@ class JScrollPane2(override val childContainer: JPanel = JPanel().apply { layout
 	init {
 		border = EmptyBorder(0, 0, 0, 0)
 	}
-}
-
-class JPanelWithinScrollPane(val scrollPane: JScrollPane) : JPanel() {
-	init {
-		scrollPane.setViewportView(this)
+	override fun paintComponent(g: Graphics) {
+		g.clearRect(0, 0, width, height)
 	}
 }
 
 class JPanel2 : JPanel() {
-	//override fun paintComponent(g: Graphics) {
-	//}
+	override fun paintComponent(g: Graphics) {
+		//g.clearRect(0, 0, width, height)
+	}
 }
 
 class JImage : JComponent() {

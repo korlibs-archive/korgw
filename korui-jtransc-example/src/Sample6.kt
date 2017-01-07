@@ -20,6 +20,7 @@ object Sample6 {
 		val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 		Application().frame("Hello World", icon = icon) {
+			padding.setTo(8.pt)
 			//vertical {
 				//padding.setTo(8.pt)
 				scrollPane {
