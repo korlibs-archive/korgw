@@ -19,8 +19,10 @@ import java.util.concurrent.CancellationException
 import javax.swing.*
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
+import javax.swing.text.JTextComponent
 
 
+@Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class AwtLightComponents : LightComponents() {
 	init {
 		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
@@ -37,9 +39,13 @@ class AwtLightComponents : LightComponents() {
 		LightType.BUTTON -> JButton()
 		LightType.IMAGE -> JImage()
 		LightType.PROGRESS -> JProgressBar(0, 100)
-		else -> throw UnsupportedOperationException()
+		LightType.LABEL -> JLabel()
+		LightType.TEXT_FIELD -> JTextField()
+		LightType.CHECK_BOX -> JCheckBox()
+		else -> throw UnsupportedOperationException("Type: $type")
 	}
 
+	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		when (type) {
 			LightClickEvent::class.java -> {
@@ -105,7 +111,9 @@ class AwtLightComponents : LightComponents() {
 			}
 			LightProperty.TEXT -> {
 				val text = key[value]
-				(c as? JButton)?.text = text
+				(c as? JLabel)?.text = text
+				(c as? JTextComponent)?.text = text
+				(c as? AbstractButton)?.text = text
 				(c as? Frame)?.title = text
 			}
 			LightProperty.IMAGE -> {
@@ -137,16 +145,16 @@ class AwtLightComponents : LightComponents() {
 				}
 			}
 			LightProperty.IMAGE_SMOOTH -> {
-				val value = key[value]
+				val v = key[value]
 				when (c) {
 					is JImage -> {
-						c.smooth = value
+						c.smooth = v
 					}
 				}
 			}
 			LightProperty.BGCOLOR -> {
-				val value = key[value]
-				(c as? Component)?.background = Color(value, true)
+				val v = key[value]
+				(c as? Component)?.background = Color(v, true)
 			}
 			LightProperty.PROGRESS_CURRENT -> {
 				(c as? JProgressBar)?.value = key[value]
@@ -154,7 +162,26 @@ class AwtLightComponents : LightComponents() {
 			LightProperty.PROGRESS_MAX -> {
 				(c as? JProgressBar)?.maximum = key[value]
 			}
+			LightProperty.CHECKED -> {
+				(c as? JCheckBox)?.isSelected = key[value]
+			}
 		}
+	}
+
+	@Suppress("UNCHECKED_CAST")
+	override fun <T> getProperty(c: Any, key: LightProperty<T>): T {
+		return when (key) {
+			LightProperty.CHECKED -> {
+				(c as? JCheckBox)?.isSelected ?: false
+			}
+			LightProperty.TEXT -> {
+				(c as? JLabel)?.text ?:
+					(c as? JTextComponent)?.text ?:
+					(c as? AbstractButton)?.text ?:
+					(c as? Frame)?.title
+			}
+			else -> super.getProperty(c, key)
+		} as T
 	}
 
 	suspend override fun dialogAlert(c: Any, message: String) = asyncFun {

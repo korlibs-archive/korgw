@@ -14,12 +14,17 @@ import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightProperty
 import com.soywiz.korui.light.LightType
-import com.soywiz.korui.style.*
+import com.soywiz.korui.style.Style
+import com.soywiz.korui.style.Styled
 import kotlin.reflect.KProperty
 
 open class Component(val lc: LightComponents, val type: LightType) : Styled {
-	class lightProperty<T>(val key: LightProperty<T>, val setHandler: ((v: T) -> Unit)? = null) {
-		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T = thisRef.getProperty(key)
+	class lightProperty<T>(val key: LightProperty<T>, val getable: Boolean = false, val setHandler: ((v: T) -> Unit)? = null) {
+		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T {
+			if (getable) return thisRef.lc.getProperty(thisRef.handle, key)
+			return thisRef.getProperty(key)
+		}
+
 		inline operator fun setValue(thisRef: Component, property: KProperty<*>, value: T): Unit = run {
 			thisRef.setProperty(key, value)
 			setHandler?.invoke(value)
@@ -184,6 +189,32 @@ class Button(lc: LightComponents, text: String) : Component(lc, LightType.BUTTON
 	}
 }
 
+class Label(lc: LightComponents, text: String) : Component(lc, LightType.LABEL) {
+	var text by lightProperty(LightProperty.TEXT)
+
+	init {
+		this.text = text
+	}
+}
+
+class TextField(lc: LightComponents, text: String) : Component(lc, LightType.TEXT_FIELD) {
+	var text by lightProperty(LightProperty.TEXT, getable = true)
+
+	init {
+		this.text = text
+	}
+}
+
+class CheckBox(lc: LightComponents, text: String, initialChecked: Boolean) : Component(lc, LightType.CHECK_BOX) {
+	var text by lightProperty(LightProperty.TEXT)
+	var checked by lightProperty(LightProperty.CHECKED, getable = true)
+
+	init {
+		this.text = text
+		this.checked = initialChecked
+	}
+}
+
 class Progress(lc: LightComponents, current: Int = 0, max: Int = 100) : Component(lc, LightType.PROGRESS) {
 	var current by lightProperty(LightProperty.PROGRESS_CURRENT)
 	var max by lightProperty(LightProperty.PROGRESS_MAX)
@@ -238,6 +269,12 @@ suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.lc).apply {
 })
 
 suspend inline fun Container.spacer() = add(Spacer(this.lc))
+
+suspend inline fun Container.label(text: String, callback: suspend Label.() -> Unit = {}) = asyncFun { add(Label(this.lc, text).apply { callback.await(this) }) }
+
+suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = asyncFun { add(CheckBox(this.lc, text, checked).apply { callback.await(this) }) }
+
+suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = asyncFun { add(TextField(this.lc, text).apply { callback.await(this) }) }
 
 suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.lc, LayeredLayout).apply { callback.await(this) }) }
 suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, callback: suspend Container.() -> Unit): Container = asyncFun {

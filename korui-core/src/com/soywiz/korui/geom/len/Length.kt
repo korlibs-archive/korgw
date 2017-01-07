@@ -4,9 +4,21 @@ import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korio.util.clamp
 
 //sealed class Length : Comparable<Length> {
+
+// http://www.w3schools.com/cssref/css_units.asp
+
 sealed class Length {
 	abstract class Fixed() : Length()
 	abstract class Variable() : Length()
+
+	//class Context {
+	//	var fontSize: Double = 16.0
+	//	var dpp: Double = 1.0
+	//	var viewportWidth: Double = 1.0
+	//	var viewportHeight: Double = 1.0
+	//	var size: Double = 100.0
+	//}
+
 
 	data class MM(val v: Int) : Fixed() {
 		override fun calc(size: Int): Int = v
@@ -21,6 +33,11 @@ sealed class Length {
 	data class PT(val v: Int) : Fixed() {
 		override fun calc(size: Int): Int = v
 		override fun toString() = "${v}pt"
+	}
+
+	data class EM(val v: Int) : Fixed() {
+		override fun calc(size: Int): Int = v
+		override fun toString() = "${v}em"
 	}
 
 	data class Ratio(val ratio: Double) : Variable() {

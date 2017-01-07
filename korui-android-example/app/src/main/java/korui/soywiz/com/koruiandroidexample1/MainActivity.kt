@@ -52,6 +52,16 @@ class MainActivity : KoruiActivity() {
 						progress.current = 0
 					}
 				}
+				label("Name:")
+				val name = textField("Test")
+				val adult = checkBox("I'm and adult", checked = true)
+				button("Apply").click {
+					if (adult.checked) {
+						alert("Hello ${name.text}!")
+					} else {
+						alert("Not an adult!")
+					}
+				}
 			}
 
 			relative {

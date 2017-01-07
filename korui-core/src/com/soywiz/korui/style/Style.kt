@@ -6,7 +6,7 @@ import com.soywiz.korui.ui.Component
 
 class Style(var parent: Style? = null) : Styled {
 	var position = Position(null, null)
-	val defaultSize = Size(120.pt, 32.pt)
+	val defaultSize = Size(120.pt, 52.pt)
 	val size = Size(null, null)
 	val minSize = Size(null, null)
 	val maxSize = Size(null, null)

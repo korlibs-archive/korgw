@@ -1,7 +1,6 @@
 package com.soywiz.korui.light.html
 
 import com.jtransc.js.*
-import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
@@ -24,6 +23,9 @@ import kotlin.coroutines.suspendCoroutine
 class HtmlLightComponents : LightComponents() {
 	init {
 		addStyles("""
+			body {
+				font: 11pt Arial;
+			}
 			.myButton {
 				-moz-box-shadow:inset 0px 1px 0px 0px #ffffff;
 				-webkit-box-shadow:inset 0px 1px 0px 0px #ffffff;
@@ -90,44 +92,60 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun create(type: LightType): JsDynamic {
-		val e: JsDynamic
-		when (type) {
+		return when (type) {
 			LightType.FRAME -> {
-				e = document.method("createElement")("article")!!
-				document["body"].method("appendChild")(e)
-				window["mainFrame"] = e
+				document.method("createElement")("article")!!.apply {
+					document["body"].method("appendChild")(this)
+					window["mainFrame"] = this
+				}
 			}
 			LightType.CONTAINER -> {
-				e = document.method("createElement")("div")!!
+				document.method("createElement")("div")!!
 			}
 			LightType.BUTTON -> {
-				e = document.method("createElement")("input")!!
-				e["className"] = "myButton"
-				e["type"] = "button"
+				document.method("createElement")("input")!!.apply {
+					this["className"] = "myButton"
+					this["type"] = "button"
+				}
 			}
 			LightType.PROGRESS -> {
-				e = document.method("createElement")("progress")!!
+				document.method("createElement")("progress")!!
 			}
 			LightType.IMAGE -> {
-				e = document.method("createElement")("canvas")!!
-				e["style"]["imageRendering"] = "pixelated"
+				document.method("createElement")("canvas")!!.apply {
+					this["style"]["imageRendering"] = "pixelated"
+				}
 			}
 			LightType.LABEL -> {
-				e = document.method("createElement")("div")!!
+				document.method("createElement")("label")!!
+			}
+			LightType.TEXT_FIELD -> {
+				document.method("createElement")("input")!!.apply {
+					this["className"] = "textField"
+					this["type"] = "text"
+				}
+			}
+			LightType.CHECK_BOX -> {
+				document.method("createElement")("label")!!.apply {
+					this["data-type"] = "checkbox"
+					this.methods["appendChild"](document.method("createElement")("input")!!.apply {
+						this["className"] = "textField"
+						this["type"] = "checkbox"
+					})
+					this.methods["appendChild"](document.method("createElement")("span")!!)
+				}
 			}
 			else -> {
-				e = document.method("createElement")("div")!!
+				document.method("createElement")("div")!!
 			}
+		}.apply {
+			this["style"]["position"] = "absolute"
+			this["style"]["overflow"] = "hidden"
+			this["style"]["left"] = "0px"
+			this["style"]["top"] = "0px"
+			this["style"]["width"] = "100px"
+			this["style"]["height"] = "100px"
 		}
-
-		e["style"]["position"] = "absolute"
-		e["style"]["overflow"] = "hidden"
-		e["style"]["left"] = "0px"
-		e["style"]["top"] = "0px"
-		e["style"]["width"] = "100px"
-		e["style"]["height"] = "100px"
-
-		return e
 	}
 
 	override fun setParent(c: Any, parent: Any?) {
@@ -181,8 +199,14 @@ class HtmlLightComponents : LightComponents() {
 				val v = key[value]
 				if (nodeName == "article") {
 					document["title"] = v
-				} else {
+				} else if (nodeName == "input") {
 					child["value"] = v
+				} else {
+					if (child["data-type"].toJavaString() == "checkbox") {
+						child.methods["querySelector"]("span")["innerText"] = v
+					} else {
+						child["innerText"] = v
+					}
 				}
 			}
 			LightProperty.PROGRESS_CURRENT -> {
@@ -228,8 +252,28 @@ class HtmlLightComponents : LightComponents() {
 				val v = key[value]
 				if (child != null) child["style"]["display"] = if (v) "block" else "none"
 			}
+			LightProperty.CHECKED -> {
+				val v = key[value]
+				child.methods["querySelector"]("input[type=checkbox]")["checked"] = v
+			}
 		}
 	}
+
+	override fun <T> getProperty(c: Any, key: LightProperty<T>): T {
+		val child = c.asJsDynamic()
+
+		when (key) {
+			LightProperty.TEXT -> {
+				return child["value"].toJavaString() as T
+			}
+			LightProperty.CHECKED -> {
+				val input = child.methods["querySelector"]("input[type=checkbox]")
+				return input["checked"].toBool() as T
+			}
+		}
+		return super.getProperty(c, key)
+	}
+
 
 	fun colorString(c: Int) = "RGBA(${RGBA.getR(c)},${RGBA.getG(c)},${RGBA.getB(c)},${RGBA.getAf(c)})"
 

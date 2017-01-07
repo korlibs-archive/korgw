@@ -3,9 +3,7 @@ package com.soywiz.korui.light.android
 import android.app.AlertDialog
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AbsoluteLayout
-import android.widget.Button
-import android.widget.ProgressBar
+import android.widget.*
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korui.light.*
 import kotlin.coroutines.suspendCoroutine
@@ -30,6 +28,15 @@ class AndroidLightComponents : LightComponents() {
 			}
 			LightType.PROGRESS -> {
 				ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal)
+			}
+			LightType.LABEL -> {
+				TextView(activity)
+			}
+			LightType.TEXT_FIELD -> {
+				EditText(activity)
+			}
+			LightType.CHECK_BOX -> {
+				CheckBox(activity)
 			}
 			else -> {
 				View(KorioAndroidContext)
@@ -72,7 +79,11 @@ class AndroidLightComponents : LightComponents() {
 		when (key) {
 			LightProperty.TEXT -> {
 				val v = key[value]
-				(cc as? Button)?.text = v
+				(cc as? TextView)?.text = v
+			}
+			LightProperty.CHECKED -> {
+				val v = key[value]
+				(cc as? CheckBox)?.isChecked = v
 			}
 			LightProperty.BGCOLOR -> {
 			}
@@ -85,6 +96,15 @@ class AndroidLightComponents : LightComponents() {
 				(cc as? ProgressBar)?.max = v
 			}
 		}
+	}
+
+	override fun <T> getProperty(c: Any, key: LightProperty<T>): T {
+		val cc = c as View
+		return key[when (key) {
+			LightProperty.CHECKED -> (cc as? CheckBox)?.isChecked
+			LightProperty.TEXT -> (cc as? TextView)?.text?.toString()
+			else -> super.getProperty(c, key)
+		}]
 	}
 
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {

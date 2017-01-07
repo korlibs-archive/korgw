@@ -25,6 +25,7 @@ open class LightComponents {
 
 	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun <T> setProperty(c: Any, key: LightProperty<T>, value: T): Unit = Unit
+	open fun <T> getProperty(c: Any, key: LightProperty<T>): T = key.default
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = Unit
 	open fun repaint(c: Any): Unit = Unit
 	open suspend fun dialogAlert(c: Any, message: String): Unit = Unit
@@ -44,7 +45,7 @@ val defaultLight: LightComponents by lazy {
 }
 
 enum class LightType {
-	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL
+	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, CHECK_BOX
 }
 
 class LightProperty<out T>(val name: String, val default: T) {
@@ -57,8 +58,10 @@ class LightProperty<out T>(val name: String, val default: T) {
 		val PROGRESS_MAX = LightProperty<Int>("PROGRESS_MAX", 100)
 		val IMAGE = LightProperty<Bitmap?>("IMAGE", null)
 		val IMAGE_SMOOTH = LightProperty<Boolean>("IMAGE_SMOOTH", true)
+		val CHECKED = LightProperty<Boolean>("CHECKED", false)
 	}
 
-	operator fun get(v: Any?) = v as T
+	operator fun get(v: Any?): T = v as T
+	fun getOrDefault(v: Any?): T = if (v == null) default else v as T
 	override fun toString(): String = "LightProperty[$name]"
 }
