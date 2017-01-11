@@ -5,6 +5,8 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import com.soywiz.korim.android.AndroidNativeImage
+import com.soywiz.korim.android.toAndroidBitmap
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korui.light.*
 import java.awt.Container
@@ -52,6 +54,9 @@ class AndroidLightComponents : LightComponents() {
 			}
 			LightType.SCROLL_PANE -> {
 				ScrollView2(activity)
+			}
+			LightType.IMAGE -> {
+				ImageView(activity)
 			}
 			else -> {
 				View(KorioAndroidContext)
@@ -111,6 +116,10 @@ class AndroidLightComponents : LightComponents() {
 			LightProperty.PROGRESS_MAX -> {
 				val v = key[value]
 				(cc as? ProgressBar)?.max = v
+			}
+			LightProperty.IMAGE -> {
+				val v = key[value]
+				(cc as? ImageView)?.setImageBitmap(v?.toAndroidBitmap())
 			}
 		}
 	}
