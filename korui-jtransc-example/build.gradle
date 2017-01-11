@@ -4,7 +4,8 @@ apply plugin: 'application'
 apply plugin: 'jtransc'
 
 //mainClassName = "Sample1Kt"
-mainClassName = "Sample6"
+//mainClassName = "Sample6"
+mainClassName = "Sample7"
 
 repositories {
     mavenLocal()
