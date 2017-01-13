@@ -5,12 +5,10 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import com.soywiz.korim.android.AndroidNativeImage
 import com.soywiz.korim.android.toAndroidBitmap
 import com.soywiz.korio.android.KorioAndroidContext
+import com.soywiz.korio.android.KorioApp
 import com.soywiz.korui.light.*
-import java.awt.Container
-import java.security.acl.Group
 import kotlin.coroutines.suspendCoroutine
 
 class AndroidLightComponents : LightComponents() {
@@ -151,7 +149,7 @@ class AndroidLightComponents : LightComponents() {
 					handler(LightResizeEvent(sizeX, sizeY) as T)
 				}
 
-				KuroiApp.resized { send() }
+				KorioApp.resized { send() }
 				send()
 			}
 		}
