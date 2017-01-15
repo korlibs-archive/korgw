@@ -1,6 +1,10 @@
+@file:Suppress("EXPERIMENTAL_FEATURE_WARNING")
+
 package com.soywiz.korui.light.html
 
 import com.jtransc.js.*
+import com.soywiz.korag.AG
+import com.soywiz.korag.agFactory
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
@@ -91,8 +95,9 @@ class HtmlLightComponents : LightComponents() {
 		head.method("appendChild")(style)
 	}
 
-	override fun create(type: LightType): JsDynamic {
-		return when (type) {
+	override fun create(type: LightType): LightComponentInfo {
+		var agg: AG? = null
+		val handle = when (type) {
 			LightType.FRAME -> {
 				document.method("createElement")("article")!!.apply {
 					this["className"] = "FRAME"
@@ -149,19 +154,27 @@ class HtmlLightComponents : LightComponents() {
 					this.methods["appendChild"](document.method("createElement")("span")!!)
 				}
 			}
+			LightType.AGCANVAS -> {
+				agg = agFactory.create()
+				agg.nativeComponent.asJsDynamic()!!
+			}
 			else -> {
 				document.method("createElement")("div")!!.apply {
 					this["className"] = "UNKNOWN"
 				}
 			}
 		}.apply {
-			this["style"]["position"] = "absolute"
-			this["style"]["overflow-y"] = if (type == LightType.SCROLL_PANE) "auto" else "hidden"
-			this["style"]["overflow-x"] = if (type == LightType.SCROLL_PANE) "hidden" else "hidden"
-			this["style"]["left"] = "0px"
-			this["style"]["top"] = "0px"
-			this["style"]["width"] = "100px"
-			this["style"]["height"] = "100px"
+			val style = this["style"]
+			style["position"] = "absolute"
+			style["overflow-y"] = if (type == LightType.SCROLL_PANE) "auto" else "hidden"
+			style["overflow-x"] = if (type == LightType.SCROLL_PANE) "hidden" else "hidden"
+			style["left"] = "0px"
+			style["top"] = "0px"
+			style["width"] = "100px"
+			style["height"] = "100px"
+		}
+		return LightComponentInfo(handle).apply {
+			if (agg != null) this.ag = agg
 		}
 	}
 
@@ -175,6 +188,7 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
+	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		val typeName = when (type) {
 			LightClickEvent::class.java -> "click"
@@ -200,7 +214,7 @@ class HtmlLightComponents : LightComponents() {
 				}
 
 				send()
-				node.method("addEventListener")(typeName, jsFunctionRaw1 { e ->
+				node.method("addEventListener")(typeName, jsFunctionRaw1 {
 					send()
 				})
 			}
@@ -276,6 +290,7 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
+	@Suppress("UNCHECKED_CAST")
 	override fun <T> getProperty(c: Any, key: LightProperty<T>): T {
 		val child = c.asJsDynamic()
 
@@ -369,10 +384,10 @@ class HtmlLightComponents : LightComponents() {
 
 		inputFile["value"] = ""
 
-		inputFile["onclick"] = jsFunctionRaw1 { e ->
-			document["body"]["onfocus"] = jsFunctionRaw1 { e ->
+		inputFile["onclick"] = jsFunctionRaw1 {
+			document["body"]["onfocus"] = jsFunctionRaw1 {
 				document["body"]["onfocus"] = null
-				global.methods["setTimeout"](jsFunctionRaw1 { e ->
+				global.methods["setTimeout"](jsFunctionRaw1 {
 					completed()
 				}, 2000)
 			}
@@ -425,7 +440,7 @@ internal object SelectedFilesVfs : Vfs() {
 				val reader = jsNew("FileReader")
 				val slice = jsfile.method("slice")(position, position + len)
 
-				reader["onload"] = jsFunctionRaw1 { e ->
+				reader["onload"] = jsFunctionRaw1 {
 					val result = reader["result"]
 					//val u8array = window["Uint8Array"].new2(result)
 					val u8array = jsNew("Uint8Array", result)
@@ -434,7 +449,7 @@ internal object SelectedFilesVfs : Vfs() {
 					c.resume(out)
 				}
 
-				reader["onerror"] = jsFunctionRaw1 { e ->
+				reader["onerror"] = jsFunctionRaw1 {
 					c.resumeWithException(RuntimeException("error reading file"))
 				}
 				reader.method("readAsArrayBuffer")(slice)

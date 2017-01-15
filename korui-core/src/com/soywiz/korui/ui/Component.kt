@@ -1,9 +1,12 @@
+@file:Suppress("EXPERIMENTAL_FEATURE_WARNING", "NOTHING_TO_INLINE")
+
 package com.soywiz.korui.ui
 
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korim.geom.ScaleMode
+import com.soywiz.korio.async.WorkQueue
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.spawnAndForget
@@ -14,6 +17,7 @@ import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.LightClickEvent
 import com.soywiz.korui.light.LightProperty
 import com.soywiz.korui.light.LightType
+import com.soywiz.korui.light.ag
 import com.soywiz.korui.style.Style
 import com.soywiz.korui.style.Styled
 import kotlin.reflect.KProperty
@@ -34,7 +38,8 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	}
 
 	override var style = Style()
-	var handle = lc.create(type)
+	val componentInfo = lc.create(type)
+	var handle: Any = componentInfo.handle
 	val properties = LinkedHashMap<LightProperty<*>, Any?>()
 	var valid = false
 	protected var nativeBounds = IRectangle()
@@ -186,6 +191,10 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 	}
 }
 
+class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
+	val ag = componentInfo.ag!!
+}
+
 class Button(app: Application, text: String) : Component(app, LightType.BUTTON) {
 	var text by lightProperty(LightProperty.TEXT)
 
@@ -266,6 +275,15 @@ suspend inline fun Container.button(text: String, callback: suspend Button.() ->
 }
 
 suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.app, current, max))
+
+fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this.app).apply {
+	val canvas = this
+	val renderQueue = WorkQueue()
+	ag.onRender = {
+		callback(canvas)
+	}
+})
+
 suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.app).apply { image = bitmap; callback.await(this) }) }
 suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 	image = bitmap

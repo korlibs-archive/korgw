@@ -14,7 +14,7 @@ import com.soywiz.korui.ui.image
 import com.soywiz.korui.ui.layersKeepAspectRatio
 import com.soywiz.korui.ui.vertical
 
-object Sample7 {
+object SampleSvg {
 	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
 		val icon = ResourcesVfs["kotlin.png"].readBitmap()
 

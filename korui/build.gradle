@@ -4,6 +4,7 @@ dependencies {
 	compile project(":korui-core")
 	compile "com.soywiz:korio:$korioVersion"
 	compile "com.soywiz:korim:$korimVersion"
+	compile "com.soywiz:korag:$korimVersion"
 	//compile "org.eclipse:swt:4.3"
 	//compile "org.eclipse.swt:org.eclipse.swt.win32.win32.x86:4.3"
 }

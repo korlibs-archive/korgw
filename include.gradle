@@ -44,6 +44,7 @@ dependencies {
 	compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 	compile "com.soywiz:korio-core:$korioVersion"
 	compile "com.soywiz:korim-core:$korimVersion"
+	compile "com.soywiz:korag-core:$koragVersion"
 	testCompile "junit:junit:4.11"
 }
 

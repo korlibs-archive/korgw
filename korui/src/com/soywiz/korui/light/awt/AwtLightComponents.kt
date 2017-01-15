@@ -1,5 +1,7 @@
 package com.soywiz.korui.light.awt
 
+import com.soywiz.korag.AG
+import com.soywiz.korag.agFactory
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.awt.transferTo
@@ -31,21 +33,31 @@ class AwtLightComponents : LightComponents() {
 		//UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
 	}
 
-	override fun create(type: LightType): Any = when (type) {
-		LightType.FRAME -> JFrame2().apply {
-			defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+	override fun create(type: LightType): LightComponentInfo {
+		var agg: AG? = null
+		val handle: Component = when (type) {
+			LightType.FRAME -> JFrame2().apply {
+				defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+			}
+			LightType.CONTAINER -> JPanel2().apply {
+				layout = null
+			}
+			LightType.BUTTON -> JButton()
+			LightType.IMAGE -> JImage()
+			LightType.PROGRESS -> JProgressBar(0, 100)
+			LightType.LABEL -> JLabel()
+			LightType.TEXT_FIELD -> JTextField()
+			LightType.CHECK_BOX -> JCheckBox()
+			LightType.SCROLL_PANE -> JScrollPane2()
+			LightType.AGCANVAS -> {
+				agg = agFactory.create()
+				agg.nativeComponent as Component
+			}
+			else -> throw UnsupportedOperationException("Type: $type")
 		}
-		LightType.CONTAINER -> JPanel2().apply {
-			layout = null
+		return LightComponentInfo(handle).apply {
+			if (agg != null) this.ag = agg!!
 		}
-		LightType.BUTTON -> JButton()
-		LightType.IMAGE -> JImage()
-		LightType.PROGRESS -> JProgressBar(0, 100)
-		LightType.LABEL -> JLabel()
-		LightType.TEXT_FIELD -> JTextField()
-		LightType.CHECK_BOX -> JCheckBox()
-		LightType.SCROLL_PANE -> JScrollPane2()
-		else -> throw UnsupportedOperationException("Type: $type")
 	}
 
 	@Suppress("UNCHECKED_CAST")
@@ -85,6 +97,7 @@ class AwtLightComponents : LightComponents() {
 	override fun setParent(c: Any, parent: Any?) {
 		val actualParent = (parent as? ChildContainer)?.childContainer ?: parent?.actualContainer
 		actualParent?.add((c as Component), 0)
+		//println("$parent <- $c")
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
@@ -96,7 +109,7 @@ class AwtLightComponents : LightComponents() {
 				c.pack()
 				//c.contentPane.setBounds(x, y, width, height)
 			}
-			is JComponent -> {
+			is Component -> {
 				if (c is JScrollPane2) {
 					//c.preferredSize = Dimension(100, 100)
 					//c.viewport.viewSize = Dimension(100, 100)

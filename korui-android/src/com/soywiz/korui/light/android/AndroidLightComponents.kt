@@ -1,3 +1,5 @@
+@file:Suppress("EXPERIMENTAL_FEATURE_WARNING")
+
 package com.soywiz.korui.light.android
 
 import android.app.AlertDialog
@@ -24,8 +26,8 @@ class AndroidLightComponents : LightComponents() {
 	fun scaled_rev(v: Double): Double = v
 	fun scaled_rev(v: Int): Int = v
 
-	override fun create(type: LightType): View {
-		return when (type) {
+	override fun create(type: LightType): LightComponentInfo {
+		val handle = when (type) {
 			LightType.FRAME -> {
 				val view = RootKoruiAbsoluteLayout(activity)
 				view.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT)
@@ -60,6 +62,7 @@ class AndroidLightComponents : LightComponents() {
 				View(KorioAndroidContext)
 			}
 		}
+		return LightComponentInfo(handle)
 	}
 
 	override fun setParent(c: Any, parent: Any?) {
@@ -80,11 +83,11 @@ class AndroidLightComponents : LightComponents() {
 				//println(" :::::::::::: $x,$y,$width,$height")
 				val layoutParams = c.layoutParams
 				if (layoutParams is AbsoluteLayout.LayoutParams) {
-					layoutParams.x = scaled(x).toInt()
-					layoutParams.y = scaled(y).toInt()
+					layoutParams.x = scaled(x)
+					layoutParams.y = scaled(y)
 				}
-				layoutParams.width = scaled(width).toInt()
-				layoutParams.height = scaled(height).toInt()
+				layoutParams.width = scaled(width)
+				layoutParams.height = scaled(height)
 				c.requestLayout()
 			}
 		}
@@ -131,6 +134,7 @@ class AndroidLightComponents : LightComponents() {
 		}]
 	}
 
+	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		when (type) {
 			LightClickEvent::class.java -> {
@@ -143,8 +147,8 @@ class AndroidLightComponents : LightComponents() {
 				//val ctx = activity as KoruiActivity
 
 				fun send() {
-					val sizeX = scaled_rev((cc.parent as View).width).toInt()
-					val sizeY = scaled_rev((cc.parent as View).height).toInt()
+					val sizeX = scaled_rev((cc.parent as View).width)
+					val sizeY = scaled_rev((cc.parent as View).height)
 					println("LightResizeEvent($sizeX, $sizeY)")
 					handler(LightResizeEvent(sizeX, sizeY) as T)
 				}
@@ -160,7 +164,7 @@ class AndroidLightComponents : LightComponents() {
 			val dialog = AlertDialog.Builder(KorioAndroidContext)
 				.setTitle(message)
 				.setMessage(message)
-				.setPositiveButton(android.R.string.ok) { dialog, which ->
+				.setPositiveButton(android.R.string.ok) { _, _ ->
 					c.resume(Unit)
 				}
 				//.setNegativeButton(android.R.string.no, android.content.DialogInterface.OnClickListener { dialog, which ->

@@ -1,13 +1,20 @@
 package com.soywiz.korui.light
 
+import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.color.Colors
+import com.soywiz.korio.util.Extra
+import com.soywiz.korio.util.extraProperty
 import com.soywiz.korio.vfs.VfsFile
 import java.util.*
 
 open class LightComponents {
-	open fun create(type: LightType): Any = Unit
+	class LightComponentInfo(val handle: Any) : Extra by Extra.Mixin()
+
+	open fun create(type: LightType): LightComponentInfo = LightComponentInfo(Unit)
 	open fun setParent(c: Any, parent: Any?): Unit = Unit
+
+	@Suppress("UNCHECKED_CAST")
 	open protected fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit): Unit = Unit
 
 	var insideEventHandler: Boolean = false; private set
@@ -47,7 +54,7 @@ val defaultLight: LightComponents by lazy {
 }
 
 enum class LightType {
-	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, CHECK_BOX, SCROLL_PANE
+	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, CHECK_BOX, SCROLL_PANE, AGCANVAS
 }
 
 class LightProperty<out T>(val name: String, val default: T) {
@@ -67,3 +74,5 @@ class LightProperty<out T>(val name: String, val default: T) {
 	fun getOrDefault(v: Any?): T = if (v == null) default else v as T
 	override fun toString(): String = "LightProperty[$name]"
 }
+
+var LightComponents.LightComponentInfo.ag: AG? by extraProperty("ag", null)

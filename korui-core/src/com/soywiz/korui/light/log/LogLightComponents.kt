@@ -8,10 +8,10 @@ class LogLightComponents : LightComponents() {
 	val log = arrayListOf<String>()
 	var lastId = 0
 
-	override fun create(type: LightType): Any {
+	override fun create(type: LightType): LightComponentInfo {
 		val id = lastId++
 		log += "create($type)=$id"
-		return id
+		return LightComponentInfo(id)
 	}
 
 	override fun setParent(c: Any, parent: Any?) {
