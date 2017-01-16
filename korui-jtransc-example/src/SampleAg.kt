@@ -10,10 +10,10 @@ import com.soywiz.korui.ui.agCanvas
 
 object SampleAg {
 	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
-		Application().frame("Accelerated Graphics!") {
+		Application().frame("KorAG: Accelerated Graphics!") {
 			agCanvas {
 				//println("clear")
-				ag.clear(Colors.RED)
+				ag.clear(Colors.BLUE)
 
 				val indices = ag.createIndexBuffer(shortArrayOf(0, 1, 2))
 				val vertices = ag.createVertexBuffer(floatArrayOf(

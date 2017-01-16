@@ -2,11 +2,11 @@
 
 package com.soywiz.korui.ui
 
+import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korim.geom.ScaleMode
-import com.soywiz.korio.async.WorkQueue
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.spawnAndForget
@@ -193,6 +193,9 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 
 class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
 	val ag = componentInfo.ag!!
+
+	fun onRender(callback: (ag: AG) -> Unit) {
+	}
 }
 
 class Button(app: Application, text: String) : Component(app, LightType.BUTTON) {
@@ -278,10 +281,7 @@ suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(thi
 
 fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this.app).apply {
 	val canvas = this
-	val renderQueue = WorkQueue()
-	ag.onRender = {
-		callback(canvas)
-	}
+	callback(canvas)
 })
 
 suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.app).apply { image = bitmap; callback.await(this) }) }
