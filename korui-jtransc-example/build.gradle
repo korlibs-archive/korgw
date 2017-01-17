@@ -5,8 +5,8 @@ apply plugin: 'jtransc'
 
 //mainClassName = "Sample1Kt"
 //mainClassName = "Sample6"
-//mainClassName = "SampleSvg"
-mainClassName = "SampleAg"
+mainClassName = "SampleSvg"
+//mainClassName = "SampleAg"
 
 repositories {
     mavenLocal()
@@ -23,8 +23,8 @@ dependencies {
 
 jtransc {
     assets = ["korui-jtransc-example/resources"]
-    //minimizeNames = true
-    minimizeNames = false
+    minimizeNames = true
+    //minimizeNames = false
     treeshaking = true
     //treeshaking = false
 }

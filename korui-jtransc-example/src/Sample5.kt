@@ -23,4 +23,3 @@ fun main(args: Array<String>) = EventLoop.main {
 		}
 	}
 }
-

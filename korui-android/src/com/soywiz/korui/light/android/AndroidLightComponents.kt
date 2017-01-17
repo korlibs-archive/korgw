@@ -47,7 +47,9 @@ class AndroidLightComponents : LightComponents() {
 				TextView(activity)
 			}
 			LightType.TEXT_FIELD -> {
-				EditText(activity)
+				EditText(activity).apply {
+					setSingleLine()
+				}
 			}
 			LightType.CHECK_BOX -> {
 				CheckBox(activity)

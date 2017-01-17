@@ -10,6 +10,8 @@ import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightResizeEvent
 import com.soywiz.korui.light.defaultLight
 import com.soywiz.korui.ui.Frame
+import java.awt.Toolkit
+import javax.swing.SwingUtilities
 
 class Application(val light: LightComponents = defaultLight) {
 	val frames = arrayListOf<Frame>()
@@ -25,6 +27,8 @@ class Application(val light: LightComponents = defaultLight) {
 				for (frame in frames.filter { !it.valid }) {
 					if (!frame.valid) {
 						//println("!!!!!!!!!!relayout")
+						//Toolkit.getDefaultToolkit().setDynamicLayout(false);
+						//println(SwingUtilities.isEventDispatchThread())
 						frame.setBoundsAndRelayout(frame.actualBounds)
 						light.repaint(frame.handle)
 					}

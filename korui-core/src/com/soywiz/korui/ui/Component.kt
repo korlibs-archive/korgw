@@ -57,11 +57,20 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	fun setBoundsInternal(bounds: IRectangle) = setBoundsInternal(bounds.x, bounds.y, bounds.width, bounds.height)
 
 	fun setBoundsInternal(x: Int, y: Int, width: Int, height: Int): IRectangle {
+		//val changed = (actualBounds.x != x || actualBounds.y != y || actualBounds.width != width || actualBounds.height != height)
+		val resized = ((nativeBounds.width != width) || (nativeBounds.height != height))
 		nativeBounds.setTo(x, y, width, height)
+		//println("$actualBounds: $width,$height")
 		actualBounds.setTo(x, y, width, height)
 		lc.setBounds(handle, x, y, width, height)
+		if (resized) {
+			onResized(x, y, width, height)
+		}
 		//invalidateAncestors()
 		return actualBounds
+	}
+
+	protected open fun onResized(x: Int, y: Int, width: Int, height: Int) {
 	}
 
 	open fun recreate() {
@@ -195,6 +204,7 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
 	val ag = componentInfo.ag!!
 
 	fun onRender(callback: (ag: AG) -> Unit) {
+		ag.onRender = callback
 	}
 }
 

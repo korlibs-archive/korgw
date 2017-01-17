@@ -1,8 +1,11 @@
 package korui.soywiz.com.koruiandroidexample1
 
+import android.content.pm.PackageManager
 import android.support.v4.app.ActivityCompat
 import com.soywiz.korim.android.androidShowImage
 import com.soywiz.korim.bitmap.NativeImage
+import com.soywiz.korim.geom.Anchor
+import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korim.vector.format.SVG
 import com.soywiz.korio.async.*
 import com.soywiz.korio.net.ws.WebSocketClient
@@ -19,8 +22,6 @@ import com.soywiz.korui.style.relativeTo
 import com.soywiz.korui.style.right
 import com.soywiz.korui.ui.*
 import java.net.URI
-import android.content.pm.PackageManager
-
 
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
@@ -46,10 +47,6 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 		  Sorry, your browser does not support inline SVG.
 		</svg>
 	""")
-
-	val bmp = NativeImage(512, 512).apply {
-		getContext2d().draw(svg)
-	}
 
 	val requestPermissionSignal = Signal<Boolean>()
 
@@ -100,7 +97,8 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 					}
 					button("show image").click {
 						//androidShowImage(ResourcesVfs["kotlin.png"].readBitmap())
-						androidShowImage(bmp)
+
+						androidShowImage(NativeImage(512, 512, svg))
 					}
 				}
 				val progress = progress(0, 100)
@@ -126,10 +124,10 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 						alert("Not an adult!")
 					}
 				}
-				image(bmp) {
-					height = 10.cm
+				layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.SHOW_ALL) {
+					style.height = 5.cm
+					vectorImage(svg, 512, 512)
 				}
-
 			}
 
 			relative {

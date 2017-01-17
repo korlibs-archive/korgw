@@ -19,7 +19,6 @@ import java.awt.image.BufferedImage
 import java.net.URI
 import java.util.concurrent.CancellationException
 import javax.swing.*
-import javax.swing.border.Border
 import javax.swing.border.EmptyBorder
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
@@ -268,17 +267,21 @@ interface ChildContainer {
 
 class JScrollPane2(override val childContainer: JPanel = JPanel().apply { layout = null }) : JScrollPane(childContainer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER), ChildContainer {
 	init {
+		val unitIncrement = 16
+		verticalScrollBar.unitIncrement = unitIncrement
+		horizontalScrollBar.unitIncrement = unitIncrement
 		border = EmptyBorder(0, 0, 0, 0)
 	}
+
 	override fun paintComponent(g: Graphics) {
 		g.clearRect(0, 0, width, height)
 	}
 }
 
 class JPanel2 : JPanel() {
-	override fun paintComponent(g: Graphics) {
-		//g.clearRect(0, 0, width, height)
-	}
+	//override fun paintComponent(g: Graphics) {
+	//	g.clearRect(0, 0, width, height)
+	//}
 }
 
 class JImage : JComponent() {
