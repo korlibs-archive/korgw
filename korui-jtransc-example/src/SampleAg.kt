@@ -14,8 +14,10 @@ import com.soywiz.korui.geom.len.cm
 import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.style.height
+import com.soywiz.korui.style.width
 import com.soywiz.korui.ui.agCanvas
 import com.soywiz.korui.ui.button
+import com.soywiz.korui.ui.horizontal
 import com.soywiz.korui.ui.vertical
 
 object SampleAg {
@@ -26,42 +28,83 @@ object SampleAg {
 				button("yay!") {
 					height = 1.cm
 				}
-				val canvas = agCanvas {
+				horizontal {
 					height = 100.percent - 1.cm
+					val canvas = agCanvas {
+						width = 100.pt
+						height = 100.percent - 1.cm
 
-					val indices = ag.createIndexBuffer(shortArrayOf(0, 1, 2))
-					val vertices = ag.createVertexBuffer()
+						val indices = ag.createIndexBuffer(shortArrayOf(0, 1, 2))
+						val vertices = ag.createVertexBuffer()
 
-					onRender {
-						vertices.upload(floatArrayOf(
-							0f, 0f,
-							640f, 0f,
-							640f, y
-						))
+						onRender {
+							vertices.upload(floatArrayOf(
+								0f, 0f,
+								640f, 0f,
+								640f, y
+							))
 
-						//println("clear")
-						ag.clear(Colors.BLUE)
+							//println("clear")
+							ag.clear(Colors.BLUE)
 
-						ag.draw(
-							vertices, indices,
-							program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
-							type = AG.DrawType.TRIANGLES,
-							vertexFormat = DefaultShaders.FORMAT_DEBUG,
-							vertexCount = 3,
-							uniforms = mapOf(
-								DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+							ag.draw(
+								vertices, indices,
+								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
+								type = AG.DrawType.TRIANGLES,
+								vertexFormat = DefaultShaders.FORMAT_DEBUG,
+								vertexCount = 3,
+								uniforms = mapOf(
+									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+								)
 							)
-						)
 
-						y--
+							y--
+						}
+					}
+					button("AG") {
+						width = 10.pt
+					}
+					val canvas2 = agCanvas {
+						width = 100.pt
+						height = 100.percent - 1.cm
+
+						val indices = ag.createIndexBuffer(shortArrayOf(0, 1, 2))
+						val vertices = ag.createVertexBuffer()
+
+						onRender {
+							vertices.upload(floatArrayOf(
+								0f, 0f,
+								640f, 0f,
+								640f, y
+							))
+
+							//println("clear")
+							ag.clear(Colors.BLUE)
+
+							ag.draw(
+								vertices, indices,
+								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
+								type = AG.DrawType.TRIANGLES,
+								vertexFormat = DefaultShaders.FORMAT_DEBUG,
+								vertexCount = 3,
+								uniforms = mapOf(
+									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+								)
+							)
+
+							y--
+						}
+					}
+					spawnAndForget {
+						while (true) {
+							sleep(1000 / 60)
+							canvas.repaint()
+							canvas2.repaint()
+						}
 					}
 				}
-				spawnAndForget {
-					while (true) {
-						sleep(1000 / 60)
-						canvas.repaint()
-					}
-				}
+
+
 			}
 		}
 	}

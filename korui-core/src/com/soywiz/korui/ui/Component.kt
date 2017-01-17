@@ -209,8 +209,11 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
 
 	override fun repaint() {
 		ag.repaint()
-		//lc.repaint(handle)
-		//ag.onRender(ag)
+	}
+
+	override fun onResized(x: Int, y: Int, width: Int, height: Int) {
+		super.onResized(x, y, width, height)
+		ag.resized()
 	}
 
 	fun onRender(callback: (ag: AG) -> Unit) {

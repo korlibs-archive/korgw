@@ -334,6 +334,8 @@ class HtmlLightComponents : LightComponents() {
 		childStyle["top"] = "${y}px"
 		childStyle["width"] = "${width}px"
 		childStyle["height"] = "${height}px"
+		child["width"] = width
+		child["height"] = height
 	}
 
 	override fun repaint(c: Any) {
