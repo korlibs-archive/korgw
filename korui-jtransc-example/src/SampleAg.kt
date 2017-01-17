@@ -3,8 +3,11 @@
 import com.soywiz.korag.AG
 import com.soywiz.korag.DefaultShaders
 import com.soywiz.korag.geom.Matrix4
+import com.soywiz.korim.awt.awtShowImageAndWait
 import com.soywiz.korim.color.Colors
 import com.soywiz.korio.async.EventLoop
+import com.soywiz.korio.async.sleep
+import com.soywiz.korio.async.spawnAndForget
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.cm
@@ -18,21 +21,24 @@ import com.soywiz.korui.ui.vertical
 object SampleAg {
 	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
 		Application().frame("KorAG: Accelerated Graphics!") {
+			var y = 480f
 			vertical {
 				button("yay!") {
 					height = 1.cm
 				}
-				agCanvas {
+				val canvas = agCanvas {
 					height = 100.percent - 1.cm
 
 					val indices = ag.createIndexBuffer(shortArrayOf(0, 1, 2))
-					val vertices = ag.createVertexBuffer(floatArrayOf(
-						0f, 0f,
-						640f, 0f,
-						640f, 480f
-					))
+					val vertices = ag.createVertexBuffer()
 
 					onRender {
+						vertices.upload(floatArrayOf(
+							0f, 0f,
+							640f, 0f,
+							640f, y
+						))
+
 						//println("clear")
 						ag.clear(Colors.BLUE)
 
@@ -46,6 +52,14 @@ object SampleAg {
 								DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
 							)
 						)
+
+						y--
+					}
+				}
+				spawnAndForget {
+					while (true) {
+						sleep(1000 / 60)
+						canvas.repaint()
 					}
 				}
 			}

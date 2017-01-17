@@ -65,12 +65,16 @@ open class Component(val app: Application, val type: LightType) : Styled {
 		lc.setBounds(handle, x, y, width, height)
 		if (resized) {
 			onResized(x, y, width, height)
+			repaint()
 		}
 		//invalidateAncestors()
 		return actualBounds
 	}
 
 	protected open fun onResized(x: Int, y: Int, width: Int, height: Int) {
+	}
+
+	open fun repaint() {
 	}
 
 	open fun recreate() {
@@ -202,6 +206,12 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 
 class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
 	val ag = componentInfo.ag!!
+
+	override fun repaint() {
+		ag.repaint()
+		//lc.repaint(handle)
+		//ag.onRender(ag)
+	}
 
 	fun onRender(callback: (ag: AG) -> Unit) {
 		ag.onRender = callback

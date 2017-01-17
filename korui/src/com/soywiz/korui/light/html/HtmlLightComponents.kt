@@ -98,6 +98,7 @@ class HtmlLightComponents : LightComponents() {
 					this["className"] = "FRAME"
 					document["body"].method("appendChild")(this)
 					window["mainFrame"] = this
+					window["mainFrame"]["style"]["visibility"] = "hidden"
 				}
 			}
 			LightType.CONTAINER -> {
@@ -336,6 +337,7 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun repaint(c: Any) {
+		window["mainFrame"]["style"]["visibility"] = "visible"
 	}
 
 	suspend override fun dialogAlert(c: Any, message: String) = suspendCoroutine<Unit> { c ->
