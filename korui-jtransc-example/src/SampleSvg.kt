@@ -15,7 +15,7 @@ object SampleSvg {
 		val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 		val svg = SVG("""
-			<svg height="400" width="450">
+			<svg height="512" width="512">
 			  <path id="lineAB" d="M 100 350 l 150 -300" stroke="red" stroke-width="3" fill="none" />
 			  <path id="lineBC" d="M 250 50 l 150 300" stroke="red" stroke-width="3" fill="none" />
 			  <path d="M 175 200 l 150 0" stroke="green" stroke-width="3" fill="none" />
@@ -102,14 +102,28 @@ object SampleSvg {
 				button("yay!")
 				layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.SHOW_ALL) {
 					height = 50.vmax
-					vectorImage(svg, 512, 512)
+					vectorImage(svg) {
+						click {
+							println("$mouseX, $mouseY")
+						}
+						mouseOver {
+							println("Over: ($mouseX, $mouseY)-($actualWidth, $actualHeight)")
+						}
+						mouseEnter {
+							println("Enter")
+						}
+						mouseExit {
+							println("Exit")
+						}
+					}
 				}
-				button("yay!")
-				inline {
-					vectorImage(svg3, 98, 20)
+				button("yay!") {
 				}
 				inline {
-					vectorImage(svg2, 120, 240)
+					vectorImage(svg3)
+				}
+				inline {
+					vectorImage(svg2)
 				}
 			}
 		}

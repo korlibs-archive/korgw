@@ -7,14 +7,16 @@ import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korim.geom.ScaleMode
+import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
-import com.soywiz.korio.async.spawnAndForget
+import com.soywiz.korio.async.execAndForget
+import com.soywiz.korio.util.Once
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.pt
-import com.soywiz.korui.light.LightClickEvent
+import com.soywiz.korui.light.LightMouseEvent
 import com.soywiz.korui.light.LightProperty
 import com.soywiz.korui.light.LightType
 import com.soywiz.korui.light.ag
@@ -44,6 +46,9 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	var valid = false
 	protected var nativeBounds = IRectangle()
 	val actualBounds: IRectangle = IRectangle()
+
+	val actualWidth: Int get() = actualBounds.width
+	val actualHeight: Int get() = actualBounds.height
 
 	fun <T> setProperty(key: LightProperty<T>, value: T, reset: Boolean = false) {
 		if (reset || (properties[key] != value)) {
@@ -131,13 +136,23 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	var mouseX = 0
 	var mouseY = 0
 
-	fun _onClickHandler(handler: suspend Component.() -> Unit) {
-		lc.setEventHandler<LightClickEvent>(handle) { e ->
-			mouseX = e.x
-			mouseY = e.y
-			spawnAndForget {
-				handler.await(this)
-			}
+	private var mouseEventOnce = Once()
+	val onClick = Signal<Component> { registerMouseEventOnce() }
+	val onOver = Signal<Component> { registerMouseEventOnce() }
+	val onEnter = Signal<Component> { registerMouseEventOnce() }
+	val onExit = Signal<Component> { registerMouseEventOnce() }
+	fun registerMouseEventOnce() = mouseEventOnce {
+		lc.setEventHandler<LightMouseEvent>(handle) { e -> onMouseEvent(e) }
+	}
+
+	protected fun onMouseEvent(e: LightMouseEvent) {
+		mouseX = e.x
+		mouseY = e.y
+		when (e.type) {
+			LightMouseEvent.Type.CLICK -> onClick(this)
+			LightMouseEvent.Type.OVER -> onOver(this)
+			LightMouseEvent.Type.ENTER -> onEnter(this)
+			LightMouseEvent.Type.EXIT -> onExit(this)
 		}
 	}
 
@@ -352,4 +367,7 @@ suspend inline fun Container.scrollPane(callback: suspend ScrollPane.() -> Unit)
 	})
 }
 
-fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { _onClickHandler(handler) }
+fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onClick { handler.execAndForget(this) } }
+fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onOver { handler.execAndForget(this) } }
+fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) = this.apply { onEnter { handler.execAndForget(this) } }
+fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) = this.apply { onExit { handler.execAndForget(this) } }

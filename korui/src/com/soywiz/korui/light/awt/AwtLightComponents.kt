@@ -5,16 +5,12 @@ import com.soywiz.korag.agFactory
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.awt.transferTo
-import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.light.*
 import java.awt.*
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
+import java.awt.event.*
 import java.awt.image.BufferedImage
 import java.net.URI
 import java.util.concurrent.CancellationException
@@ -62,22 +58,41 @@ class AwtLightComponents : LightComponents() {
 	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		when (type) {
-			LightClickEvent::class.java -> {
-				(c as Component).addMouseListener(object : MouseAdapter() {
-					override fun mouseClicked(e: MouseEvent) {
-						EventLoop.queue {
-							handler(LightClickEvent(e.x, e.y) as T)
-						}
+			LightMouseEvent::class.java -> {
+				val cc = c as Component
+				val ev = LightMouseEvent()
+
+				val adapter = object : MouseAdapter() {
+					private fun populate(e: MouseEvent, ev: LightMouseEvent, type: LightMouseEvent.Type) {
+						ev.type = type
+						ev.x = e.x
+						ev.y = e.y
+						ev.buttons = 1 shl e.button
+						ev.isAltDown = e.isAltDown
+						ev.isCtrlDown = e.isControlDown
+						ev.isShiftDown = e.isShiftDown
+						ev.isMetaDown = e.isMetaDown
 					}
-				})
+
+					private fun handle(e: MouseEvent, type: LightMouseEvent.Type) {
+						handler(ev.apply { populate(e, this, type) } as T)
+					}
+
+					override fun mouseClicked(e: MouseEvent) = handle(e, LightMouseEvent.Type.CLICK)
+					override fun mouseMoved(e: MouseEvent) = handle(e, LightMouseEvent.Type.OVER)
+					override fun mouseEntered(e: MouseEvent) = handle(e, LightMouseEvent.Type.ENTER)
+					override fun mouseExited(e: MouseEvent) = handle(e, LightMouseEvent.Type.EXIT)
+				}
+
+				cc.addMouseListener(adapter)
+				cc.addMouseMotionListener(adapter)
+				//cc.addMouseWheelListener(adapter)
 			}
 			LightResizeEvent::class.java -> {
 				fun send() {
 					val cc = (c as JFrame2)
 					val cp = cc.contentPane
-					EventLoop.queue {
-						handler(LightResizeEvent(cp.width, cp.height) as T)
-					}
+					handler(LightResizeEvent(cp.width, cp.height) as T)
 				}
 
 				(c as Frame).addComponentListener(object : ComponentAdapter() {

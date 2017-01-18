@@ -7,15 +7,15 @@ import com.soywiz.korio.async.asyncFun
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.pt
 
-suspend inline fun Container.vectorImage(vector: Context2d.Drawable, width: Int, height: Int) = asyncFun {
+suspend inline fun Container.vectorImage(vector: Context2d.SizedDrawable) = asyncFun {
 	add(VectorImage(this.app).apply {
-		setVector(vector, width, height)
+		setVector(vector, vector.width, vector.height)
 	})
 }
 
-suspend inline fun Container.vectorImage(vector: Context2d.Drawable, width: Int, height: Int, crossinline callback: VectorImage.() -> Unit) = asyncFun {
+suspend inline fun Container.vectorImage(vector: Context2d.SizedDrawable, crossinline callback: VectorImage.() -> Unit) = asyncFun {
 	add(VectorImage(this.app).apply {
-		setVector(vector, width, height)
+		setVector(vector, vector.width, vector.height)
 		callback(this)
 	})
 }

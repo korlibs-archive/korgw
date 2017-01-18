@@ -45,8 +45,20 @@ open class LightComponents {
 
 interface LightEvent
 class LightResizeEvent(var width: Int, var height: Int) : LightEvent
-class LightClickEvent(var x: Int, var y: Int) : LightEvent
-class LightOverEvent(var x: Int, var y: Int) : LightEvent
+class LightMouseEvent(
+	var type: Type = Type.NONE,
+	var x: Int = 0,
+	var y: Int = 0,
+	var buttons: Int = 0,
+	var isShiftDown: Boolean = false,
+	var isCtrlDown: Boolean = false,
+	var isAltDown: Boolean = false,
+	var isMetaDown: Boolean = false
+) : LightEvent {
+	enum class Type {
+		NONE, OVER, CLICK, UP, DOWN, ENTER, EXIT
+	}
+}
 
 val defaultLight: LightComponents by lazy {
 	ServiceLoader.load(LightComponents::class.java).firstOrNull()

@@ -186,18 +186,18 @@ class HtmlLightComponents : LightComponents() {
 
 	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
-		val typeName = when (type) {
-			LightClickEvent::class.java -> "click"
-			LightResizeEvent::class.java -> "resize"
-			else -> "unknown"
-		}
-
 		val node = if (type == LightResizeEvent::class.java) window else c.asJsDynamic()
 
 		when (type) {
-			LightClickEvent::class.java -> {
-				node.method("addEventListener")(typeName, jsFunctionRaw1({ e ->
-					handler(LightClickEvent(e["offsetX"].toInt(), e["offsetY"].toInt()) as T)
+			LightMouseEvent::class.java -> {
+				node.method("addEventListener")("click", jsFunctionRaw1({ e ->
+					handler(LightMouseEvent(LightMouseEvent.Type.CLICK, e["offsetX"].toInt(), e["offsetY"].toInt(), 1) as T)
+				}))
+				node.method("addEventListener")("mouseover", jsFunctionRaw1({ e ->
+					handler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0) as T)
+				}))
+				node.method("addEventListener")("mousemove", jsFunctionRaw1({ e ->
+					handler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0) as T)
 				}))
 			}
 			LightResizeEvent::class.java -> {
@@ -210,7 +210,7 @@ class HtmlLightComponents : LightComponents() {
 				}
 
 				send()
-				node.method("addEventListener")(typeName, jsFunctionRaw1 {
+				node.method("addEventListener")("resize", jsFunctionRaw1 {
 					send()
 				})
 			}

@@ -139,9 +139,9 @@ class AndroidLightComponents : LightComponents() {
 	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		when (type) {
-			LightClickEvent::class.java -> {
+			LightMouseEvent::class.java -> {
 				(c as View).setOnClickListener {
-					handler(LightClickEvent(0, 0) as T)
+					handler(LightMouseEvent(LightMouseEvent.Type.CLICK, 0, 0, 1) as T)
 				}
 			}
 			LightResizeEvent::class.java -> {
