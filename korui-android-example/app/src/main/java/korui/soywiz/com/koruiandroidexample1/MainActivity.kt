@@ -2,8 +2,13 @@ package korui.soywiz.com.koruiandroidexample1
 
 import android.content.pm.PackageManager
 import android.support.v4.app.ActivityCompat
+import com.soywiz.korag.AG
+import com.soywiz.korag.DefaultShaders
+import com.soywiz.korag.geom.Matrix4
+import com.soywiz.korau.sound.readSound
 import com.soywiz.korim.android.androidShowImage
 import com.soywiz.korim.bitmap.NativeImage
+import com.soywiz.korim.color.Colors
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korim.vector.format.SVG
@@ -14,6 +19,7 @@ import com.soywiz.korio.vfs.ResourcesVfs
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.cm
+import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.pt
 import com.soywiz.korui.light.android.KoruiActivity
 import com.soywiz.korui.style.bottom
@@ -27,7 +33,7 @@ import java.net.URI
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
 	val svg = SVG("""
-		<svg height="400" width="450">
+		<svg height="512" width="512">
 		  <path id="lineAB" d="M 100 350 l 150 -300" stroke="red" stroke-width="3" fill="none" />
 		  <path id="lineBC" d="M 250 50 l 150 300" stroke="red" stroke-width="3" fill="none" />
 		  <path d="M 175 200 l 150 0" stroke="green" stroke-width="3" fill="none" />
@@ -124,20 +130,62 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 						alert("Not an adult!")
 					}
 				}
+				var y = 480f
+
+				val canvas2 = agCanvas {
+					//width = 100.pt
+					height = 100.pt
+
+					val vertices = ag.createVertexBuffer()
+
+					onRender {
+						vertices.upload(floatArrayOf(
+								0f, 0f,
+								640f, 0f,
+								640f, y
+						))
+
+						//println("clear")
+						ag.clear(Colors.BLUE)
+
+						ag.draw(
+								vertices,
+								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
+								type = AG.DrawType.TRIANGLES,
+								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
+								vertexCount = 3,
+								uniforms = mapOf(
+										DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+								)
+						)
+					}
+				}
+				spawnAndForget {
+					while (true) {
+						sleep(1000 / 60)
+						canvas2.repaint()
+						y--
+						if (y < 0) y = 480f
+					}
+				}
+
 				layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.SHOW_ALL) {
 					style.height = 5.cm
-					vectorImage(svg, 512, 512)
+					vectorImage(svg)
 				}
 			}
 
 			relative {
-				val hello = button("hello") {
+				val sound = ResourcesVfs["sound.mp3"].readSound()
+				val hello = button("sound") {
 					right = 10.pt
 					bottom = 10.pt
 				}.click {
+					sound.play()
+					alert("Sound length: ${sound.lengthInMs}")
 				}
 
-				val world = button("world") {
+				val world = button("websocket") {
 					relativeTo = hello
 					right = 10.pt
 				}.click {

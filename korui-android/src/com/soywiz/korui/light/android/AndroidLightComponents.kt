@@ -7,6 +7,8 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import com.soywiz.korag.AG
+import com.soywiz.korag.agFactory
 import com.soywiz.korim.android.toAndroidBitmap
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.android.KorioApp
@@ -27,6 +29,7 @@ class AndroidLightComponents : LightComponents() {
 	fun scaled_rev(v: Int): Int = v
 
 	override fun create(type: LightType): LightComponentInfo {
+		var agg: AG? = null
 		val handle = when (type) {
 			LightType.FRAME -> {
 				val view = RootKoruiAbsoluteLayout(activity)
@@ -60,11 +63,18 @@ class AndroidLightComponents : LightComponents() {
 			LightType.IMAGE -> {
 				ImageView(activity)
 			}
+			LightType.AGCANVAS -> {
+				val ag = agFactory.create()
+				agg = ag
+				ag.nativeComponent as View
+			}
 			else -> {
 				View(KorioAndroidContext)
 			}
 		}
-		return LightComponentInfo(handle)
+		return LightComponentInfo(handle).apply {
+			if (agg != null) this.ag = agg!!
+		}
 	}
 
 	override fun setParent(c: Any, parent: Any?) {

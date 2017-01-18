@@ -4,4 +4,5 @@ dependencies {
 	compile project(":korui-core")
 	compile "com.soywiz:korio-android:$korioVersion"
 	compile "com.soywiz:korim-android:$korimVersion"
+	compile "com.soywiz:korag-android:$koragVersion"
 }

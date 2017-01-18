@@ -84,7 +84,7 @@ object SampleAg {
 								vertices, indices,
 								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
 								type = AG.DrawType.TRIANGLES,
-								vertexFormat = DefaultShaders.FORMAT_DEBUG,
+								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
 								vertexCount = 3,
 								uniforms = mapOf(
 									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
@@ -126,7 +126,7 @@ object SampleAg {
 								vertices,
 								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
 								type = AG.DrawType.TRIANGLES,
-								vertexFormat = DefaultShaders.FORMAT_DEBUG,
+								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
 								vertexCount = 3,
 								uniforms = mapOf(
 									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
