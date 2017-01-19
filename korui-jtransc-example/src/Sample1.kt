@@ -13,6 +13,7 @@ import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.Padding
 import com.soywiz.korui.geom.len.percent
 import com.soywiz.korui.geom.len.pt
+import com.soywiz.korui.geom.len.vh
 import com.soywiz.korui.style.*
 import com.soywiz.korui.ui.*
 import java.util.concurrent.CancellationException
@@ -101,8 +102,11 @@ fun main(args: Array<String>) = EventLoop.main {
 				}
 				//loadImage?.setSize(200.pt, 200.pt)
 			}
-			inline {
-				loadImage = image(image)
+			scrollPane {
+				height = 50.vh
+				inline {
+					loadImage = image(image)
+				}
 			}
 		}
 

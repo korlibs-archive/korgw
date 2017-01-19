@@ -62,12 +62,12 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 		//super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 	}
 
-	suspend override fun requestPermission(name: String): Boolean = asyncFun {
+	suspend override fun requestPermission(name: String): Boolean {
 		ActivityCompat.requestPermissions(this, arrayOf("android.permission.WRITE_EXTERNAL_STORAGE"), 0)
 		requestPermissionSignal.waitOne()
 	}
 
-	suspend override fun main(args: Array<String>) = asyncFun {
+	suspend override fun main(args: Array<String>) {
 		val that = this@MainActivity
 
 		val external = ExternalStorageVfs();
@@ -140,23 +140,23 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 
 					onRender {
 						vertices.upload(floatArrayOf(
-								0f, 0f,
-								640f, 0f,
-								640f, y
+							0f, 0f,
+							640f, 0f,
+							640f, y
 						))
 
 						//println("clear")
 						ag.clear(Colors.BLUE)
 
 						ag.draw(
-								vertices,
-								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
-								type = AG.DrawType.TRIANGLES,
-								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
-								vertexCount = 3,
-								uniforms = mapOf(
-										DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
-								)
+							vertices,
+							program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
+							type = AG.DrawType.TRIANGLES,
+							vertexLayout = DefaultShaders.LAYOUT_DEBUG,
+							vertexCount = 3,
+							uniforms = mapOf(
+								DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+							)
 						)
 					}
 				}

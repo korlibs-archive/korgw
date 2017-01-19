@@ -1,7 +1,6 @@
 package com.soywiz.korui
 
 import com.soywiz.korim.bitmap.Bitmap
-import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.sleep
 import com.soywiz.korio.async.spawn
@@ -10,8 +9,6 @@ import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightResizeEvent
 import com.soywiz.korui.light.defaultLight
 import com.soywiz.korui.ui.Frame
-import java.awt.Toolkit
-import javax.swing.SwingUtilities
 
 class Application(val light: LightComponents = defaultLight) {
 	val frames = arrayListOf<Frame>()
@@ -38,7 +35,7 @@ class Application(val light: LightComponents = defaultLight) {
 	}
 }
 
-suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, callback: suspend Frame.() -> Unit = {}): Frame = asyncFun {
+suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, callback: suspend Frame.() -> Unit = {}): Frame {
 	val frame = Frame(this, title).apply {
 		setBoundsInternal(0, 0, width, height)
 	}
@@ -52,5 +49,5 @@ suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480
 	frames += frame
 	frame.visible = true
 	frame.invalidate()
-	frame
+	return frame
 }

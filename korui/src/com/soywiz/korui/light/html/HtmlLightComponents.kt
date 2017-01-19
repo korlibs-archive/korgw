@@ -9,7 +9,6 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.html.HtmlImage
-import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
 import com.soywiz.korio.stream.toAsyncStream
@@ -454,10 +453,10 @@ internal object SelectedFilesVfs : Vfs() {
 				reader.method("readAsArrayBuffer")(slice)
 			}
 
-			suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int = asyncFun {
+			suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
 				val data = _read(jsfile, position.toDouble(), len)
 				System.arraycopy(data, 0, buffer, offset, data.size)
-				data.size
+				return data.size
 			}
 
 			suspend override fun getLength(): Long = jsstat.size.toLong()

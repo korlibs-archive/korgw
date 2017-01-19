@@ -1,24 +1,19 @@
 package com.soywiz.korui.ui
 
-import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.vector.Context2d
-import com.soywiz.korio.async.asyncFun
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.pt
 
-suspend inline fun Container.vectorImage(vector: Context2d.SizedDrawable) = asyncFun {
-	add(VectorImage(this.app).apply {
-		setVector(vector, vector.width, vector.height)
-	})
-}
+suspend fun Container.vectorImage(vector: Context2d.SizedDrawable) = add(VectorImage(this.app).apply {
+	setVector(vector, vector.width, vector.height)
+})
 
-suspend inline fun Container.vectorImage(vector: Context2d.SizedDrawable, crossinline callback: VectorImage.() -> Unit) = asyncFun {
-	add(VectorImage(this.app).apply {
-		setVector(vector, vector.width, vector.height)
-		callback(this)
-	})
-}
+
+suspend inline fun Container.vectorImage(vector: Context2d.SizedDrawable, crossinline callback: VectorImage.() -> Unit) = add(VectorImage(this.app).apply {
+	setVector(vector, vector.width, vector.height)
+	callback(this)
+})
 
 class VectorImage(app: Application) : Container(app, LayeredLayout(app)) {
 	lateinit var d: Context2d.Drawable
@@ -26,7 +21,7 @@ class VectorImage(app: Application) : Container(app, LayeredLayout(app)) {
 	var targetWidth: Int = 512
 	var targetHeight: Int = 512
 
-	suspend fun setVector(d: Context2d.Drawable, width: Int, height: Int) = asyncFun {
+	suspend fun setVector(d: Context2d.Drawable, width: Int, height: Int) {
 		this.d = d
 		this.targetWidth = width
 		this.targetHeight = height

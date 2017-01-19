@@ -8,7 +8,6 @@ import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korio.async.Signal
-import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
 import com.soywiz.korio.util.Once
@@ -201,22 +200,14 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 		this.title = title
 	}
 
-	open suspend fun dialogOpenFile(filter: String = ""): VfsFile = asyncFun {
+	open suspend fun dialogOpenFile(filter: String = ""): VfsFile {
 		if (!lc.insideEventHandler) throw IllegalStateException("Can't open file dialog outside an event")
-		lc.dialogOpenFile(handle, filter)
+		return lc.dialogOpenFile(handle, filter)
 	}
 
-	open suspend fun prompt(message: String): String = asyncFun {
-		lc.dialogPrompt(handle, message)
-	}
-
-	open suspend fun alert(message: String): Unit = asyncFun {
-		lc.dialogAlert(handle, message)
-	}
-
-	open fun openURL(url: String): Unit {
-		lc.openURL(url)
-	}
+	open suspend fun prompt(message: String): String = lc.dialogPrompt(handle, message)
+	open suspend fun alert(message: String): Unit = lc.dialogAlert(handle, message)
+	open fun openURL(url: String): Unit = lc.openURL(url)
 }
 
 class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
@@ -309,11 +300,9 @@ class Image(app: Application) : Component(app, LightType.IMAGE) {
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
 suspend fun Container.button(text: String) = add(Button(this.app, text))
-suspend inline fun Container.button(text: String, callback: suspend Button.() -> Unit) = asyncFun {
-	add(Button(this.app, text).apply {
-		callback.await(this@apply)
-	})
-}
+suspend inline fun Container.button(text: String, callback: suspend Button.() -> Unit): Button = add(Button(this.app, text).apply {
+	callback.await(this@apply)
+})
 
 suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.app, current, max))
 
@@ -322,7 +311,7 @@ fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this.app).a
 	callback(canvas)
 })
 
-suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = asyncFun { add(Image(this.app).apply { image = bitmap; callback.await(this) }) }
+suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = add(Image(this.app).apply { image = bitmap; callback.await(this) })
 suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 	image = bitmap
 	this.style.defaultSize.width = bitmap.width.pt
@@ -331,38 +320,38 @@ suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 
 suspend inline fun Container.spacer() = add(Spacer(this.app))
 
-suspend inline fun Container.label(text: String, callback: suspend Label.() -> Unit = {}) = asyncFun { add(Label(this.app, text).apply { callback.await(this) }) }
+suspend inline fun Container.label(text: String, callback: suspend Label.() -> Unit = {}) = add(Label(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = asyncFun { add(CheckBox(this.app, text, checked).apply { callback.await(this) }) }
+suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = add(CheckBox(this.app, text, checked).apply { callback.await(this) })
 
-suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = asyncFun { add(TextField(this.app, text).apply { callback.await(this) }) }
+suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = add(TextField(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) }) }
-suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.app, LayeredKeepAspectLayout(app, anchor, scaleMode)).apply { callback.await(this) })
+suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) })
+suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, callback: suspend Container.() -> Unit): Container {
+	return add(Container(this.app, LayeredKeepAspectLayout(app, anchor, scaleMode)).apply { callback.await(this) })
 }
 
-suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = asyncFun { add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) }) }
-suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.app, HorizontalLayout(app)).apply {
+suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) })
+suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container {
+	return add(Container(this.app, HorizontalLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
-suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.app, InlineLayout(app)).apply {
+suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Container {
+	return add(Container(this.app, InlineLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
-suspend inline fun Container.relative(callback: suspend Container.() -> Unit): Container = asyncFun {
-	add(Container(this.app, RelativeLayout(app)).apply {
+suspend inline fun Container.relative(callback: suspend Container.() -> Unit): Container {
+	return add(Container(this.app, RelativeLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
-suspend inline fun Container.scrollPane(callback: suspend ScrollPane.() -> Unit): ScrollPane = asyncFun {
-	add(ScrollPane(this.app, ScrollPaneLayout(app)).apply {
+suspend inline fun Container.scrollPane(callback: suspend ScrollPane.() -> Unit): ScrollPane {
+	return add(ScrollPane(this.app, ScrollPaneLayout(app)).apply {
 		callback.await(this)
 	})
 }

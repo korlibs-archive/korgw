@@ -13,12 +13,20 @@ class EventLoopAwt : EventLoop() {
 	}
 
 	override fun setImmediate(handler: () -> Unit) {
-		SwingUtilities.invokeLater { handler() }
+		if (SwingUtilities.isEventDispatchThread()) {
+			handler()
+		} else {
+			SwingUtilities.invokeLater { handler() }
+		}
 	}
 
 	override fun setTimeout(ms: Int, callback: () -> Unit): Closeable {
 		val timer = Timer(ms, {
-			SwingUtilities.invokeLater { callback() }
+			if (SwingUtilities.isEventDispatchThread()) {
+				callback()
+			} else {
+				SwingUtilities.invokeLater { callback() }
+			}
 		})
 		timer.isRepeats = false
 		timer.start()

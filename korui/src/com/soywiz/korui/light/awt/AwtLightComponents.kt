@@ -5,12 +5,14 @@ import com.soywiz.korag.agFactory
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.awt.transferTo
-import com.soywiz.korio.async.asyncFun
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.light.*
 import java.awt.*
-import java.awt.event.*
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.awt.image.BufferedImage
 import java.net.URI
 import java.util.concurrent.CancellationException
@@ -226,25 +228,22 @@ class AwtLightComponents : LightComponents() {
 		} as T
 	}
 
-	suspend override fun dialogAlert(c: Any, message: String) = asyncFun {
+	suspend override fun dialogAlert(c: Any, message: String) {
 		JOptionPane.showMessageDialog(null, message)
 	}
 
-	suspend override fun dialogPrompt(c: Any, message: String): String = asyncFun {
+	suspend override fun dialogPrompt(c: Any, message: String): String {
 		val jpf = JTextField()
 		jpf.addAncestorListener(RequestFocusListener())
 		val result = JOptionPane.showConfirmDialog(null, arrayOf(JLabel(message), jpf), "Reply:", JOptionPane.OK_CANCEL_OPTION)
-		if (result == JFileChooser.APPROVE_OPTION) {
-			jpf.text
-		} else {
-			throw CancellationException()
-		}
+		if (result != JFileChooser.APPROVE_OPTION) throw CancellationException()
+		return jpf.text
 	}
 
-	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = asyncFun {
+	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile {
 		val fd = FileDialog(c as JFrame2, "Open file", FileDialog.LOAD)
 		fd.isVisible = true
-		if (fd.files.isNotEmpty()) {
+		return if (fd.files.isNotEmpty()) {
 			LocalVfs(fd.files.first())
 		} else {
 			throw CancellationException()
@@ -282,6 +281,7 @@ interface ChildContainer {
 
 class JScrollPane2(override val childContainer: JPanel = JPanel().apply { layout = null }) : JScrollPane(childContainer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER), ChildContainer {
 	init {
+		isOpaque = false
 		val unitIncrement = 16
 		verticalScrollBar.unitIncrement = unitIncrement
 		horizontalScrollBar.unitIncrement = unitIncrement
@@ -294,8 +294,15 @@ class JScrollPane2(override val childContainer: JPanel = JPanel().apply { layout
 }
 
 class JPanel2 : JPanel() {
+	init {
+		isOpaque = false
+	}
+
 	//override fun paintComponent(g: Graphics) {
 	//	g.clearRect(0, 0, width, height)
+	//}
+	//override fun paintComponent(g: Graphics) {
+		//g.clearRect(0, 0, width, height)
 	//}
 }
 
