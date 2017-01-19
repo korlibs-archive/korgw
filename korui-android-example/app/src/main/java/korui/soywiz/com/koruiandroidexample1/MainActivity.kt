@@ -64,7 +64,7 @@ class MainActivity : KoruiActivity(), ActivityCompat.OnRequestPermissionsResultC
 
 	suspend override fun requestPermission(name: String): Boolean {
 		ActivityCompat.requestPermissions(this, arrayOf("android.permission.WRITE_EXTERNAL_STORAGE"), 0)
-		requestPermissionSignal.waitOne()
+		return requestPermissionSignal.waitOne()
 	}
 
 	suspend override fun main(args: Array<String>) {
