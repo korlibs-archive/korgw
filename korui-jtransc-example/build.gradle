@@ -6,7 +6,8 @@ apply plugin: 'jtransc'
 //mainClassName = "Sample1Kt"
 //mainClassName = "Sample6"
 //mainClassName = "SampleSvg"
-mainClassName = "SampleAg"
+//mainClassName = "SampleAg"
+mainClassName = "SampleTe"
 
 repositories {
     mavenLocal()
@@ -16,7 +17,8 @@ repositories {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-	compile "com.soywiz:korag:$koragVersion"
+	compile "com.soywiz:korag:$korVersion"
+	compile "com.soywiz:korte:$korVersion"
     compile project(":korui")
     testCompile "junit:junit:4.11"
 }

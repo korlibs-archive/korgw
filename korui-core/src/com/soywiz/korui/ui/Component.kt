@@ -15,10 +15,7 @@ import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.pt
-import com.soywiz.korui.light.LightMouseEvent
-import com.soywiz.korui.light.LightProperty
-import com.soywiz.korui.light.LightType
-import com.soywiz.korui.light.ag
+import com.soywiz.korui.light.*
 import com.soywiz.korui.style.Style
 import com.soywiz.korui.style.Styled
 import kotlin.reflect.KProperty
@@ -141,7 +138,7 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	val onEnter = Signal<Component> { registerMouseEventOnce() }
 	val onExit = Signal<Component> { registerMouseEventOnce() }
 	fun registerMouseEventOnce() = mouseEventOnce {
-		lc.setEventHandler<LightMouseEvent>(handle) { e -> onMouseEvent(e) }
+		lc.setEventHandler<LightMouseEvent>(handle) { onMouseEvent(it) }
 	}
 
 	protected fun onMouseEvent(e: LightMouseEvent) {
@@ -153,6 +150,16 @@ open class Component(val app: Application, val type: LightType) : Styled {
 			LightMouseEvent.Type.ENTER -> onEnter(this)
 			LightMouseEvent.Type.EXIT -> onExit(this)
 		}
+	}
+
+	private var onChangeOnce = Once()
+	val onChange: Signal<Component> = Signal<Component> {
+		val component = this@Component
+		lc.setEventHandler<LightChangeEvent>(handle) { onChangeEvent(it) }
+	}
+
+	protected fun onChangeEvent(e: LightChangeEvent) {
+		onChange(this)
 	}
 
 	var visible by lightProperty(LightProperty.VISIBLE)
@@ -251,6 +258,14 @@ class TextField(app: Application, text: String) : Component(app, LightType.TEXT_
 	}
 }
 
+class TextArea(app: Application, text: String) : Component(app, LightType.TEXT_AREA) {
+	var text by lightProperty(LightProperty.TEXT, getable = true)
+
+	init {
+		this.text = text
+	}
+}
+
 class CheckBox(app: Application, text: String, initialChecked: Boolean) : Component(app, LightType.CHECK_BOX) {
 	var text by lightProperty(LightProperty.TEXT)
 	var checked by lightProperty(LightProperty.CHECKED, getable = true)
@@ -325,6 +340,8 @@ suspend inline fun Container.label(text: String, callback: suspend Label.() -> U
 suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = add(CheckBox(this.app, text, checked).apply { callback.await(this) })
 
 suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = add(TextField(this.app, text).apply { callback.await(this) })
+
+suspend inline fun Container.textArea(text: String = "", callback: suspend TextArea.() -> Unit = {}) = add(TextArea(this.app, text).apply { callback.await(this) })
 
 suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) })
 suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, callback: suspend Container.() -> Unit): Container {

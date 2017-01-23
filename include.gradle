@@ -1,5 +1,5 @@
 group 'com.soywiz'
-version koruiVersion
+version korVersion
 
 buildscript {
 	repositories {
@@ -42,9 +42,9 @@ repositories {
 
 dependencies {
 	compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-	compile "com.soywiz:korio-core:$korioVersion"
-	compile "com.soywiz:korim-core:$korimVersion"
-	compile "com.soywiz:korag-core:$koragVersion"
+	compile "com.soywiz:korio-core:$korVersion"
+	compile "com.soywiz:korim-core:$korVersion"
+	compile "com.soywiz:korag-core:$korVersion"
 	testCompile "junit:junit:4.11"
 }
 

@@ -20,6 +20,8 @@ import javax.swing.*
 import javax.swing.border.EmptyBorder
 import javax.swing.event.AncestorEvent
 import javax.swing.event.AncestorListener
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 import javax.swing.text.JTextComponent
 
 
@@ -44,6 +46,7 @@ class AwtLightComponents : LightComponents() {
 			LightType.PROGRESS -> JProgressBar(0, 100)
 			LightType.LABEL -> JLabel()
 			LightType.TEXT_FIELD -> JTextField()
+			LightType.TEXT_AREA -> JScrollableTextArea()
 			LightType.CHECK_BOX -> JCheckBox()
 			LightType.SCROLL_PANE -> JScrollPane2()
 			LightType.AGCANVAS -> {
@@ -59,7 +62,27 @@ class AwtLightComponents : LightComponents() {
 
 	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
+		val uhandler = handler as (LightEvent) -> Unit
+
 		when (type) {
+			LightChangeEvent::class.java -> {
+				var rc = c as Component
+				if (rc is JScrollableTextArea) rc = rc.textArea
+				val cc = rc as? JTextComponent
+				cc?.document?.addDocumentListener(object : DocumentListener {
+					override fun changedUpdate(e: DocumentEvent?) {
+						uhandler(LightChangeEvent)
+					}
+
+					override fun insertUpdate(e: DocumentEvent?) {
+						uhandler(LightChangeEvent)
+					}
+
+					override fun removeUpdate(e: DocumentEvent?) {
+						uhandler(LightChangeEvent)
+					}
+				})
+			}
 			LightMouseEvent::class.java -> {
 				val cc = c as Component
 				val ev = LightMouseEvent()
@@ -77,7 +100,7 @@ class AwtLightComponents : LightComponents() {
 					}
 
 					private fun handle(e: MouseEvent, type: LightMouseEvent.Type) {
-						handler(ev.apply { populate(e, this, type) } as T)
+						uhandler(ev.apply { populate(e, this, type) })
 					}
 
 					override fun mouseClicked(e: MouseEvent) = handle(e, LightMouseEvent.Type.CLICK)
@@ -94,7 +117,7 @@ class AwtLightComponents : LightComponents() {
 				fun send() {
 					val cc = (c as JFrame2)
 					val cp = cc.contentPane
-					handler(LightResizeEvent(cp.width, cp.height) as T)
+					uhandler(LightResizeEvent(cp.width, cp.height))
 				}
 
 				(c as Frame).addComponentListener(object : ComponentAdapter() {
@@ -156,6 +179,7 @@ class AwtLightComponents : LightComponents() {
 			LightProperty.TEXT -> {
 				val text = key[value]
 				(c as? JLabel)?.text = text
+				(c as? JScrollableTextArea)?.text = text
 				(c as? JTextComponent)?.text = text
 				(c as? AbstractButton)?.text = text
 				(c as? Frame)?.title = text
@@ -220,6 +244,7 @@ class AwtLightComponents : LightComponents() {
 			}
 			LightProperty.TEXT -> {
 				(c as? JLabel)?.text ?:
+					(c as? JScrollableTextArea)?.text ?:
 					(c as? JTextComponent)?.text ?:
 					(c as? AbstractButton)?.text ?:
 					(c as? Frame)?.title
@@ -279,6 +304,12 @@ interface ChildContainer {
 	val childContainer: Container
 }
 
+class JScrollableTextArea(val textArea: JTextArea = JTextArea()) : JScrollPane(textArea) {
+	var text: String get() = textArea.text; set(value) {
+		textArea.text = value
+	}
+}
+
 class JScrollPane2(override val childContainer: JPanel = JPanel().apply { layout = null }) : JScrollPane(childContainer, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER), ChildContainer {
 	init {
 		isOpaque = false
@@ -302,7 +333,7 @@ class JPanel2 : JPanel() {
 	//	g.clearRect(0, 0, width, height)
 	//}
 	//override fun paintComponent(g: Graphics) {
-		//g.clearRect(0, 0, width, height)
+	//g.clearRect(0, 0, width, height)
 	//}
 }
 

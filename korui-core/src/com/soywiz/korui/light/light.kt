@@ -44,6 +44,7 @@ open class LightComponents {
 }
 
 interface LightEvent
+object LightChangeEvent : LightEvent
 class LightResizeEvent(var width: Int, var height: Int) : LightEvent
 class LightMouseEvent(
 	var type: Type = Type.NONE,
@@ -66,7 +67,7 @@ val defaultLight: LightComponents by lazy {
 }
 
 enum class LightType {
-	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, CHECK_BOX, SCROLL_PANE, AGCANVAS
+	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, TEXT_AREA, CHECK_BOX, SCROLL_PANE, AGCANVAS
 }
 
 class LightProperty<out T>(val name: String, val default: T) {

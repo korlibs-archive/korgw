@@ -64,6 +64,10 @@ class HtmlLightComponents : LightComponents() {
 				/*outline: auto 5px -webkit-focus-ring-color;*/
 				outline: auto 1px black;
 			}
+			.TEXT_AREA {
+				white-space: nowrap;
+				resize: none;
+			}
 		""")
 
 		document["body"]["style"]["background"] = "#f0f0f0"
@@ -138,6 +142,12 @@ class HtmlLightComponents : LightComponents() {
 					this["type"] = "text"
 				}
 			}
+			LightType.TEXT_AREA -> {
+				document.method("createElement")("textarea")!!.apply {
+					this["className"] = "TEXT_AREA"
+					//this["type"] = "text"
+				}
+			}
 			LightType.CHECK_BOX -> {
 				document.method("createElement")("label")!!.apply {
 					this["className"] = "CHECK_BOX"
@@ -161,8 +171,14 @@ class HtmlLightComponents : LightComponents() {
 		}.apply {
 			val style = this["style"]
 			style["position"] = "absolute"
-			style["overflow-y"] = if (type == LightType.SCROLL_PANE) "auto" else "hidden"
-			style["overflow-x"] = if (type == LightType.SCROLL_PANE) "hidden" else "hidden"
+
+			val overflow = when (type) {
+				LightType.SCROLL_PANE, LightType.TEXT_AREA, LightType.TEXT_FIELD -> true
+				else -> false
+			}
+
+			style["overflow-y"] = if (overflow) "auto" else "hidden"
+			style["overflow-x"] = if (overflow) "auto" else "hidden"
 			style["left"] = "0px"
 			style["top"] = "0px"
 			style["width"] = "100px"
@@ -185,18 +201,36 @@ class HtmlLightComponents : LightComponents() {
 
 	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
+		val uhandler = handler as (LightEvent) -> Unit
 		val node = if (type == LightResizeEvent::class.java) window else c.asJsDynamic()
 
 		when (type) {
+			LightChangeEvent::class.java -> {
+				node.method("addEventListener")("change", jsFunctionRaw1({ e ->
+					uhandler(LightChangeEvent)
+				}))
+				node.method("addEventListener")("keypress", jsFunctionRaw1({ e ->
+					uhandler(LightChangeEvent)
+				}))
+				node.method("addEventListener")("input", jsFunctionRaw1({ e ->
+					uhandler(LightChangeEvent)
+				}))
+				node.method("addEventListener")("textInput", jsFunctionRaw1({ e ->
+					uhandler(LightChangeEvent)
+				}))
+				node.method("addEventListener")("paste", jsFunctionRaw1({ e ->
+					uhandler(LightChangeEvent)
+				}))
+			}
 			LightMouseEvent::class.java -> {
 				node.method("addEventListener")("click", jsFunctionRaw1({ e ->
-					handler(LightMouseEvent(LightMouseEvent.Type.CLICK, e["offsetX"].toInt(), e["offsetY"].toInt(), 1) as T)
+					uhandler(LightMouseEvent(LightMouseEvent.Type.CLICK, e["offsetX"].toInt(), e["offsetY"].toInt(), 1))
 				}))
 				node.method("addEventListener")("mouseover", jsFunctionRaw1({ e ->
-					handler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0) as T)
+					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
 				}))
 				node.method("addEventListener")("mousemove", jsFunctionRaw1({ e ->
-					handler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0) as T)
+					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
 				}))
 			}
 			LightResizeEvent::class.java -> {
@@ -205,7 +239,7 @@ class HtmlLightComponents : LightComponents() {
 						window["mainFrame"]["style"]["width"] = "${window["innerWidth"].toInt()}px"
 						window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
 					}
-					handler(LightResizeEvent(window["innerWidth"].toInt(), window["innerHeight"].toInt()) as T)
+					uhandler(LightResizeEvent(window["innerWidth"].toInt(), window["innerHeight"].toInt()))
 				}
 
 				send()
@@ -225,7 +259,7 @@ class HtmlLightComponents : LightComponents() {
 				val v = key[value]
 				if (nodeName == "article") {
 					document["title"] = v
-				} else if (nodeName == "input") {
+				} else if (nodeName == "input" || nodeName == "textarea") {
 					child["value"] = v
 				} else {
 					if (child["data-type"].toJavaString() == "checkbox") {
