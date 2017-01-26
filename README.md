@@ -2,8 +2,9 @@
 
 With Korui you can create your UI once, and run it in HTML5, Java AWT and Android.
 
-[![Build Status](https://travis-ci.org/soywiz/korui.svg?branch=master)](https://travis-ci.org/soywiz/korui)
-[![Maven Version](https://img.shields.io/github/tag/soywiz/korui.svg?style=flat&label=maven)](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22korui%22)
+![](https://raw.githubusercontent.com/soywiz/kor/master/logos/128/korui.png)
+
+[All KOR libraries](https://github.com/soywiz/kor)
 
 [KORIO](http://github.com/soywiz/korio) - [KORIM](http://github.com/soywiz/korim) - [KORUI](http://github.com/soywiz/korui)
 
