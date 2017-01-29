@@ -230,7 +230,7 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
 	}
 
 	fun onRender(callback: (ag: AG) -> Unit) {
-		ag.onRender = callback
+		ag.onRender { callback(it) }
 	}
 }
 
