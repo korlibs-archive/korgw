@@ -315,7 +315,7 @@ class Image(app: Application) : Component(app, LightType.IMAGE) {
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
 suspend fun Container.button(text: String) = add(Button(this.app, text))
-suspend inline fun Container.button(text: String, callback: suspend Button.() -> Unit): Button = add(Button(this.app, text).apply {
+suspend inline fun Container.button(text: String, noinline callback: suspend Button.() -> Unit): Button = add(Button(this.app, text).apply {
 	callback.await(this@apply)
 })
 
@@ -326,7 +326,7 @@ fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this.app).a
 	callback(canvas)
 })
 
-suspend inline fun Container.image(bitmap: Bitmap, callback: suspend Image.() -> Unit) = add(Image(this.app).apply { image = bitmap; callback.await(this) })
+suspend inline fun Container.image(bitmap: Bitmap, noinline callback: suspend Image.() -> Unit) = add(Image(this.app).apply { image = bitmap; callback.await(this) })
 suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 	image = bitmap
 	this.style.defaultSize.width = bitmap.width.pt
@@ -335,39 +335,39 @@ suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 
 suspend inline fun Container.spacer() = add(Spacer(this.app))
 
-suspend inline fun Container.label(text: String, callback: suspend Label.() -> Unit = {}) = add(Label(this.app, text).apply { callback.await(this) })
+suspend inline fun Container.label(text: String, noinline callback: suspend Label.() -> Unit = {}) = add(Label(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.checkBox(text: String, checked: Boolean = false, callback: suspend CheckBox.() -> Unit = {}) = add(CheckBox(this.app, text, checked).apply { callback.await(this) })
+suspend inline fun Container.checkBox(text: String, checked: Boolean = false, noinline callback: suspend CheckBox.() -> Unit = {}) = add(CheckBox(this.app, text, checked).apply { callback.await(this) })
 
-suspend inline fun Container.textField(text: String = "", callback: suspend TextField.() -> Unit = {}) = add(TextField(this.app, text).apply { callback.await(this) })
+suspend inline fun Container.textField(text: String = "", noinline callback: suspend TextField.() -> Unit = {}) = add(TextField(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.textArea(text: String = "", callback: suspend TextArea.() -> Unit = {}) = add(TextArea(this.app, text).apply { callback.await(this) })
+suspend inline fun Container.textArea(text: String = "", noinline callback: suspend TextArea.() -> Unit = {}) = add(TextArea(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.layers(callback: suspend Container.() -> Unit): Container = add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) })
-suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, callback: suspend Container.() -> Unit): Container {
+suspend inline fun Container.layers(noinline callback: suspend Container.() -> Unit): Container = add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) })
+suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, noinline callback: suspend Container.() -> Unit): Container {
 	return add(Container(this.app, LayeredKeepAspectLayout(app, anchor, scaleMode)).apply { callback.await(this) })
 }
 
-suspend inline fun Container.vertical(callback: suspend Container.() -> Unit): Container = add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) })
-suspend inline fun Container.horizontal(callback: suspend Container.() -> Unit): Container {
+suspend inline fun Container.vertical(noinline callback: suspend Container.() -> Unit): Container = add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) })
+suspend inline fun Container.horizontal(noinline callback: suspend Container.() -> Unit): Container {
 	return add(Container(this.app, HorizontalLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
-suspend inline fun Container.inline(callback: suspend Container.() -> Unit): Container {
+suspend inline fun Container.inline(noinline callback: suspend Container.() -> Unit): Container {
 	return add(Container(this.app, InlineLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
-suspend inline fun Container.relative(callback: suspend Container.() -> Unit): Container {
+suspend inline fun Container.relative(noinline callback: suspend Container.() -> Unit): Container {
 	return add(Container(this.app, RelativeLayout(app)).apply {
 		callback.await(this)
 	})
 }
 
-suspend inline fun Container.scrollPane(callback: suspend ScrollPane.() -> Unit): ScrollPane {
+suspend inline fun Container.scrollPane(noinline callback: suspend ScrollPane.() -> Unit): ScrollPane {
 	return add(ScrollPane(this.app, ScrollPaneLayout(app)).apply {
 		callback.await(this)
 	})

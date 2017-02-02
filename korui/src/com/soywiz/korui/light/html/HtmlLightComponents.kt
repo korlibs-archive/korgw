@@ -9,6 +9,7 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.bitmap.NativeImage
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.html.HtmlImage
+import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
 import com.soywiz.korio.stream.toAsyncStream
@@ -20,7 +21,6 @@ import com.soywiz.korio.vfs.js.JsStat
 import com.soywiz.korui.light.*
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
-import kotlin.coroutines.suspendCoroutine
 
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
@@ -375,14 +375,14 @@ class HtmlLightComponents : LightComponents() {
 		window["mainFrame"]["style"]["visibility"] = "visible"
 	}
 
-	suspend override fun dialogAlert(c: Any, message: String) = suspendCoroutine<Unit> { c ->
+	suspend override fun dialogAlert(c: Any, message: String) = korioSuspendCoroutine<Unit> { c ->
 		window.getMethod("alert")(message)
 		window.getMethod("setTimeout")({
 			c.resume(Unit)
 		}.toJsDynamic(), 0)
 	}
 
-	suspend override fun dialogPrompt(c: Any, message: String): String = suspendCoroutine { c ->
+	suspend override fun dialogPrompt(c: Any, message: String): String = korioSuspendCoroutine { c ->
 		val result = window.getMethod("prompt")(message).toJavaStringOrNull()
 		window.getMethod("setTimeout")({
 			if (result == null) {
@@ -393,7 +393,7 @@ class HtmlLightComponents : LightComponents() {
 		}.toJsDynamic(), 0)
 	}
 
-	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = suspendCoroutine { continuation ->
+	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = korioSuspendCoroutine { continuation ->
 		val inputFile = window["inputFile"]
 		var completedOnce = false
 		var files = jsArray()
@@ -468,7 +468,7 @@ internal object SelectedFilesVfs : Vfs() {
 		val jsfile = locate(path) ?: throw FileNotFoundException(path)
 		val jsstat = jsstat(jsfile)
 		return object : AsyncStreamBase() {
-			suspend fun _read(jsfile: JsDynamic, position: Double, len: Int): ByteArray = suspendCoroutine { c ->
+			suspend fun _read(jsfile: JsDynamic, position: Double, len: Int): ByteArray = korioSuspendCoroutine { c ->
 				val reader = jsNew("FileReader")
 				val slice = jsfile.method("slice")(position, position + len)
 

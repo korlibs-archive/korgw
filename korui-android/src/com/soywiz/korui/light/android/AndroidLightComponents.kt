@@ -2,6 +2,7 @@
 
 package com.soywiz.korui.light.android
 
+import android.R
 import android.app.AlertDialog
 import android.content.Context
 import android.view.View
@@ -12,8 +13,8 @@ import com.soywiz.korag.agFactory
 import com.soywiz.korim.android.toAndroidBitmap
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.android.KorioApp
+import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korui.light.*
-import kotlin.coroutines.suspendCoroutine
 
 class AndroidLightComponents : LightComponents() {
 	val activity = KorioAndroidContext
@@ -176,18 +177,18 @@ class AndroidLightComponents : LightComponents() {
 		}
 	}
 
-	suspend override fun dialogAlert(c: Any, message: String): Unit = suspendCoroutine { c ->
+	suspend override fun dialogAlert(c: Any, message: String): Unit = korioSuspendCoroutine { c ->
 		KorioAndroidContext.runOnUiThread {
 			val dialog = AlertDialog.Builder(KorioAndroidContext)
 				.setTitle(message)
 				.setMessage(message)
-				.setPositiveButton(android.R.string.ok) { _, _ ->
+				.setPositiveButton(R.string.ok) { _, _ ->
 					c.resume(Unit)
 				}
 				//.setNegativeButton(android.R.string.no, android.content.DialogInterface.OnClickListener { dialog, which ->
 				//	c.resume(false)
 				//})
-				.setIcon(android.R.drawable.ic_dialog_alert)
+				.setIcon(R.drawable.ic_dialog_alert)
 				.setCancelable(false)
 				.show()
 
