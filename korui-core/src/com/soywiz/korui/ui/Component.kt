@@ -207,14 +207,14 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 		this.title = title
 	}
 
-	open suspend fun dialogOpenFile(filter: String = ""): VfsFile {
+	suspend fun dialogOpenFile(filter: String = ""): VfsFile {
 		if (!lc.insideEventHandler) throw IllegalStateException("Can't open file dialog outside an event")
 		return lc.dialogOpenFile(handle, filter)
 	}
 
-	open suspend fun prompt(message: String): String = lc.dialogPrompt(handle, message)
-	open suspend fun alert(message: String): Unit = lc.dialogAlert(handle, message)
-	open fun openURL(url: String): Unit = lc.openURL(url)
+	suspend fun prompt(message: String): String = lc.dialogPrompt(handle, message)
+	suspend fun alert(message: String): Unit = lc.dialogAlert(handle, message)
+	fun openURL(url: String): Unit = lc.openURL(url)
 }
 
 class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {

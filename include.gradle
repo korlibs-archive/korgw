@@ -26,6 +26,8 @@ compileTestJava.options.encoding = 'UTF-8'
 
 sourceCompatibility = 1.5
 
+kotlin { experimental { coroutines 'enable' } }
+
 sourceSets {
 	main.java.srcDirs = ['src']
 	test.java.srcDirs = ['test']

@@ -56,7 +56,9 @@ class AwtLightComponents : LightComponents() {
 			else -> throw UnsupportedOperationException("Type: $type")
 		}
 		return LightComponentInfo(handle).apply {
-			if (agg != null) this.ag = agg!!
+			if (agg != null) {
+				this.ag = agg!!
+			}
 		}
 	}
 

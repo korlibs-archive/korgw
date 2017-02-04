@@ -71,12 +71,12 @@ class HtmlLightComponents : LightComponents() {
 		""")
 
 		document["body"]["style"]["background"] = "#f0f0f0"
-		val inputFile = document.methods["createElement"]("input")
+		val inputFile = document.call("createElement", "input")
 		inputFile["type"] = "file"
 		inputFile["style"]["visibility"] = "hidden"
 		window["inputFile"] = inputFile
 		window["selectedFiles"] = jsArray()
-		document["body"].methods["appendChild"](inputFile)
+		document["body"].call("appendChild", inputFile)
 	}
 
 	fun addStyles(css: String) {
@@ -152,11 +152,11 @@ class HtmlLightComponents : LightComponents() {
 				document.method("createElement")("label")!!.apply {
 					this["className"] = "CHECK_BOX"
 					this["data-type"] = "checkbox"
-					this.methods["appendChild"](document.method("createElement")("input")!!.apply {
+					this.call("appendChild", document.method("createElement")("input")!!.apply {
 						this["className"] = "TEXT_FIELD"
 						this["type"] = "checkbox"
 					})
-					this.methods["appendChild"](document.method("createElement")("span")!!)
+					this.call("appendChild", document.method("createElement")("span")!!)
 				}
 			}
 			LightType.AGCANVAS -> {
@@ -263,7 +263,7 @@ class HtmlLightComponents : LightComponents() {
 					child["value"] = v
 				} else {
 					if (child["data-type"].toJavaString() == "checkbox") {
-						child.methods["querySelector"]("span")["innerText"] = v
+						child.call("querySelector", "span")["innerText"] = v
 					} else {
 						child["innerText"] = v
 					}
@@ -314,7 +314,7 @@ class HtmlLightComponents : LightComponents() {
 			}
 			LightProperty.CHECKED -> {
 				val v = key[value]
-				child.methods["querySelector"]("input[type=checkbox]")["checked"] = v
+				child.call("querySelector", "input[type=checkbox]")["checked"] = v
 			}
 		}
 	}
@@ -328,7 +328,7 @@ class HtmlLightComponents : LightComponents() {
 				return child["value"].toJavaString() as T
 			}
 			LightProperty.CHECKED -> {
-				val input = child.methods["querySelector"]("input[type=checkbox]")
+				val input = child.call("querySelector", "input[type=checkbox]")
 				return input["checked"].toBool() as T
 			}
 		}
@@ -343,9 +343,9 @@ class HtmlLightComponents : LightComponents() {
 		if (bmp != null) {
 			targetCanvas["width"] = bmp["width"]
 			targetCanvas["height"] = bmp["height"]
-			val ctx = targetCanvas.methods["getContext"]("2d")
+			val ctx = targetCanvas.call("getContext", "2d")
 			HtmlImage.htmlCanvasClear(targetCanvas)
-			ctx.methods["drawImage"](bmp, 0, 0)
+			ctx.call("drawImage", bmp, 0, 0)
 		} else {
 			HtmlImage.htmlCanvasClear(targetCanvas)
 		}
@@ -419,7 +419,7 @@ class HtmlLightComponents : LightComponents() {
 		inputFile["onclick"] = jsFunctionRaw1 {
 			document["body"]["onfocus"] = jsFunctionRaw1 {
 				document["body"]["onfocus"] = null
-				global.methods["setTimeout"](jsFunctionRaw1 {
+				global.call("setTimeout", jsFunctionRaw1 {
 					completed()
 				}, 2000)
 			}
@@ -433,11 +433,11 @@ class HtmlLightComponents : LightComponents() {
 			completed()
 		}
 
-		inputFile.methods["click"]()
+		inputFile.call("click")
 	}
 
 	override fun openURL(url: String): Unit {
-		window.methods["open"](url, "_blank")
+		window.call("open", url, "_blank")
 	}
 
 	override fun getDpi(): Double {
