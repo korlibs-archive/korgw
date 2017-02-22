@@ -133,6 +133,8 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	var mouseY = 0
 
 	private var mouseEventOnce = Once()
+	val onUp = Signal<Component> { registerMouseEventOnce() }
+	val onDown = Signal<Component> { registerMouseEventOnce() }
 	val onClick = Signal<Component> { registerMouseEventOnce() }
 	val onOver = Signal<Component> { registerMouseEventOnce() }
 	val onEnter = Signal<Component> { registerMouseEventOnce() }
@@ -146,6 +148,8 @@ open class Component(val app: Application, val type: LightType) : Styled {
 		mouseY = e.y
 		when (e.type) {
 			LightMouseEvent.Type.CLICK -> onClick(this)
+			LightMouseEvent.Type.UP -> onUp(this)
+			LightMouseEvent.Type.DOWN -> onDown(this)
 			LightMouseEvent.Type.OVER -> onOver(this)
 			LightMouseEvent.Type.ENTER -> onEnter(this)
 			LightMouseEvent.Type.EXIT -> onExit(this)

@@ -105,6 +105,8 @@ class AwtLightComponents : LightComponents() {
 						uhandler(ev.apply { populate(e, this, type) })
 					}
 
+					override fun mouseReleased(e: MouseEvent) = handle(e, LightMouseEvent.Type.UP)
+					override fun mousePressed(e: MouseEvent) = handle(e, LightMouseEvent.Type.DOWN)
 					override fun mouseClicked(e: MouseEvent) = handle(e, LightMouseEvent.Type.CLICK)
 					override fun mouseMoved(e: MouseEvent) = handle(e, LightMouseEvent.Type.OVER)
 					override fun mouseEntered(e: MouseEvent) = handle(e, LightMouseEvent.Type.ENTER)

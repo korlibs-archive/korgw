@@ -232,6 +232,12 @@ class HtmlLightComponents : LightComponents() {
 				node.method("addEventListener")("mousemove", jsFunctionRaw1({ e ->
 					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
 				}))
+				node.method("addEventListener")("mouseup", jsFunctionRaw1({ e ->
+					uhandler(LightMouseEvent(LightMouseEvent.Type.UP, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
+				}))
+				node.method("addEventListener")("mousedown", jsFunctionRaw1({ e ->
+					uhandler(LightMouseEvent(LightMouseEvent.Type.DOWN, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
+				}))
 			}
 			LightResizeEvent::class.java -> {
 				fun send() {
