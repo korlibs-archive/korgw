@@ -1,5 +1,7 @@
 package com.soywiz.korui
 
+import com.soywiz.korag.AGContainer
+import com.soywiz.korag.agFactory
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.sleep
@@ -9,6 +11,7 @@ import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightResizeEvent
 import com.soywiz.korui.light.defaultLight
 import com.soywiz.korui.ui.Frame
+import com.soywiz.korui.ui.agCanvas
 
 class Application(val light: LightComponents = defaultLight) {
 	val frames = arrayListOf<Frame>()
@@ -50,4 +53,16 @@ suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480
 	frame.visible = true
 	frame.invalidate()
 	return frame
+}
+
+
+suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, light: LightComponents = defaultLight, callback: suspend (AGContainer) -> Unit = {}): Unit {
+	//if (agFactory.supportsNativeFrame) {
+	//	val win = agFactory.createFastWindow(title, width, height)
+	//	callback(win)
+	//} else {
+		Application(light).frame(title, width, height, icon) {
+			callback(agCanvas())
+		}
+	//}
 }

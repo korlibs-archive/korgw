@@ -3,6 +3,7 @@
 package com.soywiz.korui.ui
 
 import com.soywiz.korag.AG
+import com.soywiz.korag.AGContainer
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.geom.Anchor
 import com.soywiz.korim.geom.IRectangle
@@ -10,6 +11,7 @@ import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
+import com.soywiz.korio.async.mapSignal
 import com.soywiz.korio.util.Once
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.Application
@@ -221,8 +223,12 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 	fun openURL(url: String): Unit = lc.openURL(url)
 }
 
-class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS) {
-	val ag = componentInfo.ag!!
+class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContainer {
+	override val ag = componentInfo.ag!!
+
+	override val onMouseUp get() = onUp.mapSignal { Unit }
+	override val onMouseDown get() = onDown.mapSignal { Unit }
+	override val onMouseOver get() = onOver.mapSignal { Unit }
 
 	override fun repaint() {
 		ag.repaint()
@@ -325,7 +331,9 @@ suspend inline fun Container.button(text: String, noinline callback: suspend But
 
 suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.app, current, max))
 
-fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this.app).apply {
+fun Container.agCanvas() = agCanvas { }
+
+inline fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this.app).apply {
 	val canvas = this
 	callback(canvas)
 })
