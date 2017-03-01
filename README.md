@@ -11,14 +11,7 @@ With Korui you can create your UI once, and run it in HTML5, Java AWT and Androi
 Use with gradle:
 
 ```
-compile "com.soywiz:korui:koruiVersion"
-```
-
-I'm uploading it to bintray and maven central:
-
-For bintray:
-```
-maven { url "https://dl.bintray.com/soywiz/soywiz-maven" }
+compile "com.soywiz:korui:$korVersion"
 ```
 
 ### Online Example:

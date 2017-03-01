@@ -1,13 +1,11 @@
 buildscript {
 	repositories {
 		mavenLocal()
-		maven { url "https://dl.bintray.com/kotlin/kotlin-eap-1.1" }
 		jcenter()
 		mavenCentral()
 	}
 	dependencies {
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-		classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
 		classpath "com.jtransc:jtransc-gradle-plugin:$jtranscVersion"
 	}
 }
