@@ -1,9 +1,9 @@
 import com.soywiz.korim.format.readBitmap
-import com.soywiz.korim.geom.Anchor
-import com.soywiz.korim.geom.ScaleMode
 import com.soywiz.korim.vector.format.SVG
 import com.soywiz.korio.async.EventLoop
 import com.soywiz.korio.vfs.ResourcesVfs
+import com.soywiz.korma.geom.Anchor
+import com.soywiz.korma.geom.ScaleMode
 import com.soywiz.korui.Application
 import com.soywiz.korui.frame
 import com.soywiz.korui.geom.len.vmax

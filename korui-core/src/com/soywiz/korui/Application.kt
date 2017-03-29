@@ -1,7 +1,6 @@
 package com.soywiz.korui
 
 import com.soywiz.korag.AGContainer
-import com.soywiz.korag.agFactory
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.sleep
@@ -61,8 +60,8 @@ suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480
 	//	val win = agFactory.createFastWindow(title, width, height)
 	//	callback(win)
 	//} else {
-		Application(light).frame(title, width, height, icon) {
-			callback(agCanvas())
-		}
+	Application(light).frame(title, width, height, icon) {
+		callback(agCanvas())
+	}
 	//}
 }

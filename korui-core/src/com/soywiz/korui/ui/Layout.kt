@@ -1,14 +1,14 @@
 package com.soywiz.korui.ui
 
-import com.soywiz.korim.geom.Anchor
-import com.soywiz.korim.geom.IRectangle
-import com.soywiz.korim.geom.ScaleMode
+import com.soywiz.korma.geom.Anchor
+import com.soywiz.korma.geom.IRectangle
+import com.soywiz.korma.geom.ScaleMode
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.calcMax
 import com.soywiz.korui.geom.len.percent
-import com.soywiz.korui.geom.len.setBoundsTo
 import com.soywiz.korui.style.*
+import com.soywiz.korui.geom.len.setBoundsTo
 
 open class Layout(val app: Application) {
 	val ctx = app.lengthContext

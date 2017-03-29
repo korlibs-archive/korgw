@@ -1,6 +1,6 @@
 package com.soywiz.korui.style
 
-import com.soywiz.korim.geom.ISize
+import com.soywiz.korma.geom.ISize
 import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.ui.Component
 

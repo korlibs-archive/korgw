@@ -85,8 +85,10 @@ class LightProperty<out T>(val name: String, val default: T) {
 
 	@Suppress("UNCHECKED_CAST")
 	operator fun get(v: Any?): T = v as T
+
 	@Suppress("UNCHECKED_CAST")
 	fun getOrDefault(v: Any?): T = if (v == null) default else v as T
+
 	override fun toString(): String = "LightProperty[$name]"
 }
 

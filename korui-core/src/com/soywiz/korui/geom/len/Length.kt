@@ -1,7 +1,7 @@
 package com.soywiz.korui.geom.len
 
-import com.soywiz.korim.geom.IRectangle
 import com.soywiz.korio.util.clamp
+import com.soywiz.korma.geom.IRectangle
 
 //sealed class Length : Comparable<Length> {
 
