@@ -19,7 +19,7 @@ class Application(val light: LightComponents = defaultLight) {
 	}
 
 	init {
-		println("pixelsPerInch:${lengthContext.pixelsPerInch}")
+		//println("pixelsPerInch:${lengthContext.pixelsPerInch}")
 		spawn {
 			while (true) {
 				sleep(16)
