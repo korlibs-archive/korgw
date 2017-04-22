@@ -12,7 +12,7 @@ import com.soywiz.korio.async.mapSignal
 import com.soywiz.korio.util.Once
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korma.geom.Anchor
-import com.soywiz.korma.geom.IRectangle
+import com.soywiz.korma.geom.RectangleInt
 import com.soywiz.korma.geom.ScaleMode
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
@@ -42,8 +42,8 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	var handle: Any = componentInfo.handle
 	val properties = LinkedHashMap<LightProperty<*>, Any?>()
 	var valid = false
-	protected var nativeBounds = IRectangle()
-	val actualBounds: IRectangle = IRectangle()
+	protected var nativeBounds = RectangleInt()
+	val actualBounds: RectangleInt = RectangleInt()
 
 	val actualWidth: Int get() = actualBounds.width
 	val actualHeight: Int get() = actualBounds.height
@@ -57,9 +57,9 @@ open class Component(val app: Application, val type: LightType) : Styled {
 
 	fun <T> getProperty(key: LightProperty<T>): T = if (key in properties) properties[key] as T else key.default
 
-	fun setBoundsInternal(bounds: IRectangle) = setBoundsInternal(bounds.x, bounds.y, bounds.width, bounds.height)
+	fun setBoundsInternal(bounds: RectangleInt) = setBoundsInternal(bounds.x, bounds.y, bounds.width, bounds.height)
 
-	fun setBoundsInternal(x: Int, y: Int, width: Int, height: Int): IRectangle {
+	fun setBoundsInternal(x: Int, y: Int, width: Int, height: Int): RectangleInt {
 		//val changed = (actualBounds.x != x || actualBounds.y != y || actualBounds.width != width || actualBounds.height != height)
 		val resized = ((nativeBounds.width != width) || (nativeBounds.height != height))
 		nativeBounds.setTo(x, y, width, height)
@@ -119,13 +119,13 @@ open class Component(val app: Application, val type: LightType) : Styled {
 		parent?.invalidateAncestors()
 	}
 
-	open fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): IRectangle {
+	open fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): RectangleInt {
 		if (valid) return actualBounds
 		valid = true
 		return setBoundsInternal(x, y, width, height)
 	}
 
-	fun setBoundsAndRelayout(rect: IRectangle) = setBoundsAndRelayout(rect.x, rect.y, rect.width, rect.height)
+	fun setBoundsAndRelayout(rect: RectangleInt) = setBoundsAndRelayout(rect.x, rect.y, rect.width, rect.height)
 
 	//fun onClick(handler: (LightClickEvent) -> Unit) {
 	//	lc.setEventHandler<LightClickEvent>(handle, handler)
@@ -186,7 +186,7 @@ open class Container(app: Application, var layout: Layout, type: LightType = Lig
 		for (child in children) child.invalidateDescendants()
 	}
 
-	override fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): IRectangle {
+	override fun setBoundsAndRelayout(x: Int, y: Int, width: Int, height: Int): RectangleInt {
 		//println("relayout:$valid")
 		if (valid) return actualBounds
 		//println("$this: relayout")

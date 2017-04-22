@@ -1,14 +1,14 @@
 package com.soywiz.korui.ui
 
 import com.soywiz.korma.geom.Anchor
-import com.soywiz.korma.geom.IRectangle
+import com.soywiz.korma.geom.RectangleInt
 import com.soywiz.korma.geom.ScaleMode
 import com.soywiz.korui.Application
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.geom.len.calcMax
 import com.soywiz.korui.geom.len.percent
+import com.soywiz.korui.geom.len.setNewBoundsTo
 import com.soywiz.korui.style.*
-import com.soywiz.korui.geom.len.setBoundsTo
 
 open class Layout(val app: Application) {
 	val ctx = app.lengthContext
@@ -17,7 +17,7 @@ open class Layout(val app: Application) {
 	//	return out
 	//}
 
-	fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+	fun applyLayout(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
 		ctx.keep {
 			viewportWidth = inoutBounds.width.toDouble()
 			viewportHeight = inoutBounds.height.toDouble()
@@ -25,10 +25,10 @@ open class Layout(val app: Application) {
 		}
 	}
 
-	open protected fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+	open protected fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
 	}
 
-	fun applyLayout(parent: Component, children: Iterable<Component>, x: Int, y: Int, width: Int, height: Int, out: IRectangle = IRectangle()): IRectangle {
+	fun applyLayout(parent: Component, children: Iterable<Component>, x: Int, y: Int, width: Int, height: Int, out: RectangleInt = RectangleInt()): RectangleInt {
 		applyLayout(parent, children, out.setTo(x, y, width, height))
 		return out
 	}
@@ -78,8 +78,8 @@ open class Layout(val app: Application) {
 }
 
 class LayeredLayout(app: Application) : Layout(app) {
-	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
-		val actualBounds = IRectangle().setBoundsTo(
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
+		val actualBounds = RectangleInt().setNewBoundsTo(
 			ctx, inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
@@ -92,8 +92,8 @@ class LayeredLayout(app: Application) : Layout(app) {
 }
 
 class LayeredKeepAspectLayout(app: Application, val anchor: Anchor, val scaleMode: ScaleMode = ScaleMode.SHOW_ALL) : Layout(app) {
-	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
-		val actualBounds = IRectangle().setBoundsTo(
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
+		val actualBounds = RectangleInt().setNewBoundsTo(
 			ctx, inoutBounds,
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
@@ -112,7 +112,7 @@ class LayeredKeepAspectLayout(app: Application, val anchor: Anchor, val scaleMod
 }
 
 abstract class VerticalHorizontalLayout(app: Application, val vertical: Boolean, val scaleMode: ScaleMode2, val resizeContainer: Boolean) : Layout(app) {
-	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
 		//val width2 = width - parent.style.computedPaddingRight.calc(width)
 		//val height2 = height - parent.style.computedPaddingBottom.calc(height)
 
@@ -155,7 +155,7 @@ class HorizontalLayout(app: Application) : VerticalHorizontalLayout(app, vertica
 class ScrollPaneLayout(app: Application) : VerticalHorizontalLayout(app, vertical = true, scaleMode = ScaleMode2.NEVER, resizeContainer = false)
 
 class InlineLayout(app: Application) : Layout(app) {
-	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
 		val posList = genAxisBounds(
 			inoutBounds.width, children,
 			{ this.computedCalcWidth(ctx.setSize(it)) },
@@ -179,7 +179,7 @@ class InlineLayout(app: Application) : Layout(app) {
 }
 
 class RelativeLayout(app: Application) : Layout(app) {
-	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: IRectangle) {
+	override fun applyLayoutInternal(parent: Component, children: Iterable<Component>, inoutBounds: RectangleInt) {
 		val parentWidth = inoutBounds.width
 		val parentHeight = inoutBounds.height
 
@@ -188,7 +188,7 @@ class RelativeLayout(app: Application) : Layout(app) {
 
 		var maxHeight = parentHeight
 
-		fun compute(c: Component): IRectangle {
+		fun compute(c: Component): RectangleInt {
 			if (c in computed) return c.actualBounds
 			computed += c
 			if (c !in childrenSet) return c.actualBounds

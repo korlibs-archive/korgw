@@ -1,6 +1,6 @@
 package com.soywiz.korui.style
 
-import com.soywiz.korma.geom.ISize
+import com.soywiz.korma.geom.SizeInt
 import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.ui.Component
 
@@ -81,7 +81,7 @@ val Styled.computedRight: Length? get() = style.right ?: style.parent?.computedR
 fun Styled.computedCalcWidth(ctx: Length.Context, ignoreBounds: Boolean = false): Int = Length.calc(ctx, computedDefaultWidth, computedWidth, computedMinWidth, computedMaxWidth, ignoreBounds)
 fun Styled.computedCalcHeight(ctx: Length.Context, ignoreBounds: Boolean = false): Int = Length.calc(ctx, computedDefaultHeight, computedHeight, computedMinHeight, computedMaxHeight, ignoreBounds)
 
-fun Styled.computedCalcSize(ctx: Length.Context, size: ISize, out: ISize = ISize(), ignoreBounds: Boolean = false): ISize = out.setTo(
+fun Styled.computedCalcSize(ctx: Length.Context, size: SizeInt, out: SizeInt = SizeInt(), ignoreBounds: Boolean = false): SizeInt = out.setTo(
 	this.computedCalcWidth(ctx.setSize(size.width), ignoreBounds),
 	this.computedCalcHeight(ctx.setSize(size.height), ignoreBounds)
 )

@@ -1,7 +1,7 @@
 package com.soywiz.korui.geom.len
 
 import com.soywiz.korio.util.clamp
-import com.soywiz.korma.geom.IRectangle
+import com.soywiz.korma.geom.RectangleInt
 
 //sealed class Length : Comparable<Length> {
 
@@ -142,14 +142,14 @@ fun Length?.calcMax(ctx: Length.Context, default: Int = ctx.size): Int = this?.c
 //operator fun Length?.minus(that: Length?): Length? = Length.Binop(this, that, "-") { a, b -> a - b }
 operator fun Length?.times(that: Double): Length? = Length.Scale(this, that)
 
-fun IRectangle.setTo(ctx: Length.Context, bounds: IRectangle, x: Length?, y: Length?, width: Length?, height: Length?) = this.setTo(
+fun RectangleInt.setNewTo(ctx: Length.Context, bounds: RectangleInt, x: Length?, y: Length?, width: Length?, height: Length?) = this.setTo(
 	x?.calc(ctx.setSize(bounds.width)) ?: bounds.x,
 	y?.calc(ctx.setSize(bounds.height)) ?: bounds.y,
 	width?.calc(ctx.setSize(bounds.width)) ?: bounds.width,
 	height?.calc(ctx.setSize(bounds.height)) ?: bounds.height
 )
 
-fun IRectangle.setBoundsTo(ctx: Length.Context, bounds: IRectangle, left: Length?, top: Length?, right: Length?, bottom: Length?) = this.setBoundsTo(
+fun RectangleInt.setNewBoundsTo(ctx: Length.Context, bounds: RectangleInt, left: Length?, top: Length?, right: Length?, bottom: Length?) = this.setBoundsTo(
 	left?.calc(ctx.setSize(bounds.width)) ?: bounds.left,
 	top?.calc(ctx.setSize(bounds.height)) ?: bounds.top,
 	right?.calc(ctx.setSize(bounds.width)) ?: bounds.right,
