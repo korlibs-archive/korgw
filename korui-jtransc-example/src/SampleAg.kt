@@ -51,7 +51,8 @@ object SampleAg {
 							ag.clear(Colors.BLUE)
 
 							ag.draw(
-								vertices, indices,
+								vertices,
+								indices = indices,
 								program = DefaultShaders.PROGRAM_DEBUG_WITH_PROJ,
 								type = AG.DrawType.TRIANGLES,
 								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
