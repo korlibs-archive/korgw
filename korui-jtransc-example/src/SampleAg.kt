@@ -21,7 +21,7 @@ import com.soywiz.korui.style.width
 import com.soywiz.korui.ui.*
 
 object SampleAg {
-	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
+	@JvmStatic fun main(args: Array<String>) = EventLoop {
 		Application().frame("KorAG: Accelerated Graphics!", icon = KotlinLogoSvg.raster(0.125)) {
 			var y = 480f
 			vertical {

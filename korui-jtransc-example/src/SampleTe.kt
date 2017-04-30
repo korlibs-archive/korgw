@@ -15,7 +15,7 @@ object SampleTe {
 	lateinit var surname: TextField
 	lateinit var adult: CheckBox
 
-	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
+	@JvmStatic fun main(args: Array<String>) = EventLoop {
 		Application().frame("Korte", icon = KotlinLogoSvg.raster(0.125)) {
 		//Application().frame("Korte") {
 			var template: TextArea? = null

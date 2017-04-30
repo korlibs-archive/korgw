@@ -11,7 +11,7 @@ import com.soywiz.korui.ui.button
 import com.soywiz.korui.ui.click
 import com.soywiz.korui.ui.relative
 
-fun main(args: Array<String>) = EventLoop.main {
+fun main(args: Array<String>) = EventLoop {
 	val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 	Application().frame("Hello Frame!", icon = icon) {

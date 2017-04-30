@@ -3,8 +3,10 @@ package com.soywiz.korui
 import com.soywiz.korag.AGContainer
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.await
-import com.soywiz.korio.async.sleep
+import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.spawn
+import com.soywiz.korio.coroutine.CoroutineContext
+import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightResizeEvent
@@ -12,7 +14,11 @@ import com.soywiz.korui.light.defaultLight
 import com.soywiz.korui.ui.Frame
 import com.soywiz.korui.ui.agCanvas
 
-class Application(val light: LightComponents = defaultLight) {
+suspend fun Application(light: LightComponents = defaultLight) = withCoroutineContext {
+	Application(this@withCoroutineContext, light)
+}
+
+class Application(val coroutineContext: CoroutineContext, val light: LightComponents = defaultLight) {
 	val frames = arrayListOf<Frame>()
 	val lengthContext = Length.Context().apply {
 		pixelsPerInch = light.getDpi()
@@ -20,9 +26,9 @@ class Application(val light: LightComponents = defaultLight) {
 
 	init {
 		//println("pixelsPerInch:${lengthContext.pixelsPerInch}")
-		spawn {
+		spawn(coroutineContext) {
 			while (true) {
-				sleep(16)
+				coroutineContext.eventLoop.sleep(16)
 				for (frame in frames.filter { !it.valid }) {
 					if (!frame.valid) {
 						//println("!!!!!!!!!!relayout")
@@ -55,13 +61,14 @@ suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480
 }
 
 
-suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, light: LightComponents = defaultLight, callback: suspend (AGContainer) -> Unit = {}): Unit {
+suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, light: LightComponents = defaultLight, callback: suspend (AGContainer) -> Unit = {}): Unit = withCoroutineContext {
 	//if (agFactory.supportsNativeFrame) {
 	//	val win = agFactory.createFastWindow(title, width, height)
 	//	callback(win)
 	//} else {
-	Application(light).frame(title, width, height, icon) {
+	Application(this@withCoroutineContext, light).frame(title, width, height, icon) {
 		callback(agCanvas())
 	}
 	//}
+	Unit
 }

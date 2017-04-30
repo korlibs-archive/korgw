@@ -12,7 +12,7 @@ import com.soywiz.korui.style.relativeTo
 import com.soywiz.korui.style.right
 import com.soywiz.korui.ui.*
 
-fun main(args: Array<String>) = EventLoop.main {
+fun main(args: Array<String>) = EventLoop {
 	//val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 	Application().frame("Hello World") {

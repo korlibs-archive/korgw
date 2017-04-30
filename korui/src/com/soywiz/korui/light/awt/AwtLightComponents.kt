@@ -200,7 +200,7 @@ class AwtLightComponents : LightComponents() {
 						} else {
 							if ((image.width != bmp.width) || (image.height != bmp.height)) {
 								//println("*********************** RECREATED NATIVE IMAGE!")
-								image.image = BufferedImage(bmp.width, bmp.height, BufferedImage.TYPE_INT_ARGB)
+								image.image = bmp.toAwt()
 							}
 							bmp.toBMP32().transferTo(image.image!!)
 						}

@@ -18,7 +18,7 @@ import com.soywiz.korui.style.*
 import com.soywiz.korui.ui.*
 import java.util.concurrent.CancellationException
 
-fun main(args: Array<String>) = EventLoop.main {
+fun main(args: Array<String>) = EventLoop {
 	val image = ResourcesVfs["kotlin.png"].readBitmap()
 
 	//val url = UrlVfs("http://127.0.0.1")

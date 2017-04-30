@@ -16,7 +16,7 @@ object Sample6 {
 	lateinit var surname: TextField
 	lateinit var adult: CheckBox
 
-	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
+	@JvmStatic fun main(args: Array<String>) = EventLoop {
 		val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 		Application().frame("Hello World", icon = icon) {

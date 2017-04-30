@@ -23,6 +23,7 @@ import com.soywiz.korui.style.Styled
 import kotlin.reflect.KProperty
 
 open class Component(val app: Application, val type: LightType) : Styled {
+	val coroutineContext = app.coroutineContext
 	val lc = app.light
 
 	class lightProperty<T>(val key: LightProperty<T>, val getable: Boolean = false, val setHandler: ((v: T) -> Unit)? = null) {
@@ -385,7 +386,7 @@ suspend inline fun Container.scrollPane(noinline callback: suspend ScrollPane.()
 	})
 }
 
-fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onClick { handler.execAndForget(this) } }
-fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onOver { handler.execAndForget(this) } }
-fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) = this.apply { onEnter { handler.execAndForget(this) } }
-fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) = this.apply { onExit { handler.execAndForget(this) } }
+fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onClick { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onOver { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) = this.apply { onEnter { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) = this.apply { onExit { handler.execAndForget(coroutineContext, this) } }

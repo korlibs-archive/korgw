@@ -11,7 +11,7 @@ import com.soywiz.korui.style.height
 import com.soywiz.korui.ui.*
 
 object SampleSvg {
-	@JvmStatic fun main(args: Array<String>) = EventLoop.main {
+	@JvmStatic fun main(args: Array<String>) = EventLoop {
 		val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 		val svg = SVG("""

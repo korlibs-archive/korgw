@@ -8,7 +8,7 @@ import com.soywiz.korui.frame
 import com.soywiz.korui.ui.image
 import com.soywiz.korui.ui.layersKeepAspectRatio
 
-fun main(args: Array<String>) = EventLoop.main {
+fun main(args: Array<String>) = EventLoop {
 	val icon = ResourcesVfs["kotlin.png"].readBitmap()
 
 	Application().frame("Hello World", icon = icon) {
