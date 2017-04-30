@@ -14,7 +14,7 @@ class EventLoopFactoryAwt : EventLoopFactory() {
 }
 
 class EventLoopAwt : EventLoop() {
-	override fun setImmediate(handler: () -> Unit) {
+	override fun setImmediateInternal(handler: () -> Unit) {
 		if (SwingUtilities.isEventDispatchThread()) {
 			handler()
 		} else {
@@ -22,7 +22,7 @@ class EventLoopAwt : EventLoop() {
 		}
 	}
 
-	override fun setTimeout(ms: Int, callback: () -> Unit): Closeable {
+	override fun setTimeoutInternal(ms: Int, callback: () -> Unit): Closeable {
 		val timer = Timer(ms, {
 			if (SwingUtilities.isEventDispatchThread()) {
 				callback()
@@ -35,7 +35,7 @@ class EventLoopAwt : EventLoop() {
 		return Closeable { timer.stop() }
 	}
 
-	override fun setInterval(ms: Int, callback: () -> Unit): Closeable {
+	override fun setIntervalInternal(ms: Int, callback: () -> Unit): Closeable {
 		val timer = Timer(ms, {
 			if (SwingUtilities.isEventDispatchThread()) {
 				callback()
