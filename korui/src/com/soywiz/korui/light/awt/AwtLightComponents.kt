@@ -9,10 +9,7 @@ import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.light.*
 import java.awt.*
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
+import java.awt.event.*
 import java.awt.image.BufferedImage
 import java.net.URI
 import java.util.concurrent.CancellationException
@@ -116,6 +113,33 @@ class AwtLightComponents : LightComponents() {
 				cc.addMouseListener(adapter)
 				cc.addMouseMotionListener(adapter)
 				//cc.addMouseWheelListener(adapter)
+			}
+			LightKeyEvent::class.java -> {
+				val cc = c as Component
+				val ev = LightKeyEvent()
+
+				val adapter = object : KeyAdapter() {
+					private fun populate(e: KeyEvent, ev: LightKeyEvent, type: LightKeyEvent.Type) {
+						ev.type = type
+						ev.keyCode = e.keyCode
+					}
+
+					private fun handle(e: KeyEvent, type: LightKeyEvent.Type) {
+						uhandler(ev.apply { populate(e, this, type) })
+					}
+
+					override fun keyTyped(e: KeyEvent) = handle(e, LightKeyEvent.Type.TYPED)
+					override fun keyPressed(e: KeyEvent) = handle(e, LightKeyEvent.Type.DOWN)
+					override fun keyReleased(e: KeyEvent) = handle(e, LightKeyEvent.Type.UP)
+				}
+
+				cc.addKeyListener(adapter)
+			}
+			LightGamepadEvent::class.java -> {
+				val cc = c as Component
+				val ev = LightGamepadEvent()
+
+				// @TODO
 			}
 			LightResizeEvent::class.java -> {
 				fun send() {

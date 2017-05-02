@@ -4,11 +4,11 @@ package com.soywiz.korui.ui
 
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGContainer
+import com.soywiz.korag.AGInput
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
-import com.soywiz.korio.async.mapSignal
 import com.soywiz.korio.util.Once
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korma.geom.Anchor
@@ -136,26 +136,60 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	var mouseY = 0
 
 	private var mouseEventOnce = Once()
-	val onUp = Signal<Component> { registerMouseEventOnce() }
-	val onDown = Signal<Component> { registerMouseEventOnce() }
-	val onClick = Signal<Component> { registerMouseEventOnce() }
-	val onOver = Signal<Component> { registerMouseEventOnce() }
-	val onEnter = Signal<Component> { registerMouseEventOnce() }
-	val onExit = Signal<Component> { registerMouseEventOnce() }
+	private var keyEventOnce = Once()
+	private var gamepadEventOnce = Once()
+
+	val onMouseUp = Signal<LightMouseEvent> { registerMouseEventOnce() }
+	val onMouseDown = Signal<LightMouseEvent> { registerMouseEventOnce() }
+	val onMouseClick = Signal<LightMouseEvent> { registerMouseEventOnce() }
+	val onMouseOver = Signal<LightMouseEvent> { registerMouseEventOnce() }
+	val onMouseEnter = Signal<LightMouseEvent> { registerMouseEventOnce() }
+	val onMouseExit = Signal<LightMouseEvent> { registerMouseEventOnce() }
+
+	val onKeyTyped = Signal<LightKeyEvent> { registerKeyEventOnce() }
+	val onKeyDown = Signal<LightKeyEvent> { registerKeyEventOnce() }
+	val onKeyUp = Signal<LightKeyEvent> { registerKeyEventOnce() }
+
+	val onGamepadDown = Signal<LightGamepadEvent> { registerGamepadEventOnce() }
+	val onGamepadUp = Signal<LightGamepadEvent> { registerGamepadEventOnce() }
+
 	fun registerMouseEventOnce() = mouseEventOnce {
 		lc.setEventHandler<LightMouseEvent>(handle) { onMouseEvent(it) }
+	}
+
+	fun registerKeyEventOnce() = keyEventOnce {
+		lc.setEventHandler<LightKeyEvent>(handle) { onKeyEvent(it) }
+	}
+
+	fun registerGamepadEventOnce() = gamepadEventOnce {
+		lc.setEventHandler<LightGamepadEvent>(handle) { onGamepadEvent(it) }
+	}
+
+	protected fun onGamepadEvent(e: LightGamepadEvent) {
+		when (e.type) {
+			LightGamepadEvent.Type.DOWN -> onGamepadDown(e)
+			LightGamepadEvent.Type.UP -> onGamepadUp(e)
+		}
+	}
+
+	protected fun onKeyEvent(e: LightKeyEvent) {
+		when (e.type) {
+			LightKeyEvent.Type.TYPED -> onKeyTyped(e)
+			LightKeyEvent.Type.DOWN -> onKeyDown(e)
+			LightKeyEvent.Type.UP -> onKeyUp(e)
+		}
 	}
 
 	protected fun onMouseEvent(e: LightMouseEvent) {
 		mouseX = e.x
 		mouseY = e.y
 		when (e.type) {
-			LightMouseEvent.Type.CLICK -> onClick(this)
-			LightMouseEvent.Type.UP -> onUp(this)
-			LightMouseEvent.Type.DOWN -> onDown(this)
-			LightMouseEvent.Type.OVER -> onOver(this)
-			LightMouseEvent.Type.ENTER -> onEnter(this)
-			LightMouseEvent.Type.EXIT -> onExit(this)
+			LightMouseEvent.Type.CLICK -> onMouseClick(e)
+			LightMouseEvent.Type.UP -> onMouseUp(e)
+			LightMouseEvent.Type.DOWN -> onMouseDown(e)
+			LightMouseEvent.Type.OVER -> onMouseOver(e)
+			LightMouseEvent.Type.ENTER -> onMouseEnter(e)
+			LightMouseEvent.Type.EXIT -> onMouseExit(e)
 		}
 	}
 
@@ -227,9 +261,26 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContainer {
 	override val ag = componentInfo.ag!!
 
-	override val onMouseUp get() = onUp.mapSignal { Unit }
-	override val onMouseDown get() = onDown.mapSignal { Unit }
-	override val onMouseOver get() = onOver.mapSignal { Unit }
+	override val agInput: AGInput = AGInput()
+
+	private fun updateMouse(e: LightMouseEvent) {
+		agInput.mouseEvent.x = e.x
+		agInput.mouseEvent.y = e.y
+	}
+
+	private fun updateKey(e: LightKeyEvent) {
+		agInput.keyEvent.keyCode = e.keyCode
+	}
+
+	init {
+		onMouseUp { updateMouse(it); agInput.onMouseUp(agInput.mouseEvent) }
+		onMouseDown { updateMouse(it); agInput.onMouseDown(agInput.mouseEvent) }
+		onMouseOver { updateMouse(it); agInput.onMouseOver(agInput.mouseEvent) }
+
+		onKeyDown { updateKey(it); agInput.onKeyDown(agInput.keyEvent) }
+		onKeyUp { updateKey(it); agInput.onKeyUp(agInput.keyEvent) }
+		onKeyTyped { updateKey(it); agInput.onKeyTyped(agInput.keyEvent) }
+	}
 
 	override fun repaint() {
 		ag.repaint()
@@ -386,7 +437,7 @@ suspend inline fun Container.scrollPane(noinline callback: suspend ScrollPane.()
 	})
 }
 
-fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onClick { handler.execAndForget(coroutineContext, this) } }
-fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onOver { handler.execAndForget(coroutineContext, this) } }
-fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) = this.apply { onEnter { handler.execAndForget(coroutineContext, this) } }
-fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) = this.apply { onExit { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onMouseClick { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onMouseOver { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) = this.apply { onMouseEnter { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) = this.apply { onMouseExit { handler.execAndForget(coroutineContext, this) } }

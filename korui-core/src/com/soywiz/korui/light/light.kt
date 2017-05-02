@@ -46,6 +46,27 @@ open class LightComponents {
 interface LightEvent
 object LightChangeEvent : LightEvent
 class LightResizeEvent(var width: Int, var height: Int) : LightEvent
+
+class LightKeyEvent(
+	var type: Type = Type.NONE,
+	var keyCode: Int = 0
+) : LightEvent {
+	enum class Type {
+		NONE, TYPED, DOWN, UP
+	}
+}
+
+class LightGamepadEvent(
+	var type: Type = Type.NONE,
+	var button: Int = 0,
+	var buttons: Int = 0,
+	val axis: DoubleArray = DoubleArray(16)
+) : LightEvent {
+	enum class Type {
+		NONE, DOWN, UP
+	}
+}
+
 class LightMouseEvent(
 	var type: Type = Type.NONE,
 	var x: Int = 0,

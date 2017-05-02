@@ -239,6 +239,17 @@ class HtmlLightComponents : LightComponents() {
 					uhandler(LightMouseEvent(LightMouseEvent.Type.DOWN, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
 				}))
 			}
+			LightKeyEvent::class.java -> {
+				node.method("addEventListener")("keydown", jsFunctionRaw1({ e ->
+					uhandler(LightKeyEvent(LightKeyEvent.Type.DOWN, e["keyCode"].toInt()))
+				}))
+				node.method("addEventListener")("keyup", jsFunctionRaw1({ e ->
+					uhandler(LightKeyEvent(LightKeyEvent.Type.UP, e["keyCode"].toInt()))
+				}))
+				node.method("addEventListener")("keypress", jsFunctionRaw1({ e ->
+					uhandler(LightKeyEvent(LightKeyEvent.Type.TYPED, e["keyCode"].toInt()))
+				}))
+			}
 			LightResizeEvent::class.java -> {
 				fun send() {
 					if (window["mainFrame"] != null) {
