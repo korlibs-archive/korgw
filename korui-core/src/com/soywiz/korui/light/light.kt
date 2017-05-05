@@ -3,10 +3,17 @@ package com.soywiz.korui.light
 import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.color.Colors
+import com.soywiz.korio.service.Services
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.extraProperty
 import com.soywiz.korio.vfs.VfsFile
-import java.util.*
+import java.io.File
+import java.net.URI
+import java.net.URL
+
+abstract class LightComponentsFactory : Services.Impl() {
+	abstract fun create(): LightComponents
+}
 
 open class LightComponents {
 	class LightComponentInfo(val handle: Any) : Extra by Extra.Mixin()
@@ -41,6 +48,7 @@ open class LightComponents {
 	open suspend fun dialogPrompt(c: Any, message: String): String = throw UnsupportedOperationException()
 	open suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = throw UnsupportedOperationException()
 	open fun openURL(url: String): Unit = Unit
+	open fun open(file: File): Unit = openURL(file.toURI().toString())
 }
 
 interface LightEvent
@@ -82,10 +90,8 @@ class LightMouseEvent(
 	}
 }
 
-val defaultLight: LightComponents by lazy {
-	ServiceLoader.load(LightComponents::class.java).firstOrNull()
-		?: throw UnsupportedOperationException("LightComponents not defined")
-}
+val defaultLightFactory: LightComponentsFactory by lazy { Services.load<LightComponentsFactory>() }
+val defaultLight: LightComponents by lazy { defaultLightFactory.create() }
 
 enum class LightType {
 	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, TEXT_AREA, CHECK_BOX, SCROLL_PANE, AGCANVAS

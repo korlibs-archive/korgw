@@ -2,6 +2,7 @@
 
 package com.soywiz.korui.light.html
 
+import com.jtransc.JTranscSystem
 import com.jtransc.js.*
 import com.soywiz.korag.AG
 import com.soywiz.korag.agFactory
@@ -21,6 +22,11 @@ import com.soywiz.korio.vfs.js.JsStat
 import com.soywiz.korui.light.*
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
+
+class HtmlLightComponentsFactory : LightComponentsFactory() {
+	override val available: Boolean = JTranscSystem.isJs()
+	override fun create(): LightComponents = HtmlLightComponents()
+}
 
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {

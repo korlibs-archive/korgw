@@ -11,6 +11,7 @@ import com.soywiz.korui.light.*
 import java.awt.*
 import java.awt.event.*
 import java.awt.image.BufferedImage
+import java.io.File
 import java.net.URI
 import java.util.concurrent.CancellationException
 import javax.swing.*
@@ -21,6 +22,9 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.JTextComponent
 
+class AwtLightComponentsFactory : LightComponentsFactory() {
+	override fun create(): LightComponents = AwtLightComponents()
+}
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class AwtLightComponents : LightComponents() {
@@ -308,8 +312,11 @@ class AwtLightComponents : LightComponents() {
 	}
 
 	override fun openURL(url: String): Unit {
-		val desktop = Desktop.getDesktop()
-		desktop.browse(URI(url))
+		Desktop.getDesktop().browse(URI(url))
+	}
+
+	override fun open(file: File): Unit {
+		Desktop.getDesktop().open(file)
 	}
 
 	override fun getDpi(): Double {

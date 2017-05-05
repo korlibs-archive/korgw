@@ -16,6 +16,10 @@ import com.soywiz.korio.android.KorioApp
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korui.light.*
 
+class AndroidLightComponentsFactory : LightComponentsFactory() {
+	override fun create(): LightComponents = AndroidLightComponents()
+}
+
 class AndroidLightComponents : LightComponents() {
 	val activity = KorioAndroidContext
 	//val scale = KorioAndroidContext.resources.displayMetrics.density
