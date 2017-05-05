@@ -29,8 +29,9 @@ class AwtLightComponentsFactory : LightComponentsFactory() {
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class AwtLightComponents : LightComponents() {
 	init {
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-		//UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName())
+		if (UIManager.getLookAndFeel().name == UIManager.getCrossPlatformLookAndFeelClassName()) {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
+		}
 	}
 
 	override fun create(type: LightType): LightComponentInfo {
