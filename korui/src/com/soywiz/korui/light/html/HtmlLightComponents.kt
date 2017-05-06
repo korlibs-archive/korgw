@@ -278,7 +278,7 @@ class HtmlLightComponents : LightComponents() {
 					val touches = e["changedTouches"]
 					for (n in 0 until touches["length"].toInt()) {
 						val touch = touches[n]
-						uhandlerLog(touchEvent.apply {
+						uhandler(touchEvent.apply {
 							this.type = type
 							this.x = (touch["pageX"].toInt() * devicePixelRatio).toInt()
 							this.y = (touch["pageY"].toInt() * devicePixelRatio).toInt()
