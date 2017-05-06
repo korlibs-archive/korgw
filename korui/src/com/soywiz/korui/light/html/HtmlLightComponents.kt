@@ -244,6 +244,24 @@ class HtmlLightComponents : LightComponents() {
 				node.method("addEventListener")("mousedown", jsFunctionRaw1({ e ->
 					uhandler(LightMouseEvent(LightMouseEvent.Type.DOWN, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
 				}))
+
+				// Touch
+				node.method("addEventListener")("touchstart", jsFunctionRaw1({ e ->
+					val e2 = e["changedTouches"][0]
+					uhandler(LightMouseEvent(LightMouseEvent.Type.DOWN, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
+					e.call("preventDefault")
+				}))
+				node.method("addEventListener")("touchend", jsFunctionRaw1({ e ->
+					val e2 = e["changedTouches"][0]
+					//uhandler(LightMouseEvent(LightMouseEvent.Type.UP, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
+					uhandler(LightMouseEvent(LightMouseEvent.Type.UP, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
+					e.call("preventDefault")
+				}))
+				node.method("addEventListener")("touchmove", jsFunctionRaw1({ e ->
+					val e2 = e["changedTouches"][0]
+					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
+					e.call("preventDefault")
+				}))
 			}
 			LightKeyEvent::class.java -> {
 				node.method("addEventListener")("keydown", jsFunctionRaw1({ e ->
