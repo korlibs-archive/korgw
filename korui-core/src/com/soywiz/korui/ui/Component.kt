@@ -137,6 +137,7 @@ open class Component(val app: Application, val type: LightType) : Styled {
 
 	private var mouseEventOnce = Once()
 	private var keyEventOnce = Once()
+	private var touchEventOnce = Once()
 	private var gamepadEventOnce = Once()
 
 	val onMouseUp = Signal<LightMouseEvent> { registerMouseEventOnce() }
@@ -150,6 +151,10 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	val onKeyDown = Signal<LightKeyEvent> { registerKeyEventOnce() }
 	val onKeyUp = Signal<LightKeyEvent> { registerKeyEventOnce() }
 
+	val onTouchStart = Signal<LightTouchEvent> { registerTouchEventOnce() }
+	val onTouchEnd = Signal<LightTouchEvent> { registerTouchEventOnce() }
+	val onTouchMove = Signal<LightTouchEvent> { registerTouchEventOnce() }
+
 	val onGamepadDown = Signal<LightGamepadEvent> { registerGamepadEventOnce() }
 	val onGamepadUp = Signal<LightGamepadEvent> { registerGamepadEventOnce() }
 
@@ -159,6 +164,10 @@ open class Component(val app: Application, val type: LightType) : Styled {
 
 	fun registerKeyEventOnce() = keyEventOnce {
 		lc.setEventHandler<LightKeyEvent>(handle) { onKeyEvent(it) }
+	}
+
+	fun registerTouchEventOnce() = touchEventOnce {
+		lc.setEventHandler<LightTouchEvent>(handle) { onTouchEvent(it) }
 	}
 
 	fun registerGamepadEventOnce() = gamepadEventOnce {
@@ -177,6 +186,14 @@ open class Component(val app: Application, val type: LightType) : Styled {
 			LightKeyEvent.Type.TYPED -> onKeyTyped(e)
 			LightKeyEvent.Type.DOWN -> onKeyDown(e)
 			LightKeyEvent.Type.UP -> onKeyUp(e)
+		}
+	}
+
+	protected fun onTouchEvent(e: LightTouchEvent) {
+		when (e.type) {
+			LightTouchEvent.Type.START -> onTouchStart(e)
+			LightTouchEvent.Type.END -> onTouchEnd(e)
+			LightTouchEvent.Type.MOVE -> onTouchMove(e)
 		}
 	}
 
@@ -272,6 +289,12 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 		agInput.keyEvent.keyCode = e.keyCode
 	}
 
+	private fun updateTouch(e: LightTouchEvent) {
+		agInput.touchEvent.id = e.id
+		agInput.touchEvent.x = e.x
+		agInput.touchEvent.y = e.y
+	}
+
 	init {
 		onMouseUp { updateMouse(it); agInput.onMouseUp(agInput.mouseEvent) }
 		onMouseDown { updateMouse(it); agInput.onMouseDown(agInput.mouseEvent) }
@@ -280,6 +303,10 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 		onKeyDown { updateKey(it); agInput.onKeyDown(agInput.keyEvent) }
 		onKeyUp { updateKey(it); agInput.onKeyUp(agInput.keyEvent) }
 		onKeyTyped { updateKey(it); agInput.onKeyTyped(agInput.keyEvent) }
+
+		onTouchStart { updateTouch(it); agInput.onTouchStart(agInput.touchEvent) }
+		onTouchEnd { updateTouch(it); agInput.onTouchEnd(agInput.touchEvent) }
+		onTouchMove { updateTouch(it); agInput.onTouchMove(agInput.touchEvent) }
 	}
 
 	override fun repaint() {

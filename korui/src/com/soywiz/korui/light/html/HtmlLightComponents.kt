@@ -14,6 +14,7 @@ import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
 import com.soywiz.korio.stream.toAsyncStream
+import com.soywiz.korio.util.clamp
 import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
@@ -30,6 +31,14 @@ class HtmlLightComponentsFactory : LightComponentsFactory() {
 
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
+	val tDevicePixelRatio = window["devicePixelRatio"].toDouble();
+	val devicePixelRatio = when {
+		tDevicePixelRatio <= 0.0 -> 1.0
+		tDevicePixelRatio.isNaN() -> 1.0
+		tDevicePixelRatio.isInfinite() -> 1.0
+		else -> tDevicePixelRatio
+	}
+
 	init {
 		addStyles("""
 			body {
@@ -205,10 +214,18 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
+	val mouseEvent = LightMouseEvent()
+	val touchEvent = LightTouchEvent()
+
 	@Suppress("UNCHECKED_CAST")
 	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
 		val uhandler = handler as (LightEvent) -> Unit
 		val node = if (type == LightResizeEvent::class.java) window else c.asJsDynamic()
+
+		fun uhandlerLog(e: LightEvent) {
+			println(e)
+			uhandler(e)
+		}
 
 		when (type) {
 			LightChangeEvent::class.java -> {
@@ -229,38 +246,56 @@ class HtmlLightComponents : LightComponents() {
 				}))
 			}
 			LightMouseEvent::class.java -> {
+				fun handleMouseEvent(type: LightMouseEvent.Type, buttons: Int, e: JsDynamic?) {
+					uhandler(mouseEvent.apply {
+						this.type = type
+						this.x = (e["offsetX"].toInt() * devicePixelRatio).toInt()
+						this.y = (e["offsetY"].toInt() * devicePixelRatio).toInt()
+						this.buttons = buttons
+					})
+				}
+
 				node.method("addEventListener")("click", jsFunctionRaw1({ e ->
-					uhandler(LightMouseEvent(LightMouseEvent.Type.CLICK, e["offsetX"].toInt(), e["offsetY"].toInt(), 1))
+					handleMouseEvent(LightMouseEvent.Type.CLICK, 1, e)
 				}))
 				node.method("addEventListener")("mouseover", jsFunctionRaw1({ e ->
-					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
+					handleMouseEvent(LightMouseEvent.Type.OVER, 0, e)
 				}))
 				node.method("addEventListener")("mousemove", jsFunctionRaw1({ e ->
-					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
+					handleMouseEvent(LightMouseEvent.Type.OVER, 0, e)
 				}))
 				node.method("addEventListener")("mouseup", jsFunctionRaw1({ e ->
-					uhandler(LightMouseEvent(LightMouseEvent.Type.UP, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
+					handleMouseEvent(LightMouseEvent.Type.UP, 0, e)
 				}))
 				node.method("addEventListener")("mousedown", jsFunctionRaw1({ e ->
-					uhandler(LightMouseEvent(LightMouseEvent.Type.DOWN, e["offsetX"].toInt(), e["offsetY"].toInt(), 0))
+					handleMouseEvent(LightMouseEvent.Type.DOWN, 1, e)
 				}))
-
+			}
+			LightTouchEvent::class.java -> {
 				// Touch
-				node.method("addEventListener")("touchstart", jsFunctionRaw1({ e ->
-					val e2 = e["changedTouches"][0]
-					uhandler(LightMouseEvent(LightMouseEvent.Type.DOWN, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
+
+				fun handleTouchEvent(type: LightTouchEvent.Type, e: JsDynamic?) {
+					val touches = e["changedTouches"]
+					for (n in 0 until touches["length"].toInt()) {
+						val touch = touches[n]
+						uhandlerLog(touchEvent.apply {
+							this.type = type
+							this.x = (touch["pageX"].toInt() * devicePixelRatio).toInt()
+							this.y = (touch["pageY"].toInt() * devicePixelRatio).toInt()
+							this.id = touch["identifier"].toInt()
+						})
+					}
 					e.call("preventDefault")
+				}
+
+				node.method("addEventListener")("touchstart", jsFunctionRaw1({ e ->
+					handleTouchEvent(LightTouchEvent.Type.START, e)
 				}))
 				node.method("addEventListener")("touchend", jsFunctionRaw1({ e ->
-					val e2 = e["changedTouches"][0]
-					//uhandler(LightMouseEvent(LightMouseEvent.Type.UP, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
-					uhandler(LightMouseEvent(LightMouseEvent.Type.UP, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
-					e.call("preventDefault")
+					handleTouchEvent(LightTouchEvent.Type.END, e)
 				}))
 				node.method("addEventListener")("touchmove", jsFunctionRaw1({ e ->
-					val e2 = e["changedTouches"][0]
-					uhandler(LightMouseEvent(LightMouseEvent.Type.OVER, e2["pageX"].toInt(), e2["pageY"].toInt(), 0))
-					e.call("preventDefault")
+					handleTouchEvent(LightTouchEvent.Type.MOVE, e)
 				}))
 			}
 			LightKeyEvent::class.java -> {
@@ -408,8 +443,9 @@ class HtmlLightComponents : LightComponents() {
 		childStyle["top"] = "${y}px"
 		childStyle["width"] = "${width}px"
 		childStyle["height"] = "${height}px"
-		child["width"] = width
-		child["height"] = height
+
+		child["width"] = width * devicePixelRatio
+		child["height"] = height * devicePixelRatio
 	}
 
 	override fun repaint(c: Any) {

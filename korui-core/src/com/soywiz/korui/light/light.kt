@@ -55,28 +55,28 @@ interface LightEvent
 object LightChangeEvent : LightEvent
 class LightResizeEvent(var width: Int, var height: Int) : LightEvent
 
-class LightKeyEvent(
-	var type: Type = Type.NONE,
+data class LightKeyEvent(
+	var type: Type = Type.TYPED,
 	var keyCode: Int = 0
 ) : LightEvent {
 	enum class Type {
-		NONE, TYPED, DOWN, UP
+		TYPED, DOWN, UP
 	}
 }
 
-class LightGamepadEvent(
-	var type: Type = Type.NONE,
+data class LightGamepadEvent(
+	var type: Type = Type.DOWN,
 	var button: Int = 0,
 	var buttons: Int = 0,
 	val axis: DoubleArray = DoubleArray(16)
 ) : LightEvent {
 	enum class Type {
-		NONE, DOWN, UP
+		DOWN, UP
 	}
 }
 
-class LightMouseEvent(
-	var type: Type = Type.NONE,
+data class LightMouseEvent(
+	var type: Type = Type.OVER,
 	var x: Int = 0,
 	var y: Int = 0,
 	var buttons: Int = 0,
@@ -86,7 +86,18 @@ class LightMouseEvent(
 	var isMetaDown: Boolean = false
 ) : LightEvent {
 	enum class Type {
-		NONE, OVER, CLICK, UP, DOWN, ENTER, EXIT
+		OVER, CLICK, UP, DOWN, ENTER, EXIT
+	}
+}
+
+data class LightTouchEvent(
+	var type: Type = Type.START,
+	var x: Int = 0,
+	var y: Int = 0,
+	var id: Int = 0
+) : LightEvent {
+	enum class Type {
+		START, END, MOVE
 	}
 }
 
