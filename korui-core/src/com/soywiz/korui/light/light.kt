@@ -8,6 +8,7 @@ import com.soywiz.korio.util.Cancellable
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.extraProperty
 import com.soywiz.korio.vfs.VfsFile
+import java.io.Closeable
 import java.io.File
 
 abstract class LightComponentsFactory : Services.Impl() {
@@ -22,12 +23,12 @@ open class LightComponents {
 
 	var insideEventHandler: Boolean = false; private set
 
-	open fun addHandler(c: Any, listener: LightMouseHandler): Cancellable = Cancellable { }
-	open fun addHandler(c: Any, listener: LightChangeHandler): Cancellable = Cancellable { }
-	open fun addHandler(c: Any, listener: LightResizeHandler): Cancellable = Cancellable { }
-	open fun addHandler(c: Any, listener: LightKeyHandler): Cancellable = Cancellable { }
-	open fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable = Cancellable { }
-	open fun addHandler(c: Any, listener: LightTouchHandler): Cancellable = Cancellable { }
+	open fun addHandler(c: Any, listener: LightMouseHandler): Closeable = Closeable { }
+	open fun addHandler(c: Any, listener: LightChangeHandler): Closeable = Closeable { }
+	open fun addHandler(c: Any, listener: LightResizeHandler): Closeable = Closeable { }
+	open fun addHandler(c: Any, listener: LightKeyHandler): Closeable = Closeable { }
+	open fun addHandler(c: Any, listener: LightGamepadHandler): Closeable = Closeable { }
+	open fun addHandler(c: Any, listener: LightTouchHandler): Closeable = Closeable { }
 
 	open fun getDpi(): Double = 96.0
 	open fun <T> setProperty(c: Any, key: LightProperty<T>, value: T): Unit = Unit

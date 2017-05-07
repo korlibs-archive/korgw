@@ -16,6 +16,7 @@ import com.soywiz.korio.android.KorioApp
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.util.Cancellable
 import com.soywiz.korui.light.*
+import java.io.Closeable
 
 class AndroidLightComponentsFactory : LightComponentsFactory() {
 	override fun create(): LightComponents = AndroidLightComponents()
@@ -157,19 +158,19 @@ class AndroidLightComponents : LightComponents() {
 		}]
 	}
 
-	override fun addHandler(c: Any, listener: LightMouseHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightMouseHandler): Closeable {
 		val cc = c as View
 		cc.setOnClickListener {
 			listener.click(LightMouseHandler.Info())
 		}
-		return Cancellable { }
+		return Closeable { }
 	}
 
-	override fun addHandler(c: Any, listener: LightChangeHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightChangeHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 
-	override fun addHandler(c: Any, listener: LightResizeHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightResizeHandler): Closeable {
 		val cc = (c as RootKoruiAbsoluteLayout)
 		//val ctx = activity as KoruiActivity
 
@@ -182,18 +183,18 @@ class AndroidLightComponents : LightComponents() {
 
 		KorioApp.resized { send() }
 		send()
-		return Cancellable { }
+		return Closeable { }
 	}
 
-	override fun addHandler(c: Any, listener: LightKeyHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightKeyHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 
-	override fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightGamepadHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 
-	override fun addHandler(c: Any, listener: LightTouchHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightTouchHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 

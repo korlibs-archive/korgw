@@ -16,12 +16,14 @@ import com.soywiz.korio.stream.AsyncStreamBase
 import com.soywiz.korio.stream.toAsyncStream
 import com.soywiz.korio.util.Cancellable
 import com.soywiz.korio.util.cancellable
+import com.soywiz.korio.util.closeable
 import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
 import com.soywiz.korio.vfs.js.JsStat
 import com.soywiz.korui.light.*
+import java.io.Closeable
 import java.io.FileNotFoundException
 import java.util.concurrent.CancellationException
 
@@ -215,12 +217,12 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
-	private fun JsDynamic?.addEventListener(name: String, func: JsDynamic?): Cancellable {
+	private fun JsDynamic?.addEventListener(name: String, func: JsDynamic?): Closeable {
 		this.call("addEventListener", name, func)
-		return Cancellable { this.call("removeEventListener", name, func) }
+		return Closeable { this.call("removeEventListener", name, func) }
 	}
 
-	override fun addHandler(c: Any, listener: LightMouseHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightMouseHandler): Closeable {
 		val node = c.asJsDynamic()
 
 		val info = LightMouseHandler.Info()
@@ -236,10 +238,10 @@ class HtmlLightComponents : LightComponents() {
 			node.addEventListener("mousemove", jsFunctionRaw1 { listener.over(process(it, 0)) }),
 			node.addEventListener("mouseup", jsFunctionRaw1 { listener.up(process(it, 0)) }),
 			node.addEventListener("mousedown", jsFunctionRaw1 { listener.down(process(it, 0)) })
-		).cancellable()
+		).closeable()
 	}
 
-	override fun addHandler(c: Any, listener: LightChangeHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightChangeHandler): Closeable {
 		val node = c.asJsDynamic()
 		val info = LightChangeHandler.Info()
 
@@ -249,10 +251,10 @@ class HtmlLightComponents : LightComponents() {
 			node.addEventListener("input", jsFunctionRaw1 { listener.changed(info) }),
 			node.addEventListener("textInput", jsFunctionRaw1 { listener.changed(info) }),
 			node.addEventListener("paste", jsFunctionRaw1 { listener.changed(info) })
-		).cancellable()
+		).closeable()
 	}
 
-	override fun addHandler(c: Any, listener: LightResizeHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightResizeHandler): Closeable {
 		val node = window
 		val info = LightResizeHandler.Info()
 
@@ -272,10 +274,10 @@ class HtmlLightComponents : LightComponents() {
 
 		return listOf(
 			node.addEventListener("resize", jsFunctionRaw1 { send() })
-		).cancellable()
+		).closeable()
 	}
 
-	override fun addHandler(c: Any, listener: LightKeyHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightKeyHandler): Closeable {
 		val node = c.asJsDynamic()
 		val info = LightKeyHandler.Info()
 
@@ -287,14 +289,14 @@ class HtmlLightComponents : LightComponents() {
 			node.addEventListener("keydown", jsFunctionRaw1 { listener.down(process(it)) }),
 			node.addEventListener("keyup", jsFunctionRaw1 { listener.up(process(it)) }),
 			node.addEventListener("keypress", jsFunctionRaw1 { listener.typed(process(it)) })
-		).cancellable()
+		).closeable()
 	}
 
-	override fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightGamepadHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 
-	override fun addHandler(c: Any, listener: LightTouchHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightTouchHandler): Closeable {
 		val node = c.asJsDynamic()
 
 		fun process(e: JsDynamic?): List<LightTouchHandler.Info> {
@@ -316,7 +318,7 @@ class HtmlLightComponents : LightComponents() {
 			node.addEventListener("touchstart", jsFunctionRaw1 { for (info in process(it)) listener.start(info) }),
 			node.addEventListener("touchend", jsFunctionRaw1 { for (info in process(it)) listener.end(info) }),
 			node.addEventListener("touchmove", jsFunctionRaw1 { for (info in process(it)) listener.move(info) })
-		).cancellable()
+		).closeable()
 	}
 
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {

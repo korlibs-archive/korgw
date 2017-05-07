@@ -12,6 +12,7 @@ import com.soywiz.korui.light.*
 import java.awt.*
 import java.awt.event.*
 import java.awt.image.BufferedImage
+import java.io.Closeable
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CancellationException
@@ -65,7 +66,7 @@ class AwtLightComponents : LightComponents() {
 		}
 	}
 
-	override fun addHandler(c: Any, listener: LightMouseHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightMouseHandler): Closeable {
 		val cc = c as Component
 
 		val adapter = object : MouseAdapter() {
@@ -92,13 +93,13 @@ class AwtLightComponents : LightComponents() {
 		cc.addMouseListener(adapter)
 		cc.addMouseMotionListener(adapter)
 
-		return Cancellable {
+		return Closeable {
 			cc.removeMouseListener(adapter)
 			cc.removeMouseMotionListener(adapter)
 		}
 	}
 
-	override fun addHandler(c: Any, listener: LightChangeHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightChangeHandler): Closeable {
 		var rc = c as Component
 		if (rc is JScrollableTextArea) rc = rc.textArea
 		val cc = rc as? JTextComponent
@@ -113,12 +114,12 @@ class AwtLightComponents : LightComponents() {
 
 		cc?.document?.addDocumentListener(adaptor)
 
-		return Cancellable {
+		return Closeable {
 			cc?.document?.removeDocumentListener(adaptor)
 		}
 	}
 
-	override fun addHandler(c: Any, listener: LightResizeHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightResizeHandler): Closeable {
 		val info = LightResizeHandler.Info()
 		val cc = c as Frame
 
@@ -140,12 +141,12 @@ class AwtLightComponents : LightComponents() {
 		cc.addComponentListener(adapter)
 		send()
 
-		return Cancellable {
+		return Closeable {
 			cc.removeComponentListener(adapter)
 		}
 	}
 
-	override fun addHandler(c: Any, listener: LightKeyHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightKeyHandler): Closeable {
 		val cc = c as Component
 		val ev = LightKeyHandler.Info()
 
@@ -161,16 +162,16 @@ class AwtLightComponents : LightComponents() {
 
 		cc.addKeyListener(adapter)
 
-		return Cancellable {
+		return Closeable {
 			cc.removeKeyListener(adapter)
 		}
 	}
 
-	override fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightGamepadHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 
-	override fun addHandler(c: Any, listener: LightTouchHandler): Cancellable {
+	override fun addHandler(c: Any, listener: LightTouchHandler): Closeable {
 		return super.addHandler(c, listener)
 	}
 
