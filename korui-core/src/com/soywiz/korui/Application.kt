@@ -9,7 +9,7 @@ import com.soywiz.korio.coroutine.CoroutineContext
 import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.light.LightComponents
-import com.soywiz.korui.light.LightResizeEvent
+import com.soywiz.korui.light.LightResizeHandler
 import com.soywiz.korui.light.defaultLight
 import com.soywiz.korui.ui.Frame
 import com.soywiz.korui.ui.agCanvas
@@ -50,10 +50,12 @@ suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480
 	frame.icon = icon
 	callback.await(frame)
 	light.setBounds(frame.handle, 0, 0, frame.actualBounds.width, frame.actualBounds.height)
-	light.setEventHandler<LightResizeEvent>(frame.handle) { e ->
-		frame.setBoundsInternal(0, 0, e.width, e.height)
-		frame.invalidate()
-	}
+	light.addHandler(frame.handle, object : LightResizeHandler() {
+		override fun resized(e: Info) {
+			frame.setBoundsInternal(0, 0, e.width, e.height)
+			frame.invalidate()
+		}
+	})
 	frames += frame
 	frame.visible = true
 	frame.invalidate()

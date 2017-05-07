@@ -9,6 +9,7 @@ import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
+import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Once
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korma.geom.Anchor
@@ -22,7 +23,7 @@ import com.soywiz.korui.style.Style
 import com.soywiz.korui.style.Styled
 import kotlin.reflect.KProperty
 
-open class Component(val app: Application, val type: LightType) : Styled {
+open class Component(val app: Application, val type: LightType) : Styled, Extra by Extra.Mixin() {
 	val coroutineContext = app.coroutineContext
 	val lc = app.light
 
@@ -135,91 +136,6 @@ open class Component(val app: Application, val type: LightType) : Styled {
 	var mouseX = 0
 	var mouseY = 0
 
-	private var mouseEventOnce = Once()
-	private var keyEventOnce = Once()
-	private var touchEventOnce = Once()
-	private var gamepadEventOnce = Once()
-
-	val onMouseUp = Signal<LightMouseEvent> { registerMouseEventOnce() }
-	val onMouseDown = Signal<LightMouseEvent> { registerMouseEventOnce() }
-	val onMouseClick = Signal<LightMouseEvent> { registerMouseEventOnce() }
-	val onMouseOver = Signal<LightMouseEvent> { registerMouseEventOnce() }
-	val onMouseEnter = Signal<LightMouseEvent> { registerMouseEventOnce() }
-	val onMouseExit = Signal<LightMouseEvent> { registerMouseEventOnce() }
-
-	val onKeyTyped = Signal<LightKeyEvent> { registerKeyEventOnce() }
-	val onKeyDown = Signal<LightKeyEvent> { registerKeyEventOnce() }
-	val onKeyUp = Signal<LightKeyEvent> { registerKeyEventOnce() }
-
-	val onTouchStart = Signal<LightTouchEvent> { registerTouchEventOnce() }
-	val onTouchEnd = Signal<LightTouchEvent> { registerTouchEventOnce() }
-	val onTouchMove = Signal<LightTouchEvent> { registerTouchEventOnce() }
-
-	val onGamepadDown = Signal<LightGamepadEvent> { registerGamepadEventOnce() }
-	val onGamepadUp = Signal<LightGamepadEvent> { registerGamepadEventOnce() }
-
-	fun registerMouseEventOnce() = mouseEventOnce {
-		lc.setEventHandler<LightMouseEvent>(handle) { onMouseEvent(it) }
-	}
-
-	fun registerKeyEventOnce() = keyEventOnce {
-		lc.setEventHandler<LightKeyEvent>(handle) { onKeyEvent(it) }
-	}
-
-	fun registerTouchEventOnce() = touchEventOnce {
-		lc.setEventHandler<LightTouchEvent>(handle) { onTouchEvent(it) }
-	}
-
-	fun registerGamepadEventOnce() = gamepadEventOnce {
-		lc.setEventHandler<LightGamepadEvent>(handle) { onGamepadEvent(it) }
-	}
-
-	protected fun onGamepadEvent(e: LightGamepadEvent) {
-		when (e.type) {
-			LightGamepadEvent.Type.DOWN -> onGamepadDown(e)
-			LightGamepadEvent.Type.UP -> onGamepadUp(e)
-		}
-	}
-
-	protected fun onKeyEvent(e: LightKeyEvent) {
-		when (e.type) {
-			LightKeyEvent.Type.TYPED -> onKeyTyped(e)
-			LightKeyEvent.Type.DOWN -> onKeyDown(e)
-			LightKeyEvent.Type.UP -> onKeyUp(e)
-		}
-	}
-
-	protected fun onTouchEvent(e: LightTouchEvent) {
-		when (e.type) {
-			LightTouchEvent.Type.START -> onTouchStart(e)
-			LightTouchEvent.Type.END -> onTouchEnd(e)
-			LightTouchEvent.Type.MOVE -> onTouchMove(e)
-		}
-	}
-
-	protected fun onMouseEvent(e: LightMouseEvent) {
-		mouseX = e.x
-		mouseY = e.y
-		when (e.type) {
-			LightMouseEvent.Type.CLICK -> onMouseClick(e)
-			LightMouseEvent.Type.UP -> onMouseUp(e)
-			LightMouseEvent.Type.DOWN -> onMouseDown(e)
-			LightMouseEvent.Type.OVER -> onMouseOver(e)
-			LightMouseEvent.Type.ENTER -> onMouseEnter(e)
-			LightMouseEvent.Type.EXIT -> onMouseExit(e)
-		}
-	}
-
-	private var onChangeOnce = Once()
-	val onChange: Signal<Component> = Signal<Component> {
-		val component = this@Component
-		lc.setEventHandler<LightChangeEvent>(handle) { onChangeEvent(it) }
-	}
-
-	protected fun onChangeEvent(e: LightChangeEvent) {
-		onChange(this)
-	}
-
 	var visible by lightProperty(LightProperty.VISIBLE)
 
 	override fun toString(): String = javaClass.simpleName
@@ -280,16 +196,16 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 
 	override val agInput: AGInput = AGInput()
 
-	private fun updateMouse(e: LightMouseEvent) {
+	private fun updateMouse(e: LightMouseHandler.Info) {
 		agInput.mouseEvent.x = e.x
 		agInput.mouseEvent.y = e.y
 	}
 
-	private fun updateKey(e: LightKeyEvent) {
+	private fun updateKey(e: LightKeyHandler.Info) {
 		agInput.keyEvent.keyCode = e.keyCode
 	}
 
-	private fun updateTouch(e: LightTouchEvent) {
+	private fun updateTouch(e: LightTouchHandler.Info) {
 		agInput.touchEvent.id = e.id
 		agInput.touchEvent.x = e.x
 		agInput.touchEvent.y = e.y
@@ -463,6 +379,7 @@ suspend inline fun Container.scrollPane(noinline callback: suspend ScrollPane.()
 		callback.await(this)
 	})
 }
+
 
 fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onMouseClick { handler.execAndForget(coroutineContext, this) } }
 fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onMouseOver { handler.execAndForget(coroutineContext, this) } }

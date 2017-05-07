@@ -4,12 +4,11 @@ import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.color.Colors
 import com.soywiz.korio.service.Services
+import com.soywiz.korio.util.Cancellable
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.extraProperty
 import com.soywiz.korio.vfs.VfsFile
 import java.io.File
-import java.net.URI
-import java.net.URL
 
 abstract class LightComponentsFactory : Services.Impl() {
 	abstract fun create(): LightComponents
@@ -21,25 +20,16 @@ open class LightComponents {
 	open fun create(type: LightType): LightComponentInfo = LightComponentInfo(Unit)
 	open fun setParent(c: Any, parent: Any?): Unit = Unit
 
-	@Suppress("UNCHECKED_CAST")
-	open protected fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit): Unit = Unit
-
 	var insideEventHandler: Boolean = false; private set
 
-	fun <T : LightEvent> setEventHandler(c: Any, type: Class<T>, handler: (T) -> Unit): Unit {
-		setEventHandlerInternal(c, type, {
-			insideEventHandler = true
-			try {
-				handler(it)
-			} finally {
-				insideEventHandler = false
-			}
-		})
-	}
+	open fun addHandler(c: Any, listener: LightMouseHandler): Cancellable = Cancellable { }
+	open fun addHandler(c: Any, listener: LightChangeHandler): Cancellable = Cancellable { }
+	open fun addHandler(c: Any, listener: LightResizeHandler): Cancellable = Cancellable { }
+	open fun addHandler(c: Any, listener: LightKeyHandler): Cancellable = Cancellable { }
+	open fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable = Cancellable { }
+	open fun addHandler(c: Any, listener: LightTouchHandler): Cancellable = Cancellable { }
 
 	open fun getDpi(): Double = 96.0
-
-	inline fun <reified T : LightEvent> setEventHandler(c: Any, noinline handler: (T) -> Unit): Unit = setEventHandler(c, T::class.java, handler)
 	open fun <T> setProperty(c: Any, key: LightProperty<T>, value: T): Unit = Unit
 	open fun <T> getProperty(c: Any, key: LightProperty<T>): T = key.default
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = Unit
@@ -51,54 +41,68 @@ open class LightComponents {
 	open fun open(file: File): Unit = openURL(file.toURI().toString())
 }
 
-interface LightEvent
-object LightChangeEvent : LightEvent
-class LightResizeEvent(var width: Int, var height: Int) : LightEvent
+open class LightChangeHandler {
+	data class Info(var dummy: Boolean = true)
 
-data class LightKeyEvent(
-	var type: Type = Type.TYPED,
-	var keyCode: Int = 0
-) : LightEvent {
-	enum class Type {
-		TYPED, DOWN, UP
-	}
+	open fun changed(info: Info) = Unit
 }
 
-data class LightGamepadEvent(
-	var type: Type = Type.DOWN,
-	var button: Int = 0,
-	var buttons: Int = 0,
-	val axis: DoubleArray = DoubleArray(16)
-) : LightEvent {
-	enum class Type {
-		DOWN, UP
-	}
+open class LightResizeHandler {
+	data class Info(var width: Int = 0, var height: Int = 0)
+
+	open fun resized(info: Info) = Unit
 }
 
-data class LightMouseEvent(
-	var type: Type = Type.OVER,
-	var x: Int = 0,
-	var y: Int = 0,
-	var buttons: Int = 0,
-	var isShiftDown: Boolean = false,
-	var isCtrlDown: Boolean = false,
-	var isAltDown: Boolean = false,
-	var isMetaDown: Boolean = false
-) : LightEvent {
-	enum class Type {
-		OVER, CLICK, UP, DOWN, ENTER, EXIT
-	}
+open class LightMouseHandler {
+	data class Info(
+		var x: Int = 0,
+		var y: Int = 0,
+		var buttons: Int = 0,
+		var isShiftDown: Boolean = false,
+		var isCtrlDown: Boolean = false,
+		var isAltDown: Boolean = false,
+		var isMetaDown: Boolean = false
+	)
+
+	open fun enter(info: Info) = Unit
+	open fun exit(info: Info) = Unit
+	open fun over(info: Info) = Unit
+	open fun up(info: Info) = Unit
+	open fun down(info: Info) = Unit
+	open fun click(info: Info) = Unit
 }
 
-data class LightTouchEvent(
-	var type: Type = Type.START,
-	var x: Int = 0,
-	var y: Int = 0,
-	var id: Int = 0
-) : LightEvent {
-	enum class Type {
-		START, END, MOVE
-	}
+open class LightKeyHandler {
+	data class Info(
+		var keyCode: Int = 0
+	)
+
+	open fun typed(info: Info) = Unit
+	open fun down(info: Info) = Unit
+	open fun up(info: Info) = Unit
+}
+
+open class LightGamepadHandler {
+	data class Info(
+		var id: Int = 0,
+		var buttons: Int = 0,
+		@Suppress("ArrayInDataClass") val axis: DoubleArray = DoubleArray(16)
+	)
+
+	open fun down(info: Info) = Unit
+	open fun up(info: Info) = Unit
+}
+
+open class LightTouchHandler {
+	data class Info(
+		var x: Int = 0,
+		var y: Int = 0,
+		var id: Int = 0
+	)
+
+	open fun start(info: Info) = Unit
+	open fun end(info: Info) = Unit
+	open fun move(info: Info) = Unit
 }
 
 val defaultLightFactory: LightComponentsFactory by lazy { Services.load<LightComponentsFactory>() }

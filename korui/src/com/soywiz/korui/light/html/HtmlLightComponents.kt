@@ -14,7 +14,8 @@ import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
 import com.soywiz.korio.stream.toAsyncStream
-import com.soywiz.korio.util.clamp
+import com.soywiz.korio.util.Cancellable
+import com.soywiz.korio.util.cancellable
 import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
@@ -214,116 +215,108 @@ class HtmlLightComponents : LightComponents() {
 		}
 	}
 
-	val mouseEvent = LightMouseEvent()
-	val touchEvent = LightTouchEvent()
+	private fun JsDynamic?.addEventListener(name: String, func: JsDynamic?): Cancellable {
+		this.call("addEventListener", name, func)
+		return Cancellable { this.call("removeEventListener", name, func) }
+	}
 
-	@Suppress("UNCHECKED_CAST")
-	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
-		val uhandler = handler as (LightEvent) -> Unit
-		val node = if (type == LightResizeEvent::class.java) window else c.asJsDynamic()
+	override fun addHandler(c: Any, listener: LightMouseHandler): Cancellable {
+		val node = c.asJsDynamic()
 
-		fun uhandlerLog(e: LightEvent) {
-			println(e)
-			uhandler(e)
+		val info = LightMouseHandler.Info()
+		fun process(e: JsDynamic?, buttons: Int) = info.apply {
+			this.x = (e["offsetX"].toInt() * devicePixelRatio).toInt()
+			this.y = (e["offsetY"].toInt() * devicePixelRatio).toInt()
+			this.buttons = buttons
 		}
 
-		when (type) {
-			LightChangeEvent::class.java -> {
-				node.method("addEventListener")("change", jsFunctionRaw1({ e ->
-					uhandler(LightChangeEvent)
-				}))
-				node.method("addEventListener")("keypress", jsFunctionRaw1({ e ->
-					uhandler(LightChangeEvent)
-				}))
-				node.method("addEventListener")("input", jsFunctionRaw1({ e ->
-					uhandler(LightChangeEvent)
-				}))
-				node.method("addEventListener")("textInput", jsFunctionRaw1({ e ->
-					uhandler(LightChangeEvent)
-				}))
-				node.method("addEventListener")("paste", jsFunctionRaw1({ e ->
-					uhandler(LightChangeEvent)
-				}))
-			}
-			LightMouseEvent::class.java -> {
-				fun handleMouseEvent(type: LightMouseEvent.Type, buttons: Int, e: JsDynamic?) {
-					uhandler(mouseEvent.apply {
-						this.type = type
-						this.x = (e["offsetX"].toInt() * devicePixelRatio).toInt()
-						this.y = (e["offsetY"].toInt() * devicePixelRatio).toInt()
-						this.buttons = buttons
-					})
-				}
+		return listOf(
+			node.addEventListener("click", jsFunctionRaw1 { listener.click(process(it, 1)) }),
+			node.addEventListener("mouseover", jsFunctionRaw1 { listener.over(process(it, 0)) }),
+			node.addEventListener("mousemove", jsFunctionRaw1 { listener.over(process(it, 0)) }),
+			node.addEventListener("mouseup", jsFunctionRaw1 { listener.up(process(it, 0)) }),
+			node.addEventListener("mousedown", jsFunctionRaw1 { listener.down(process(it, 0)) })
+		).cancellable()
+	}
 
-				node.method("addEventListener")("click", jsFunctionRaw1({ e ->
-					handleMouseEvent(LightMouseEvent.Type.CLICK, 1, e)
-				}))
-				node.method("addEventListener")("mouseover", jsFunctionRaw1({ e ->
-					handleMouseEvent(LightMouseEvent.Type.OVER, 0, e)
-				}))
-				node.method("addEventListener")("mousemove", jsFunctionRaw1({ e ->
-					handleMouseEvent(LightMouseEvent.Type.OVER, 0, e)
-				}))
-				node.method("addEventListener")("mouseup", jsFunctionRaw1({ e ->
-					handleMouseEvent(LightMouseEvent.Type.UP, 0, e)
-				}))
-				node.method("addEventListener")("mousedown", jsFunctionRaw1({ e ->
-					handleMouseEvent(LightMouseEvent.Type.DOWN, 1, e)
-				}))
-			}
-			LightTouchEvent::class.java -> {
-				// Touch
+	override fun addHandler(c: Any, listener: LightChangeHandler): Cancellable {
+		val node = c.asJsDynamic()
+		val info = LightChangeHandler.Info()
 
-				fun handleTouchEvent(type: LightTouchEvent.Type, e: JsDynamic?) {
-					val touches = e["changedTouches"]
-					for (n in 0 until touches["length"].toInt()) {
-						val touch = touches[n]
-						uhandler(touchEvent.apply {
-							this.type = type
-							this.x = (touch["pageX"].toInt() * devicePixelRatio).toInt()
-							this.y = (touch["pageY"].toInt() * devicePixelRatio).toInt()
-							this.id = touch["identifier"].toInt()
-						})
-					}
-					e.call("preventDefault")
-				}
+		return listOf(
+			node.addEventListener("change", jsFunctionRaw1 { listener.changed(info) }),
+			node.addEventListener("keypress", jsFunctionRaw1 { listener.changed(info) }),
+			node.addEventListener("input", jsFunctionRaw1 { listener.changed(info) }),
+			node.addEventListener("textInput", jsFunctionRaw1 { listener.changed(info) }),
+			node.addEventListener("paste", jsFunctionRaw1 { listener.changed(info) })
+		).cancellable()
+	}
 
-				node.method("addEventListener")("touchstart", jsFunctionRaw1({ e ->
-					handleTouchEvent(LightTouchEvent.Type.START, e)
-				}))
-				node.method("addEventListener")("touchend", jsFunctionRaw1({ e ->
-					handleTouchEvent(LightTouchEvent.Type.END, e)
-				}))
-				node.method("addEventListener")("touchmove", jsFunctionRaw1({ e ->
-					handleTouchEvent(LightTouchEvent.Type.MOVE, e)
-				}))
-			}
-			LightKeyEvent::class.java -> {
-				node.method("addEventListener")("keydown", jsFunctionRaw1({ e ->
-					uhandler(LightKeyEvent(LightKeyEvent.Type.DOWN, e["keyCode"].toInt()))
-				}))
-				node.method("addEventListener")("keyup", jsFunctionRaw1({ e ->
-					uhandler(LightKeyEvent(LightKeyEvent.Type.UP, e["keyCode"].toInt()))
-				}))
-				node.method("addEventListener")("keypress", jsFunctionRaw1({ e ->
-					uhandler(LightKeyEvent(LightKeyEvent.Type.TYPED, e["keyCode"].toInt()))
-				}))
-			}
-			LightResizeEvent::class.java -> {
-				fun send() {
-					if (window["mainFrame"] != null) {
-						window["mainFrame"]["style"]["width"] = "${window["innerWidth"].toInt()}px"
-						window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
-					}
-					uhandler(LightResizeEvent(window["innerWidth"].toInt(), window["innerHeight"].toInt()))
-				}
+	override fun addHandler(c: Any, listener: LightResizeHandler): Cancellable {
+		val node = window
+		val info = LightResizeHandler.Info()
 
-				send()
-				node.method("addEventListener")("resize", jsFunctionRaw1 {
-					send()
-				})
+		fun send() {
+			if (window["mainFrame"] != null) {
+				window["mainFrame"]["style"]["width"] = "${window["innerWidth"].toInt()}px"
+				window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
 			}
+
+			listener.resized(info.apply {
+				width = window["innerWidth"].toInt()
+				height = window["innerHeight"].toInt()
+			})
 		}
+
+		send()
+
+		return listOf(
+			node.addEventListener("resize", jsFunctionRaw1 { send() })
+		).cancellable()
+	}
+
+	override fun addHandler(c: Any, listener: LightKeyHandler): Cancellable {
+		val node = c.asJsDynamic()
+		val info = LightKeyHandler.Info()
+
+		fun process(e: JsDynamic?) = info.apply {
+			this.keyCode = e["keyCode"].toInt()
+		}
+
+		return listOf(
+			node.addEventListener("keydown", jsFunctionRaw1 { listener.down(process(it)) }),
+			node.addEventListener("keyup", jsFunctionRaw1 { listener.up(process(it)) }),
+			node.addEventListener("keypress", jsFunctionRaw1 { listener.typed(process(it)) })
+		).cancellable()
+	}
+
+	override fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable {
+		return super.addHandler(c, listener)
+	}
+
+	override fun addHandler(c: Any, listener: LightTouchHandler): Cancellable {
+		val node = c.asJsDynamic()
+
+		fun process(e: JsDynamic?): List<LightTouchHandler.Info> {
+			val out = arrayListOf<LightTouchHandler.Info>()
+			val touches = e["changedTouches"]
+			for (n in 0 until touches["length"].toInt()) {
+				val touch = touches[n]
+				out += LightTouchHandler.Info().apply {
+					this.x = (touch["pageX"].toInt() * devicePixelRatio).toInt()
+					this.y = (touch["pageY"].toInt() * devicePixelRatio).toInt()
+					this.id = touch["identifier"].toInt()
+				}
+			}
+			e.call("preventDefault")
+			return out
+		}
+
+		return listOf(
+			node.addEventListener("touchstart", jsFunctionRaw1 { for (info in process(it)) listener.start(info) }),
+			node.addEventListener("touchend", jsFunctionRaw1 { for (info in process(it)) listener.end(info) }),
+			node.addEventListener("touchmove", jsFunctionRaw1 { for (info in process(it)) listener.move(info) })
+		).cancellable()
 	}
 
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {

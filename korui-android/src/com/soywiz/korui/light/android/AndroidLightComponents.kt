@@ -14,6 +14,7 @@ import com.soywiz.korim.android.toAndroidBitmap
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.android.KorioApp
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
+import com.soywiz.korio.util.Cancellable
 import com.soywiz.korui.light.*
 
 class AndroidLightComponentsFactory : LightComponentsFactory() {
@@ -156,30 +157,46 @@ class AndroidLightComponents : LightComponents() {
 		}]
 	}
 
-	@Suppress("UNCHECKED_CAST")
-	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
-		when (type) {
-			LightMouseEvent::class.java -> {
-				(c as View).setOnClickListener {
-					handler(LightMouseEvent(LightMouseEvent.Type.CLICK, 0, 0, 1) as T)
-				}
-			}
-			LightResizeEvent::class.java -> {
-				val cc = (c as RootKoruiAbsoluteLayout)
-				//val ctx = activity as KoruiActivity
-
-				fun send() {
-					val sizeX = scaled_rev((cc.parent as View).width)
-					val sizeY = scaled_rev((cc.parent as View).height)
-					println("LightResizeEvent($sizeX, $sizeY)")
-					handler(LightResizeEvent(sizeX, sizeY) as T)
-				}
-
-				KorioApp.resized { send() }
-				send()
-			}
+	override fun addHandler(c: Any, listener: LightMouseHandler): Cancellable {
+		val cc = c as View
+		cc.setOnClickListener {
+			listener.click(LightMouseHandler.Info())
 		}
+		return Cancellable { }
 	}
+
+	override fun addHandler(c: Any, listener: LightChangeHandler): Cancellable {
+		return super.addHandler(c, listener)
+	}
+
+	override fun addHandler(c: Any, listener: LightResizeHandler): Cancellable {
+		val cc = (c as RootKoruiAbsoluteLayout)
+		//val ctx = activity as KoruiActivity
+
+		fun send() {
+			val sizeX = scaled_rev((cc.parent as View).width)
+			val sizeY = scaled_rev((cc.parent as View).height)
+			println("LightResizeEvent($sizeX, $sizeY)")
+			listener.resized(LightResizeHandler.Info(sizeX, sizeY))
+		}
+
+		KorioApp.resized { send() }
+		send()
+		return Cancellable { }
+	}
+
+	override fun addHandler(c: Any, listener: LightKeyHandler): Cancellable {
+		return super.addHandler(c, listener)
+	}
+
+	override fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable {
+		return super.addHandler(c, listener)
+	}
+
+	override fun addHandler(c: Any, listener: LightTouchHandler): Cancellable {
+		return super.addHandler(c, listener)
+	}
+
 
 	suspend override fun dialogAlert(c: Any, message: String): Unit = korioSuspendCoroutine { c ->
 		KorioAndroidContext.runOnUiThread {

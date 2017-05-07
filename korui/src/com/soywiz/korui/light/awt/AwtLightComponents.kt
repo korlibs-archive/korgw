@@ -5,6 +5,7 @@ import com.soywiz.korag.agFactory
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.awt.transferTo
+import com.soywiz.korio.util.Cancellable
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.light.*
@@ -64,103 +65,113 @@ class AwtLightComponents : LightComponents() {
 		}
 	}
 
-	@Suppress("UNCHECKED_CAST")
-	override fun <T : LightEvent> setEventHandlerInternal(c: Any, type: Class<T>, handler: (T) -> Unit) {
-		val uhandler = handler as (LightEvent) -> Unit
+	override fun addHandler(c: Any, listener: LightMouseHandler): Cancellable {
+		val cc = c as Component
 
-		when (type) {
-			LightChangeEvent::class.java -> {
-				var rc = c as Component
-				if (rc is JScrollableTextArea) rc = rc.textArea
-				val cc = rc as? JTextComponent
-				cc?.document?.addDocumentListener(object : DocumentListener {
-					override fun changedUpdate(e: DocumentEvent?) {
-						uhandler(LightChangeEvent)
-					}
+		val adapter = object : MouseAdapter() {
+			private val info = LightMouseHandler.Info()
 
-					override fun insertUpdate(e: DocumentEvent?) {
-						uhandler(LightChangeEvent)
-					}
-
-					override fun removeUpdate(e: DocumentEvent?) {
-						uhandler(LightChangeEvent)
-					}
-				})
+			private fun populate(e: MouseEvent): LightMouseHandler.Info = info.apply {
+				x = e.x
+				y = e.y
+				buttons = 1 shl e.button
+				isAltDown = e.isAltDown
+				isCtrlDown = e.isControlDown
+				isShiftDown = e.isShiftDown
+				isMetaDown = e.isMetaDown
 			}
-			LightMouseEvent::class.java -> {
-				val cc = c as Component
-				val ev = LightMouseEvent()
 
-				val adapter = object : MouseAdapter() {
-					private fun populate(e: MouseEvent, ev: LightMouseEvent, type: LightMouseEvent.Type) {
-						ev.type = type
-						ev.x = e.x
-						ev.y = e.y
-						ev.buttons = 1 shl e.button
-						ev.isAltDown = e.isAltDown
-						ev.isCtrlDown = e.isControlDown
-						ev.isShiftDown = e.isShiftDown
-						ev.isMetaDown = e.isMetaDown
-					}
+			override fun mouseReleased(e: MouseEvent) = listener.up(populate(e))
+			override fun mousePressed(e: MouseEvent) = listener.down(populate(e))
+			override fun mouseClicked(e: MouseEvent) = listener.click(populate(e))
+			override fun mouseMoved(e: MouseEvent) = listener.over(populate(e))
+			override fun mouseEntered(e: MouseEvent) = listener.enter(populate(e))
+			override fun mouseExited(e: MouseEvent) = listener.exit(populate(e))
+		}
 
-					private fun handle(e: MouseEvent, type: LightMouseEvent.Type) {
-						uhandler(ev.apply { populate(e, this, type) })
-					}
+		cc.addMouseListener(adapter)
+		cc.addMouseMotionListener(adapter)
 
-					override fun mouseReleased(e: MouseEvent) = handle(e, LightMouseEvent.Type.UP)
-					override fun mousePressed(e: MouseEvent) = handle(e, LightMouseEvent.Type.DOWN)
-					override fun mouseClicked(e: MouseEvent) = handle(e, LightMouseEvent.Type.CLICK)
-					override fun mouseMoved(e: MouseEvent) = handle(e, LightMouseEvent.Type.OVER)
-					override fun mouseEntered(e: MouseEvent) = handle(e, LightMouseEvent.Type.ENTER)
-					override fun mouseExited(e: MouseEvent) = handle(e, LightMouseEvent.Type.EXIT)
-				}
+		return Cancellable {
+			cc.removeMouseListener(adapter)
+			cc.removeMouseMotionListener(adapter)
+		}
+	}
 
-				cc.addMouseListener(adapter)
-				cc.addMouseMotionListener(adapter)
-				//cc.addMouseWheelListener(adapter)
-			}
-			LightKeyEvent::class.java -> {
-				val cc = c as Component
-				val ev = LightKeyEvent()
+	override fun addHandler(c: Any, listener: LightChangeHandler): Cancellable {
+		var rc = c as Component
+		if (rc is JScrollableTextArea) rc = rc.textArea
+		val cc = rc as? JTextComponent
 
-				val adapter = object : KeyAdapter() {
-					private fun populate(e: KeyEvent, ev: LightKeyEvent, type: LightKeyEvent.Type) {
-						ev.type = type
-						ev.keyCode = e.keyCode
-					}
+		val adaptor = object : DocumentListener {
+			val info = LightChangeHandler.Info()
 
-					private fun handle(e: KeyEvent, type: LightKeyEvent.Type) {
-						uhandler(ev.apply { populate(e, this, type) })
-					}
+			override fun changedUpdate(e: DocumentEvent?) = listener.changed(info)
+			override fun insertUpdate(e: DocumentEvent?) = listener.changed(info)
+			override fun removeUpdate(e: DocumentEvent?) = listener.changed(info)
+		}
 
-					override fun keyTyped(e: KeyEvent) = handle(e, LightKeyEvent.Type.TYPED)
-					override fun keyPressed(e: KeyEvent) = handle(e, LightKeyEvent.Type.DOWN)
-					override fun keyReleased(e: KeyEvent) = handle(e, LightKeyEvent.Type.UP)
-				}
+		cc?.document?.addDocumentListener(adaptor)
 
-				cc.addKeyListener(adapter)
-			}
-			LightGamepadEvent::class.java -> {
-				val cc = c as Component
-				val ev = LightGamepadEvent()
+		return Cancellable {
+			cc?.document?.removeDocumentListener(adaptor)
+		}
+	}
 
-				// @TODO
-			}
-			LightResizeEvent::class.java -> {
-				fun send() {
-					val cc = (c as JFrame2)
-					val cp = cc.contentPane
-					uhandler(LightResizeEvent(cp.width, cp.height))
-				}
+	override fun addHandler(c: Any, listener: LightResizeHandler): Cancellable {
+		val info = LightResizeHandler.Info()
+		val cc = c as Frame
 
-				(c as Frame).addComponentListener(object : ComponentAdapter() {
-					override fun componentResized(e: ComponentEvent) {
-						send()
-					}
-				})
+		fun send() {
+			val cc2 = (c as JFrame2)
+			val cp = cc2.contentPane
+			listener.resized(info.apply {
+				width = cp.width
+				height = cp.height
+			})
+		}
+
+		val adapter = object : ComponentAdapter() {
+			override fun componentResized(e: ComponentEvent) {
 				send()
 			}
 		}
+
+		cc.addComponentListener(adapter)
+		send()
+
+		return Cancellable {
+			cc.removeComponentListener(adapter)
+		}
+	}
+
+	override fun addHandler(c: Any, listener: LightKeyHandler): Cancellable {
+		val cc = c as Component
+		val ev = LightKeyHandler.Info()
+
+		val adapter = object : KeyAdapter() {
+			private fun populate(e: KeyEvent) = ev.apply {
+				keyCode = e.keyCode
+			}
+
+			override fun keyTyped(e: KeyEvent) = listener.typed(populate(e))
+			override fun keyPressed(e: KeyEvent) = listener.down(populate(e))
+			override fun keyReleased(e: KeyEvent) = listener.up(populate(e))
+		}
+
+		cc.addKeyListener(adapter)
+
+		return Cancellable {
+			cc.removeKeyListener(adapter)
+		}
+	}
+
+	override fun addHandler(c: Any, listener: LightGamepadHandler): Cancellable {
+		return super.addHandler(c, listener)
+	}
+
+	override fun addHandler(c: Any, listener: LightTouchHandler): Cancellable {
+		return super.addHandler(c, listener)
 	}
 
 	val Any.actualComponent: Component get() = if (this is JFrame2) this.panel else (this as Component)
