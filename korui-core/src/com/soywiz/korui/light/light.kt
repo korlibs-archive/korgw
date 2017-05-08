@@ -31,6 +31,7 @@ open class LightComponents {
 	open fun addHandler(c: Any, listener: LightTouchHandler): Closeable = Closeable { }
 
 	open fun getDpi(): Double = 96.0
+	open fun <T> callAction(c: Any, key: LightAction<T>, param: T): Unit = Unit
 	open fun <T> setProperty(c: Any, key: LightProperty<T>, value: T): Unit = Unit
 	open fun <T> getProperty(c: Any, key: LightProperty<T>): T = key.default
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = Unit
@@ -111,6 +112,15 @@ val defaultLight: LightComponents by lazy { defaultLightFactory.create() }
 
 enum class LightType {
 	FRAME, CONTAINER, BUTTON, PROGRESS, IMAGE, LABEL, TEXT_FIELD, TEXT_AREA, CHECK_BOX, SCROLL_PANE, AGCANVAS
+}
+
+class LightAction<T>(val name: String) {
+	companion object {
+		val FOCUS = LightAction<Any?>("FOCUS")
+	}
+
+	@Suppress("UNCHECKED_CAST")
+	operator fun get(v: Any?): T = v as T
 }
 
 class LightProperty<out T>(val name: String, val default: T) {

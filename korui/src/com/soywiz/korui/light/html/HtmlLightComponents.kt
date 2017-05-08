@@ -299,7 +299,7 @@ class HtmlLightComponents : LightComponents() {
 	override fun addHandler(c: Any, listener: LightTouchHandler): Closeable {
 		val node = c.asJsDynamic()
 
-		fun process(e: JsDynamic?): List<LightTouchHandler.Info> {
+		fun process(e: JsDynamic?, preventDefault: Boolean): List<LightTouchHandler.Info> {
 			val out = arrayListOf<LightTouchHandler.Info>()
 			val touches = e["changedTouches"]
 			for (n in 0 until touches["length"].toInt()) {
@@ -310,15 +310,24 @@ class HtmlLightComponents : LightComponents() {
 					this.id = touch["identifier"].toInt()
 				}
 			}
-			e.call("preventDefault")
+			if (preventDefault) e.call("preventDefault")
 			return out
 		}
 
 		return listOf(
-			node.addEventListener("touchstart", jsFunctionRaw1 { for (info in process(it)) listener.start(info) }),
-			node.addEventListener("touchend", jsFunctionRaw1 { for (info in process(it)) listener.end(info) }),
-			node.addEventListener("touchmove", jsFunctionRaw1 { for (info in process(it)) listener.move(info) })
+			node.addEventListener("touchstart", jsFunctionRaw1 { for (info in process(it, preventDefault = false)) listener.start(info) }),
+			node.addEventListener("touchend", jsFunctionRaw1 { for (info in process(it, preventDefault = false)) listener.end(info) }),
+			node.addEventListener("touchmove", jsFunctionRaw1 { for (info in process(it, preventDefault = true)) listener.move(info) })
 		).closeable()
+	}
+
+	override fun <T> callAction(c: Any, key: LightAction<T>, param: T) {
+		when (key) {
+			LightAction.FOCUS -> {
+				val child = c.asJsDynamic()
+				child.call("focus")
+			}
+		}
 	}
 
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {

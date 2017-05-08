@@ -69,7 +69,7 @@ suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480
 	//	callback(win)
 	//} else {
 	Application(this@withCoroutineContext, light).frame(title, width, height, icon) {
-		callback(agCanvas())
+		callback(agCanvas().apply { focus() })
 	}
 	//}
 	Unit

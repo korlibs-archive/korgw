@@ -6,11 +6,9 @@ import com.soywiz.korag.AG
 import com.soywiz.korag.AGContainer
 import com.soywiz.korag.AGInput
 import com.soywiz.korim.bitmap.Bitmap
-import com.soywiz.korio.async.Signal
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
 import com.soywiz.korio.util.Extra
-import com.soywiz.korio.util.Once
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korma.geom.Anchor
 import com.soywiz.korma.geom.RectangleInt
@@ -139,6 +137,10 @@ open class Component(val app: Application, val type: LightType) : Styled, Extra 
 	var visible by lightProperty(LightProperty.VISIBLE)
 
 	override fun toString(): String = javaClass.simpleName
+
+	fun focus() {
+		lc.callAction(handle, LightAction.FOCUS, null)
+	}
 }
 
 open class Container(app: Application, var layout: Layout, type: LightType = LightType.CONTAINER) : Component(app, type) {
@@ -215,6 +217,7 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 		onMouseUp { updateMouse(it); agInput.onMouseUp(agInput.mouseEvent) }
 		onMouseDown { updateMouse(it); agInput.onMouseDown(agInput.mouseEvent) }
 		onMouseOver { updateMouse(it); agInput.onMouseOver(agInput.mouseEvent) }
+		onMouseClick { updateMouse(it); agInput.onMouseClick(agInput.mouseEvent) }
 
 		onKeyDown { updateKey(it); agInput.onKeyDown(agInput.keyEvent) }
 		onKeyUp { updateKey(it); agInput.onKeyUp(agInput.keyEvent) }

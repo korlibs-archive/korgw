@@ -210,6 +210,14 @@ class AwtLightComponents : LightComponents() {
 		}
 	}
 
+	override fun <T> callAction(c: Any, key: LightAction<T>, param: T) {
+		when (key) {
+			LightAction.FOCUS -> {
+				(c as Component).requestFocus()
+			}
+		}
+	}
+
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
 		when (key) {
 			LightProperty.VISIBLE -> {
