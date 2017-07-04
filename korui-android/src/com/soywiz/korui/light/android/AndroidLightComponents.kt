@@ -14,7 +14,6 @@ import com.soywiz.korim.android.toAndroidBitmap
 import com.soywiz.korio.android.KorioAndroidContext
 import com.soywiz.korio.android.KorioApp
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
-import com.soywiz.korio.util.Cancellable
 import com.soywiz.korui.light.*
 import java.io.Closeable
 
@@ -161,7 +160,7 @@ class AndroidLightComponents : LightComponents() {
 	override fun addHandler(c: Any, listener: LightMouseHandler): Closeable {
 		val cc = c as View
 		cc.setOnClickListener {
-			listener.click(LightMouseHandler.Info())
+			insideEventHandler { listener.click(LightMouseHandler.Info()) }
 		}
 		return Closeable { }
 	}
@@ -178,7 +177,7 @@ class AndroidLightComponents : LightComponents() {
 			val sizeX = scaled_rev((cc.parent as View).width)
 			val sizeY = scaled_rev((cc.parent as View).height)
 			println("LightResizeEvent($sizeX, $sizeY)")
-			listener.resized(LightResizeHandler.Info(sizeX, sizeY))
+			insideEventHandler { listener.resized(LightResizeHandler.Info(sizeX, sizeY)) }
 		}
 
 		KorioApp.resized { send() }

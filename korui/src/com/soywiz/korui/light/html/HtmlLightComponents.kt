@@ -21,7 +21,6 @@ import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
-import com.soywiz.korio.vfs.js.JsStat
 import com.soywiz.korui.light.*
 import java.io.Closeable
 import java.io.FileNotFoundException
@@ -233,11 +232,11 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		return listOf(
-			node.addEventListener("click", jsFunctionRaw1 { listener.click(process(it, 1)) }),
-			node.addEventListener("mouseover", jsFunctionRaw1 { listener.over(process(it, 0)) }),
-			node.addEventListener("mousemove", jsFunctionRaw1 { listener.over(process(it, 0)) }),
-			node.addEventListener("mouseup", jsFunctionRaw1 { listener.up(process(it, 0)) }),
-			node.addEventListener("mousedown", jsFunctionRaw1 { listener.down(process(it, 0)) })
+			node.addEventListener("click", jsFunctionRaw1 { listener.click2(process(it, 1)) }),
+			node.addEventListener("mouseover", jsFunctionRaw1 { listener.over2(process(it, 0)) }),
+			node.addEventListener("mousemove", jsFunctionRaw1 { listener.over2(process(it, 0)) }),
+			node.addEventListener("mouseup", jsFunctionRaw1 { listener.up2(process(it, 0)) }),
+			node.addEventListener("mousedown", jsFunctionRaw1 { listener.down2(process(it, 0)) })
 		).closeable()
 	}
 
@@ -246,11 +245,11 @@ class HtmlLightComponents : LightComponents() {
 		val info = LightChangeHandler.Info()
 
 		return listOf(
-			node.addEventListener("change", jsFunctionRaw1 { listener.changed(info) }),
-			node.addEventListener("keypress", jsFunctionRaw1 { listener.changed(info) }),
-			node.addEventListener("input", jsFunctionRaw1 { listener.changed(info) }),
-			node.addEventListener("textInput", jsFunctionRaw1 { listener.changed(info) }),
-			node.addEventListener("paste", jsFunctionRaw1 { listener.changed(info) })
+			node.addEventListener("change", jsFunctionRaw1 { listener.changed2(info) }),
+			node.addEventListener("keypress", jsFunctionRaw1 { listener.changed2(info) }),
+			node.addEventListener("input", jsFunctionRaw1 { listener.changed2(info) }),
+			node.addEventListener("textInput", jsFunctionRaw1 { listener.changed2(info) }),
+			node.addEventListener("paste", jsFunctionRaw1 { listener.changed2(info) })
 		).closeable()
 	}
 
@@ -264,7 +263,7 @@ class HtmlLightComponents : LightComponents() {
 				window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
 			}
 
-			listener.resized(info.apply {
+			listener.resized2(info.apply {
 				width = window["innerWidth"].toInt()
 				height = window["innerHeight"].toInt()
 			})
@@ -286,9 +285,9 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		return listOf(
-			node.addEventListener("keydown", jsFunctionRaw1 { listener.down(process(it)) }),
-			node.addEventListener("keyup", jsFunctionRaw1 { listener.up(process(it)) }),
-			node.addEventListener("keypress", jsFunctionRaw1 { listener.typed(process(it)) })
+			node.addEventListener("keydown", jsFunctionRaw1 { listener.down2(process(it)) }),
+			node.addEventListener("keyup", jsFunctionRaw1 { listener.up2(process(it)) }),
+			node.addEventListener("keypress", jsFunctionRaw1 { listener.typed2(process(it)) })
 		).closeable()
 	}
 
@@ -315,9 +314,9 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		return listOf(
-			node.addEventListener("touchstart", jsFunctionRaw1 { for (info in process(it, preventDefault = false)) listener.start(info) }),
-			node.addEventListener("touchend", jsFunctionRaw1 { for (info in process(it, preventDefault = false)) listener.end(info) }),
-			node.addEventListener("touchmove", jsFunctionRaw1 { for (info in process(it, preventDefault = true)) listener.move(info) })
+			node.addEventListener("touchstart", jsFunctionRaw1 { for (info in process(it, preventDefault = false)) listener.start2(info) }),
+			node.addEventListener("touchend", jsFunctionRaw1 { for (info in process(it, preventDefault = false)) listener.end2(info) }),
+			node.addEventListener("touchmove", jsFunctionRaw1 { for (info in process(it, preventDefault = true)) listener.move2(info) })
 		).closeable()
 	}
 
@@ -582,4 +581,8 @@ internal object SelectedFilesVfs : Vfs() {
 	suspend override fun stat(path: String): VfsStat {
 		return jsstat(locate(path)).toStat(path, this)
 	}
+}
+
+data class JsStat(val size: Double, var isDirectory: Boolean = false) {
+	fun toStat(path: String, vfs: Vfs): VfsStat = vfs.createExistsStat(path, isDirectory = isDirectory, size = size.toLong())
 }

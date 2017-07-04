@@ -5,7 +5,6 @@ import com.soywiz.korag.agFactory
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.awt.transferTo
-import com.soywiz.korio.util.Cancellable
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.light.*
@@ -82,12 +81,12 @@ class AwtLightComponents : LightComponents() {
 				isMetaDown = e.isMetaDown
 			}
 
-			override fun mouseReleased(e: MouseEvent) = listener.up(populate(e))
-			override fun mousePressed(e: MouseEvent) = listener.down(populate(e))
-			override fun mouseClicked(e: MouseEvent) = listener.click(populate(e))
-			override fun mouseMoved(e: MouseEvent) = listener.over(populate(e))
-			override fun mouseEntered(e: MouseEvent) = listener.enter(populate(e))
-			override fun mouseExited(e: MouseEvent) = listener.exit(populate(e))
+			override fun mouseReleased(e: MouseEvent) = listener.up2(populate(e))
+			override fun mousePressed(e: MouseEvent) = listener.down2(populate(e))
+			override fun mouseClicked(e: MouseEvent) = listener.click2(populate(e))
+			override fun mouseMoved(e: MouseEvent) = listener.over2(populate(e))
+			override fun mouseEntered(e: MouseEvent) = listener.enter2(populate(e))
+			override fun mouseExited(e: MouseEvent) = listener.exit2(populate(e))
 		}
 
 		cc.addMouseListener(adapter)
@@ -107,9 +106,9 @@ class AwtLightComponents : LightComponents() {
 		val adaptor = object : DocumentListener {
 			val info = LightChangeHandler.Info()
 
-			override fun changedUpdate(e: DocumentEvent?) = listener.changed(info)
-			override fun insertUpdate(e: DocumentEvent?) = listener.changed(info)
-			override fun removeUpdate(e: DocumentEvent?) = listener.changed(info)
+			override fun changedUpdate(e: DocumentEvent?) = listener.changed2(info)
+			override fun insertUpdate(e: DocumentEvent?) = listener.changed2(info)
+			override fun removeUpdate(e: DocumentEvent?) = listener.changed2(info)
 		}
 
 		cc?.document?.addDocumentListener(adaptor)
@@ -126,7 +125,7 @@ class AwtLightComponents : LightComponents() {
 		fun send() {
 			val cc2 = (c as JFrame2)
 			val cp = cc2.contentPane
-			listener.resized(info.apply {
+			listener.resized2(info.apply {
 				width = cp.width
 				height = cp.height
 			})
@@ -155,9 +154,9 @@ class AwtLightComponents : LightComponents() {
 				keyCode = e.keyCode
 			}
 
-			override fun keyTyped(e: KeyEvent) = listener.typed(populate(e))
-			override fun keyPressed(e: KeyEvent) = listener.down(populate(e))
-			override fun keyReleased(e: KeyEvent) = listener.up(populate(e))
+			override fun keyTyped(e: KeyEvent) = listener.typed2(populate(e))
+			override fun keyPressed(e: KeyEvent) = listener.down2(populate(e))
+			override fun keyReleased(e: KeyEvent) = listener.up2(populate(e))
 		}
 
 		cc.addKeyListener(adapter)

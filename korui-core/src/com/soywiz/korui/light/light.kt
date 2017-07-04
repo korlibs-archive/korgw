@@ -4,7 +4,6 @@ import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.color.Colors
 import com.soywiz.korio.service.Services
-import com.soywiz.korio.util.Cancellable
 import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.extraProperty
 import com.soywiz.korio.vfs.VfsFile
@@ -22,6 +21,31 @@ open class LightComponents {
 	open fun setParent(c: Any, parent: Any?): Unit = Unit
 
 	var insideEventHandler: Boolean = false; private set
+
+	protected fun <T> insideEventHandler(callback: () -> T): T {
+		val oldEventHandler = this.insideEventHandler
+		try {
+			this.insideEventHandler = true
+			return callback()
+		} finally {
+			this.insideEventHandler = oldEventHandler
+		}
+	}
+
+	protected fun LightMouseHandler.up2(info: LightMouseHandler.Info) = insideEventHandler { this.up(info) }
+	protected fun LightMouseHandler.down2(info: LightMouseHandler.Info) = insideEventHandler { this.down(info) }
+	protected fun LightMouseHandler.click2(info: LightMouseHandler.Info) = insideEventHandler { this.click(info) }
+	protected fun LightMouseHandler.over2(info: LightMouseHandler.Info) = insideEventHandler { this.over(info) }
+	protected fun LightMouseHandler.enter2(info: LightMouseHandler.Info) = insideEventHandler { this.enter(info) }
+	protected fun LightMouseHandler.exit2(info: LightMouseHandler.Info) = insideEventHandler { this.exit(info) }
+	protected fun LightChangeHandler.changed2(info: LightChangeHandler.Info) = insideEventHandler { this.changed(info) }
+	protected fun LightResizeHandler.resized2(info: LightResizeHandler.Info) = insideEventHandler { this.resized(info) }
+	protected fun LightKeyHandler.up2(info: LightKeyHandler.Info) = insideEventHandler { this.up(info) }
+	protected fun LightKeyHandler.down2(info: LightKeyHandler.Info) = insideEventHandler { this.down(info) }
+	protected fun LightKeyHandler.typed2(info: LightKeyHandler.Info) = insideEventHandler { this.typed(info) }
+	protected fun LightTouchHandler.start2(info: LightTouchHandler.Info) = insideEventHandler { this.start(info) }
+	protected fun LightTouchHandler.end2(info: LightTouchHandler.Info) = insideEventHandler { this.end(info) }
+	protected fun LightTouchHandler.move2(info: LightTouchHandler.Info) = insideEventHandler { this.move(info) }
 
 	open fun addHandler(c: Any, listener: LightMouseHandler): Closeable = Closeable { }
 	open fun addHandler(c: Any, listener: LightChangeHandler): Closeable = Closeable { }
