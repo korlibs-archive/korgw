@@ -2,9 +2,7 @@ package com.soywiz.korui.light.awt
 
 import com.soywiz.korag.AG
 import com.soywiz.korag.agFactory
-import com.soywiz.korim.awt.AwtNativeImage
-import com.soywiz.korim.awt.toAwt
-import com.soywiz.korim.awt.transferTo
+import com.soywiz.korim.awt.*
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korui.light.*
@@ -244,7 +242,8 @@ class AwtLightComponents : LightComponents() {
 						image.image = null
 					} else {
 						if (bmp is AwtNativeImage) {
-							image.image = bmp.awtImage
+							image.image = bmp.awtImage.clone()
+
 						} else {
 							if ((image.width != bmp.width) || (image.height != bmp.height)) {
 								//println("*********************** RECREATED NATIVE IMAGE!")

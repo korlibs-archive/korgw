@@ -1,2 +1,3 @@
 com.soywiz.korui.light.awt.AwtLightComponentsFactory # <target=java>
 com.soywiz.korui.light.html.HtmlLightComponentsFactory # <target=js>
+com.soywiz.korui.light.haxelime.HaxeLimeLightComponentsFactory # <target=haxe>
