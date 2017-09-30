@@ -1,7 +1,8 @@
 rootProject.name = 'korui-root'
 include(
+		'korui-common',
 		'korui',
-		'korui-core',
 		'korui-android',
-		'korui-jtransc-example'
+		'korui-js',
+		//'korui-jtransc-example',
 )
