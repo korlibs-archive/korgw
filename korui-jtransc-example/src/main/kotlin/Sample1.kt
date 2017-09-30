@@ -19,7 +19,7 @@ import com.soywiz.korui.ui.*
 import java.util.concurrent.CancellationException
 
 fun main(args: Array<String>) = EventLoop {
-	val image = ResourcesVfs["kotlin.png"].readBitmap()
+	val image = ResourcesVfs["kotlin.png"].readNativeImage()
 
 	//val url = UrlVfs("http://127.0.0.1")
 
@@ -29,7 +29,7 @@ fun main(args: Array<String>) = EventLoop {
 		val c2 = RGBA(255, 255, 255, 255)
 
 		layersKeepAspectRatio(anchor = Anchor.MIDDLE_CENTER, scaleMode = ScaleMode.COVER) {
-			image(Bitmap32(50, 50, { x, y -> if ((x + y) % 2 == 0) c1 else c2 })) {
+			image(Bitmap32(50, 50) { x, y -> if ((x + y) % 2 == 0) c1 else c2 }) {
 				width = 50.pt
 				height = 50.pt
 				smooth = false
