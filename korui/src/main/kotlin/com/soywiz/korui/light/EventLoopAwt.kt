@@ -20,10 +20,15 @@ class EventLoopAwt : EventLoop() {
 	}
 
 	override fun setTimeoutInternal(ms: Int, callback: () -> Unit): Closeable {
+		//try { throw RuntimeException() } catch (e: Throwable) { e.printStackTrace() }
+
+		//println("EventLoopAwt.setTimeoutInternal[1]: $ms")
 		val timer = Timer(ms, {
 			if (SwingUtilities.isEventDispatchThread()) {
+				//println("EventLoopAwt.setTimeoutInternal[2]: $ms")
 				callback()
 			} else {
+				//println("EventLoopAwt.setTimeoutInternal[3]: $ms")
 				SwingUtilities.invokeLater { callback() }
 			}
 		})
