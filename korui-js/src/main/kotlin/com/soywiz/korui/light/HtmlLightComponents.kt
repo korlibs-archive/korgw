@@ -100,7 +100,7 @@ class HtmlLightComponents : LightComponents() {
 		inputFile.style.visibility = "hidden"
 		windowInputFile = inputFile
 		selectedFiles = arrayOf()
-		document["body"].call("appendChild", inputFile)
+		document.body?.appendChild(inputFile)
 	}
 
 	fun addStyles(css: String) {
@@ -268,9 +268,10 @@ class HtmlLightComponents : LightComponents() {
 		val info = LightResizeHandler.Info()
 
 		fun send() {
-			if (window["mainFrame"] != null) {
-				window["mainFrame"]["style"]["width"] = "${window["innerWidth"].toInt()}px"
-				window["mainFrame"]["style"]["height"] = "${window["innerHeight"].toInt()}px"
+			if (mainFrame != null) {
+
+				mainFrame?.style?.width = "${window.innerWidth}px"
+				mainFrame?.style?.height = "${window.innerHeight}px"
 			}
 
 			listener.resized2(info.apply {
@@ -487,7 +488,7 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = korioSuspendCoroutine { continuation ->
-		val inputFile = window["inputFile"]
+		val inputFile = windowInputFile
 		var completedOnce = false
 		var files = arrayOf<File>()
 
@@ -507,11 +508,11 @@ class HtmlLightComponents : LightComponents() {
 			}
 		}
 
-		inputFile["value"] = ""
+		windowInputFile?.value = ""
 
-		inputFile["onclick"] = {
-			document["body"]["onfocus"] = {
-				document["body"]["onfocus"] = null
+		windowInputFile?.onclick = {
+			document.body?.onfocus = {
+				document.body?.onfocus = null
 				window.setTimeout({
 					completed()
 				}, 2000)
@@ -519,14 +520,14 @@ class HtmlLightComponents : LightComponents() {
 			Unit
 		}
 
-		inputFile["onchange"] = { e ->
-			files = e["target"]["files"]
+		windowInputFile?.onchange = { e ->
+			files = e?.target.asDynamic()["files"]
 			//var v = this.value;
 			//console.log(v);
 			completed()
 		}
 
-		inputFile.click()
+		inputFile?.click()
 	}
 
 	override fun openURL(url: String): Unit {
@@ -534,7 +535,7 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun getDpi(): Double {
-		return (window["devicePixelRatio"].toInt() * 96).toDouble()
+		return (window.devicePixelRatio.toInt() * 96).toDouble()
 	}
 }
 
