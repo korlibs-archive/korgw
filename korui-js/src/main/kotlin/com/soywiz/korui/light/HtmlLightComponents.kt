@@ -460,9 +460,10 @@ class HtmlLightComponents : LightComponents() {
 		childStyle.width = "${width}px"
 		childStyle.height = "${height}px"
 
-		child as HTMLCanvasElement
-		child.width = (width * devicePixelRatio).toInt()
-		child.height = (height * devicePixelRatio).toInt()
+		if (child is HTMLCanvasElement) {
+			child.width = (width * devicePixelRatio).toInt()
+			child.height = (height * devicePixelRatio).toInt()
+		}
 	}
 
 	override fun repaint(c: Any) {
