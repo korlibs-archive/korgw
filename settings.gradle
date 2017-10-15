@@ -6,3 +6,8 @@ include(
 		'korui-js',
 		//'korui-jtransc-example',
 )
+
+project(':korui-common').projectDir = file('korui/common')
+project(':korui').projectDir = file('korui/jvm')
+project(':korui-android').projectDir = file('korui/android')
+project(':korui-js').projectDir = file('korui/js')

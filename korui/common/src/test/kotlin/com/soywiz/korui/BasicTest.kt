@@ -4,8 +4,8 @@ import com.soywiz.korio.async.EventLoopTest
 import com.soywiz.korio.async.sync
 import com.soywiz.korui.light.log.LogLightComponents
 import com.soywiz.korui.ui.button
-import org.junit.Assert
 import org.junit.Test
+import kotlin.test.assertEquals
 
 class BasicTest {
 	val eventLoop = EventLoopTest()
@@ -21,7 +21,7 @@ class BasicTest {
 		eventLoop.step(60)
 		eventLoop.step(60)
 
-		Assert.assertEquals(
+		assertEquals(
 			"""
 				create(FRAME)=0
 				setProperty(0,LightProperty[TEXT],Title)
