@@ -1,5 +1,7 @@
 ## Korui : Kotlin cORoutines User Interfaces : korio + kimage + korui for JVM, Kotlin-JS, Android, Jtransc+Browser
 
+[![Build Status](https://travis-ci.org/korlibs/korui.svg?branch=master)](https://travis-ci.org/korlibs/korui)
+
 With Korui you can create your UI once, and run it in HTML5, Java AWT and Android.
 
 ![](https://raw.githubusercontent.com/soywiz/kor/master/logos/128/korui.png)
