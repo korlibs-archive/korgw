@@ -7,9 +7,9 @@ import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.format.CanvasNativeImage
 import com.soywiz.korim.format.HtmlImage
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
-import com.soywiz.korio.lang.CancellationException
+import com.soywiz.korio.CancellationException
 import com.soywiz.korio.lang.Closeable
-import com.soywiz.korio.lang.FileNotFoundException
+import com.soywiz.korio.FileNotFoundException
 import com.soywiz.korio.lang.closeable
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
