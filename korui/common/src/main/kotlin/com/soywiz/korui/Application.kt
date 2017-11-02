@@ -6,6 +6,7 @@ import com.soywiz.korio.async.await
 import com.soywiz.korio.async.eventLoop
 import com.soywiz.korio.async.spawn
 import com.soywiz.korio.coroutine.CoroutineContext
+import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.coroutine.withCoroutineContext
 import com.soywiz.korui.geom.len.Length
 import com.soywiz.korui.light.LightComponents
@@ -63,13 +64,27 @@ suspend fun Application.frame(title: String, width: Int = 640, height: Int = 480
 }
 
 
-suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, light: LightComponents = defaultLight, callback: suspend (AGContainer) -> Unit = {}): Unit = withCoroutineContext {
+suspend fun CanvasApplication(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, light: LightComponents = defaultLight, callback: suspend (AGContainer) -> Unit = {}): Unit {
 	//if (agFactory.supportsNativeFrame) {
 	//	val win = agFactory.createFastWindow(title, width, height)
 	//	callback(win)
 	//} else {
-	Application(this@withCoroutineContext, light).frame(title, width, height, icon) {
+	val application = Application(getCoroutineContext(), light)
+	application.frame(title, width, height, icon) {
 		callback(agCanvas().apply { focus() })
+	}
+	//}
+	Unit
+}
+
+suspend fun CanvasApplicationEx(title: String, width: Int = 640, height: Int = 480, icon: Bitmap? = null, light: LightComponents = defaultLight, callback: suspend (AGContainer, Frame) -> Unit = { c, f -> }): Unit {
+	//if (agFactory.supportsNativeFrame) {
+	//	val win = agFactory.createFastWindow(title, width, height)
+	//	callback(win)
+	//} else {
+	val application = Application(getCoroutineContext(), light)
+	application.frame(title, width, height, icon) {
+		callback(agCanvas().apply { focus() }, this)
 	}
 	//}
 	Unit
