@@ -6,10 +6,10 @@ import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korim.format.CanvasNativeImage
 import com.soywiz.korim.format.HtmlImage
-import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.CancellationException
-import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.FileNotFoundException
+import com.soywiz.korio.coroutine.korioSuspendCoroutine
+import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.lang.closeable
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
@@ -19,7 +19,8 @@ import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
 import com.soywiz.korio.vfs.VfsStat
-import org.khronos.webgl.Uint8Array
+import org.khronos.webgl.ArrayBuffer
+import org.khronos.webgl.Int8Array
 import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.EventTarget
@@ -570,11 +571,7 @@ internal object SelectedFilesVfs : Vfs() {
 
 				reader.onload = {
 					val result = reader.result
-					//val u8array = window["Uint8Array"].new2(result)
-					val u8array = Uint8Array(result as Uint8Array)
-					val out = ByteArray(u8array.length.toInt())
-					(out.asDynamic()).setArraySlice(0, u8array)
-					c.resume(out)
+					c.resume(Int8Array(result.unsafeCast<ArrayBuffer>()).unsafeCast<ByteArray>())
 				}
 
 				reader.onerror = {
