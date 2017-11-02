@@ -18,7 +18,7 @@ buildscript {
 
 allprojects {
 	group 'com.soywiz'
-	version '0.15.6-SNAPSHOT'
+	version '0.15.6'
 
 	if (project == rootProject) {
 		new File(rootProject.rootDir, "korui/common/src/main/kotlin/com/soywiz/korui/KoruiVersion.kt").write(
