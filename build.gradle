@@ -1,6 +1,6 @@
 buildscript {
-	ext.koragVersion = '0.15.4'
-	ext.kotlinVersion = '1.2.0-beta-88'
+	ext.koragVersion = '0.16.0'
+	ext.kotlinVersion = '1.2.0-rc-39'
 	ext.compilerVersion = ext.kotlinVersion
 	ext.librariesVersion = ext.kotlinVersion
 	ext.eapChannel = 'http://dl.bintray.com/kotlin/kotlin-eap-1.2'
@@ -18,7 +18,7 @@ buildscript {
 
 allprojects {
 	group 'com.soywiz'
-	version '0.15.7'
+	version '0.15.8-SNAPSHOT'
 
 	if (project == rootProject) {
 		new File(rootProject.rootDir, "korui/common/src/main/kotlin/com/soywiz/korui/KoruiVersion.kt").write(
