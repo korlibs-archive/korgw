@@ -1,3 +1,3 @@
 package com.soywiz.korui
 
-val KORUI_VERSION = "0.16.0"
+val KORUI_VERSION = "0.16.1-SNAPSHOT"
