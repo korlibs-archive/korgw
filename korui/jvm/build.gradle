@@ -4,4 +4,5 @@ dependencies {
 	expectedBy project(":korui-common")
 	testImplementation project(":korui-common")
 	compile "com.soywiz:korag:$koragVersion"
+	compile "com.soywiz:klock:$klockVersion"
 }

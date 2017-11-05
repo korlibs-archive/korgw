@@ -2,4 +2,5 @@ apply plugin: 'kotlin-platform-common'
 
 dependencies {
 	compile "com.soywiz:korag-common:$koragVersion"
+	compile "com.soywiz:klock-common:$klockVersion"
 }

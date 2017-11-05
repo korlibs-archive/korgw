@@ -4,4 +4,5 @@ dependencies {
 	expectedBy project(":korui-common")
 
 	compile "com.soywiz:korag-js:$koragVersion"
+	compile "com.soywiz:klock-js:$klockVersion"
 }
