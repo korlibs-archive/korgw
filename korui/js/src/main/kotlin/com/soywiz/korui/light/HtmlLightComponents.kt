@@ -188,7 +188,10 @@ class HtmlLightComponents : LightComponents() {
 			}
 			LightType.AGCANVAS -> {
 				agg = agFactory.create()
-				agg?.nativeComponent as HTMLCanvasElement
+				val cc = agg.nativeComponent as HTMLCanvasElement
+				cc.tabIndex = 1
+				cc.style.outline = "none"
+				cc
 			}
 			else -> {
 				(document.createElement("div") as HTMLElement).apply {
