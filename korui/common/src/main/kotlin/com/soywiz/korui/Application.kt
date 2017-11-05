@@ -4,7 +4,6 @@ import com.soywiz.korag.AGContainer
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.eventLoop
-import com.soywiz.korio.async.spawn
 import com.soywiz.korio.coroutine.CoroutineContext
 import com.soywiz.korio.coroutine.getCoroutineContext
 import com.soywiz.korio.coroutine.withCoroutineContext
@@ -26,19 +25,13 @@ class Application(val coroutineContext: CoroutineContext, val light: LightCompon
 	}
 
 	init {
-		//println("pixelsPerInch:${lengthContext.pixelsPerInch}")
-		spawn(coroutineContext) {
-			while (true) {
-				coroutineContext.eventLoop.sleep(16)
-				for (frame in frames.filter { !it.valid }) {
-					if (!frame.valid) {
-						//println("!!!!!!!!!!relayout")
-						//Toolkit.getDefaultToolkit().setDynamicLayout(false);
-						//println(SwingUtilities.isEventDispatchThread())
-						frame.setBoundsAndRelayout(frame.actualBounds)
-						light.repaint(frame.handle)
-					}
-				}
+		coroutineContext.eventLoop.animationFrameLoop {
+			var n = 0
+			while (n < frames.size) {
+				val frame = frames[n++]
+				if (frame.valid) continue
+				frame.setBoundsAndRelayout(frame.actualBounds)
+				light.repaint(frame.handle)
 			}
 		}
 	}
