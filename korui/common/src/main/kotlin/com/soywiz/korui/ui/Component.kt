@@ -89,17 +89,27 @@ open class Component(val app: Application, val type: LightType) : Styled, Extra 
 		lc.setParent(handle, parent?.handle)
 	}
 
-	var parent: Container? = null
+	open var parent: Container? = null
 		set(newParent) {
-			if (newParent != null) {
-				newParent.children -= this
+			if (field != newParent) {
+				val old = field
+				if (newParent != null) {
+					newParent.children -= this
+				}
+				field = newParent
+				newParent?.children?.add(this)
+				lc.setParent(handle, newParent?.handle)
+				//invalidate()
+				newParent?.invalidate()
+				ancestorChanged(old, newParent)
 			}
-			field = newParent
-			newParent?.children?.add(this)
-			lc.setParent(handle, newParent?.handle)
-			//invalidate()
-			newParent?.invalidate()
 		}
+
+	val root: Container? get() = parent?.root ?: (this as? Container?)
+	val parentFrame: Frame? get() = (this as? Frame?) ?: parent?.parentFrame
+
+	open fun ancestorChanged(old: Container?, newParent: Container?) {
+	}
 
 	fun invalidate() {
 		//println("------invalidate")
@@ -136,7 +146,7 @@ open class Component(val app: Application, val type: LightType) : Styled, Extra 
 
 	var visible by lightProperty(LightProperty.VISIBLE)
 
-	override fun toString(): String = this::class.simpleName ?: "unknown"
+	override fun toString(): String = "Component($type)"
 
 	fun focus() {
 		lc.callAction(handle, LightAction.FOCUS, null)
@@ -168,10 +178,16 @@ open class Container(app: Application, var layout: Layout, type: LightType = Lig
 		other.parent = this
 		return other
 	}
+
+	override fun ancestorChanged(old: Container?, newParent: Container?) {
+		for (child in children) child.ancestorChanged(old, newParent)
+	}
+
+	override fun toString(): String = "Container($type)"
 }
 
 open class ScrollPane(app: Application, layout: Layout) : Container(app, layout, LightType.SCROLL_PANE) {
-
+	override fun toString(): String = "ScrollPane"
 }
 
 class Frame(app: Application, title: String) : Container(app, LayeredLayout(app), LightType.FRAME) {
@@ -191,6 +207,8 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 	suspend fun prompt(message: String): String = lc.dialogPrompt(handle, message)
 	suspend fun alert(message: String): Unit = lc.dialogAlert(handle, message)
 	fun openURL(url: String): Unit = lc.openURL(url)
+
+	override fun toString(): String = "Frame"
 }
 
 class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContainer {
@@ -199,8 +217,10 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 	override val agInput: AGInput = AGInput()
 
 	private fun updateMouse(e: LightMouseHandler.Info) {
-		agInput.mouseEvent.x = e.x
-		agInput.mouseEvent.y = e.y
+		agInput.mouseEvent.apply {
+			x = e.x
+			y = e.y
+		}
 	}
 
 	private fun updateKey(e: LightKeyHandler.Info) {
@@ -228,6 +248,18 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 		onTouchMove { updateTouch(it); agInput.onTouchMove(agInput.touchEvent) }
 	}
 
+	//var registeredKeyEvents = false
+
+	//override fun ancestorChanged(old: Container?, newParent: Container?) {
+	//	if (!registeredKeyEvents) {
+	//		registeredKeyEvents = true
+	//		println("Registered AgCanvas.keyEvents to $parentFrame")
+	//		parentFrame?.onKeyDown?.invoke { updateKey(it); agInput.onKeyDown(agInput.keyEvent) }
+	//		parentFrame?.onKeyUp?.invoke { updateKey(it); agInput.onKeyUp(agInput.keyEvent) }
+	//		parentFrame?.onKeyTyped?.invoke { updateKey(it); agInput.onKeyTyped(agInput.keyEvent) }
+	//	}
+	//}
+
 	override fun repaint() {
 		ag.repaint()
 	}
@@ -240,6 +272,8 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 	fun onRender(callback: (ag: AG) -> Unit) {
 		ag.onRender { callback(it) }
 	}
+
+	override fun toString(): String = "AGCanvas"
 }
 
 class Button(app: Application, text: String) : Component(app, LightType.BUTTON) {
@@ -248,6 +282,8 @@ class Button(app: Application, text: String) : Component(app, LightType.BUTTON) 
 	init {
 		this.text = text
 	}
+
+	override fun toString(): String = "Button"
 }
 
 class Label(app: Application, text: String) : Component(app, LightType.LABEL) {
@@ -256,6 +292,8 @@ class Label(app: Application, text: String) : Component(app, LightType.LABEL) {
 	init {
 		this.text = text
 	}
+
+	override fun toString(): String = "Label"
 }
 
 class TextField(app: Application, text: String) : Component(app, LightType.TEXT_FIELD) {
@@ -264,6 +302,8 @@ class TextField(app: Application, text: String) : Component(app, LightType.TEXT_
 	init {
 		this.text = text
 	}
+
+	override fun toString(): String = "TextField"
 }
 
 class TextArea(app: Application, text: String) : Component(app, LightType.TEXT_AREA) {
@@ -272,6 +312,8 @@ class TextArea(app: Application, text: String) : Component(app, LightType.TEXT_A
 	init {
 		this.text = text
 	}
+
+	override fun toString(): String = "TextArea"
 }
 
 class CheckBox(app: Application, text: String, initialChecked: Boolean) : Component(app, LightType.CHECK_BOX) {
@@ -282,6 +324,8 @@ class CheckBox(app: Application, text: String, initialChecked: Boolean) : Compon
 		this.text = text
 		this.checked = initialChecked
 	}
+
+	override fun toString(): String = "CheckBox"
 }
 
 class Progress(app: Application, current: Int = 0, max: Int = 100) : Component(app, LightType.PROGRESS) {
@@ -296,9 +340,12 @@ class Progress(app: Application, current: Int = 0, max: Int = 100) : Component(a
 	init {
 		set(current, max)
 	}
+
+	override fun toString(): String = "Progress"
 }
 
 class Spacer(app: Application) : Component(app, LightType.CONTAINER) {
+	override fun toString(): String = "Spacer"
 }
 
 class Image(app: Application) : Component(app, LightType.IMAGE) {
@@ -316,6 +363,8 @@ class Image(app: Application) : Component(app, LightType.IMAGE) {
 	fun refreshImage() {
 		setProperty(LightProperty.IMAGE, image, reset = true)
 	}
+
+	override fun toString(): String = "Image"
 }
 
 //fun Application.createFrame(): Frame = Frame(this.light)
