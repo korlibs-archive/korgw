@@ -2,13 +2,13 @@
 
 package com.soywiz.korui.ui
 
+import com.soywiz.kds.Extra
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGContainer
 import com.soywiz.korag.AGInput
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
-import com.soywiz.korio.util.Extra
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korma.geom.Anchor
 import com.soywiz.korma.geom.RectangleInt

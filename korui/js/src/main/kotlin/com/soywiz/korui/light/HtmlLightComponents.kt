@@ -1,5 +1,6 @@
 package com.soywiz.korui.light
 
+import com.soywiz.kmem.arraycopy
 import com.soywiz.korag.AG
 import com.soywiz.korag.agFactory
 import com.soywiz.korim.bitmap.Bitmap32
@@ -14,7 +15,6 @@ import com.soywiz.korio.lang.closeable
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
 import com.soywiz.korio.stream.toAsyncStream
-import com.soywiz.korio.typedarray.copyRangeTo
 import com.soywiz.korio.vfs.Vfs
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korio.vfs.VfsOpenMode
@@ -585,7 +585,7 @@ internal object SelectedFilesVfs : Vfs() {
 
 			suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
 				val data = _read(jsfile, position.toDouble(), len)
-				data.copyRangeTo(0, buffer, offset, data.size)
+				arraycopy(data, 0, buffer, offset, data.size)
 				return data.size
 			}
 

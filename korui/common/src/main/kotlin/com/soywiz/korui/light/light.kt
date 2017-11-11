@@ -1,11 +1,11 @@
 package com.soywiz.korui.light
 
+import com.soywiz.kds.Extra
+import com.soywiz.kds.extraProperty
 import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.color.Colors
 import com.soywiz.korio.lang.Closeable
-import com.soywiz.korio.util.Extra
-import com.soywiz.korio.util.extraProperty
 import com.soywiz.korio.vfs.VfsFile
 
 expect object NativeLightsComponentsFactory : LightComponentsFactory {

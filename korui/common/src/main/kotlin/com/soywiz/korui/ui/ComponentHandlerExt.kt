@@ -1,7 +1,7 @@
 package com.soywiz.korui.ui
 
+import com.soywiz.kds.Extra
 import com.soywiz.korio.async.Signal
-import com.soywiz.korio.util.Extra
 import com.soywiz.korio.util.Once
 import com.soywiz.korui.light.*
 
