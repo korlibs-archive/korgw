@@ -31,10 +31,6 @@ import org.w3c.files.FileReader
 import kotlin.browser.document
 import kotlin.browser.window
 
-actual object NativeLightsComponentsFactory : LightComponentsFactory {
-	actual override fun create(): LightComponents = HtmlLightComponents()
-}
-
 var windowInputFile: HTMLInputElement? = null
 var selectedFiles = arrayOf<File>()
 var mainFrame: HTMLElement? = null
@@ -384,7 +380,7 @@ class HtmlLightComponents : LightComponents() {
 				if (v != null) {
 					val href = HtmlImage.htmlCanvasToDataUrl(HtmlImage.bitmapToHtmlCanvas(v.toBMP32()))
 
-					var link: HTMLLinkElement? = document.querySelector("link[rel*='icon']") as? HTMLLinkElement?
+					var link: HTMLLinkElement? = document.querySelector("link[rel*='icon']").unsafeCast<HTMLLinkElement>()
 					if (link == null) {
 						link = document.createElement("link") as HTMLLinkElement
 					}
@@ -481,8 +477,8 @@ class HtmlLightComponents : LightComponents() {
 		}, 0)
 	}
 
-	suspend override fun dialogPrompt(c: Any, message: String): String = korioSuspendCoroutine { c ->
-		val result = window.prompt(message)
+	suspend override fun dialogPrompt(c: Any, message: String, initialValue: String): String = korioSuspendCoroutine { c ->
+		val result = window.prompt(message, initialValue)
 		window.setTimeout({
 			if (result == null) {
 				c.resumeWithException(CancellationException("cancelled"))

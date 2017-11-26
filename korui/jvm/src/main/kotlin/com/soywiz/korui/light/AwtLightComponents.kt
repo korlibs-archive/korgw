@@ -23,10 +23,6 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.JTextComponent
 
-actual object NativeLightsComponentsFactory : LightComponentsFactory {
-	actual override fun create(): LightComponents = AwtLightComponents()
-}
-
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class AwtLightComponents : LightComponents() {
 	init {
@@ -310,9 +306,11 @@ class AwtLightComponents : LightComponents() {
 		JOptionPane.showMessageDialog(null, message)
 	}
 
-	suspend override fun dialogPrompt(c: Any, message: String): String {
+	suspend override fun dialogPrompt(c: Any, message: String, initialValue: String): String {
 		val jpf = JTextField()
 		jpf.addAncestorListener(RequestFocusListener())
+		jpf.text = initialValue
+		jpf.selectAll()
 		val result = JOptionPane.showConfirmDialog(null, arrayOf(JLabel(message), jpf), "Reply:", JOptionPane.OK_CANCEL_OPTION)
 		if (result != JFileChooser.APPROVE_OPTION) throw CancellationException()
 		return jpf.text

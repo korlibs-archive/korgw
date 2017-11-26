@@ -204,7 +204,7 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 		return lc.dialogOpenFile(handle, filter)
 	}
 
-	suspend fun prompt(message: String): String = lc.dialogPrompt(handle, message)
+	suspend fun prompt(message: String, initialValue: String = ""): String = lc.dialogPrompt(handle, message, initialValue)
 	suspend fun alert(message: String): Unit = lc.dialogAlert(handle, message)
 	fun openURL(url: String): Unit = lc.openURL(url)
 

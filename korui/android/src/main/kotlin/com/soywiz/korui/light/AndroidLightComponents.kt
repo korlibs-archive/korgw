@@ -16,10 +16,6 @@ import com.soywiz.korio.android.KorioApp
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.lang.Closeable
 
-actual object NativeLightsComponentsFactory : LightComponentsFactory {
-	actual override fun create(): LightComponents = AndroidLightComponents()
-}
-
 class AndroidLightComponents : LightComponents() {
 	val activity = KorioAndroidContext
 	//val scale = KorioAndroidContext.resources.displayMetrics.density

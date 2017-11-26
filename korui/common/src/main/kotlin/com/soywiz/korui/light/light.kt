@@ -63,7 +63,7 @@ open class LightComponents {
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = Unit
 	open fun repaint(c: Any): Unit = Unit
 	open suspend fun dialogAlert(c: Any, message: String): Unit = Unit
-	open suspend fun dialogPrompt(c: Any, message: String): String = throw UnsupportedOperationException()
+	open suspend fun dialogPrompt(c: Any, message: String, initialValue: String = ""): String = throw UnsupportedOperationException()
 	open suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = throw UnsupportedOperationException()
 	open fun openURL(url: String): Unit = Unit
 	open fun open(file: VfsFile): Unit = openURL(file.absolutePath)
