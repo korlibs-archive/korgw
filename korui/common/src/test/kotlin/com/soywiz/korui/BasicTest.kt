@@ -2,6 +2,7 @@ package com.soywiz.korui
 
 import com.soywiz.korio.async.EventLoopTest
 import com.soywiz.korio.async.sync
+import com.soywiz.korio.util.OS
 import com.soywiz.korui.light.log.LogLightComponents
 import com.soywiz.korui.ui.button
 import org.junit.Test
@@ -12,17 +13,19 @@ class BasicTest {
 	val lc = LogLightComponents()
 
 	@Test
-	fun name() = sync(eventLoop) {
-		val frame = Application(lc).frame("Title") {
-			button("Hello")
-		}
-		eventLoop.step(60)
-		eventLoop.step(60)
-		eventLoop.step(60)
-		eventLoop.step(60)
+	fun name() {
+		if (OS.isJs) return
+		sync(eventLoop) {
+			val frame = Application(lc).frame("Title") {
+				button("Hello")
+			}
+			eventLoop.step(60)
+			eventLoop.step(60)
+			eventLoop.step(60)
+			eventLoop.step(60)
 
-		assertEquals(
-			"""
+			assertEquals(
+					"""
 				create(FRAME)=0
 				setProperty(0,LightProperty[TEXT],Title)
 				setBounds(0,0,0,640,480)
@@ -34,7 +37,8 @@ class BasicTest {
 				setBounds(1,0,0,640,480)
 				setBounds(0,0,0,640,480)
 			""".trimIndent(),
-			lc.log.joinToString("\n")
-		)
+					lc.log.joinToString("\n")
+			)
+		}
 	}
 }
