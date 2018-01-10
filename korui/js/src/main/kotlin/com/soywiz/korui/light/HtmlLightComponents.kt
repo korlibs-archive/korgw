@@ -236,8 +236,8 @@ class HtmlLightComponents : LightComponents() {
 
 		val info = LightMouseHandler.Info()
 		fun process(e: MouseEvent, buttons: Int) = info.apply {
-			this.x = (e.offsetX.toInt() * devicePixelRatio).toInt()
-			this.y = (e.offsetY.toInt() * devicePixelRatio).toInt()
+			this.x = (e.offsetX.toInt())
+			this.y = (e.offsetY.toInt())
 			this.buttons = buttons
 		}
 
