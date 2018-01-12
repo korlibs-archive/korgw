@@ -1,5 +1,5 @@
 buildscript {
-	ext.projectVersion = '0.19.2-SNAPSHOT'
+	ext.projectVersion = '0.19.2'
 	ext.projectName = 'korui'
 	ext.projectGroup = 'com.soywiz'
 	ext.projectDesc = 'Korui: Kotlin cORoutines User Interfaces for Kotlin Common'
