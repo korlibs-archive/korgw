@@ -11,6 +11,7 @@ import com.soywiz.korio.CancellationException
 import com.soywiz.korio.FileNotFoundException
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.lang.Closeable
+import com.soywiz.korio.lang.Dynamic
 import com.soywiz.korio.lang.closeable
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
@@ -311,9 +312,11 @@ class HtmlLightComponents : LightComponents() {
 
 		fun process(e: Event, preventDefault: Boolean): List<LightTouchHandler.Info> {
 			val out = arrayListOf<LightTouchHandler.Info>()
-			val touches = e.asDynamic().changedTouches
-			for (n in 0 until touches.length.toInt()) {
-				val touch = touches[n]
+
+			val touches = e.unsafeCast<dynamic>().changedTouches
+			val touchesLength: Int = touches.length.unsafeCast<Int>()
+			for (n in 0 until touchesLength) {
+				val touch = touches[n].unsafeCast<dynamic>()
 				out += LightTouchHandler.Info().apply {
 					this.x = (touch.pageX * devicePixelRatio)
 					this.y = (touch.pageY * devicePixelRatio)
@@ -325,8 +328,8 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		return listOf(
-			node.addCloseableEventListener("touchstart", { for (info in process(it, preventDefault = false)) listener.start2(info) }),
-			node.addCloseableEventListener("touchend", { for (info in process(it, preventDefault = false)) listener.end2(info) }),
+			node.addCloseableEventListener("touchstart", { for (info in process(it, preventDefault = true)) listener.start2(info) }),
+			node.addCloseableEventListener("touchend", { for (info in process(it, preventDefault = true)) listener.end2(info) }),
 			node.addCloseableEventListener("touchmove", { for (info in process(it, preventDefault = true)) listener.move2(info) })
 		).closeable()
 	}
