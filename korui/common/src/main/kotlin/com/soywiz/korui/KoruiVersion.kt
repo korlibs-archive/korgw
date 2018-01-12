@@ -1,3 +1,3 @@
 package com.soywiz.korui
 
-internal const val KORUI_VERSION = "0.19.2"
+internal const val KORUI_VERSION = "0.19.3-SNAPSHOT"
