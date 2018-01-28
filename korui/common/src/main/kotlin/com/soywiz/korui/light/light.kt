@@ -55,6 +55,7 @@ open class LightComponents {
 	open fun addHandler(c: Any, listener: LightKeyHandler): Closeable = Closeable { }
 	open fun addHandler(c: Any, listener: LightGamepadHandler): Closeable = Closeable { }
 	open fun addHandler(c: Any, listener: LightTouchHandler): Closeable = Closeable { }
+	open fun addHandler(c: Any, listener: LightDropHandler): Closeable = Closeable { }
 
 	open fun getDpi(): Double = 96.0
 	open fun <T> callAction(c: Any, key: LightAction<T>, param: T): Unit = Unit
@@ -63,7 +64,9 @@ open class LightComponents {
 	open fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int): Unit = Unit
 	open fun repaint(c: Any): Unit = Unit
 	open suspend fun dialogAlert(c: Any, message: String): Unit = Unit
-	open suspend fun dialogPrompt(c: Any, message: String, initialValue: String = ""): String = throw UnsupportedOperationException()
+	open suspend fun dialogPrompt(c: Any, message: String, initialValue: String = ""): String =
+		throw UnsupportedOperationException()
+
 	open suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = throw UnsupportedOperationException()
 	open fun openURL(url: String): Unit = Unit
 	open fun open(file: VfsFile): Unit = openURL(file.absolutePath)
@@ -98,6 +101,14 @@ open class LightMouseHandler {
 	open fun up(info: Info) = Unit
 	open fun down(info: Info) = Unit
 	open fun click(info: Info) = Unit
+}
+
+open class LightDropHandler {
+	data class FileInfo(
+		val files: List<VfsFile>
+	)
+
+	open fun files(info: FileInfo) = Unit
 }
 
 open class LightKeyHandler {

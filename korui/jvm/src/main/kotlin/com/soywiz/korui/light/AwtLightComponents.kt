@@ -10,9 +10,13 @@ import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.vfs.LocalVfs
 import com.soywiz.korio.vfs.VfsFile
 import java.awt.*
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.UnsupportedFlavorException
+import java.awt.dnd.*
 import java.awt.event.*
 import java.awt.image.BufferedImage
 import java.io.File
+import java.io.IOException
 import java.net.URI
 import java.util.concurrent.CancellationException
 import javax.swing.*
@@ -111,6 +115,28 @@ class AwtLightComponents : LightComponents() {
 
 		return Closeable {
 			cc?.document?.removeDocumentListener(adaptor)
+		}
+	}
+
+	override fun addHandler(c: Any, listener: LightDropHandler): Closeable {
+		val cc = c as JFrame
+
+		val oldTH = cc.transferHandler
+		cc.transferHandler = object : TransferHandler() {
+			override fun canImport(support: TransferHandler.TransferSupport): Boolean {
+				return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)
+			}
+
+			override fun importData(support: TransferHandler.TransferSupport): Boolean {
+				if (!canImport(support)) return false
+				val l = support.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
+				listener.files(LightDropHandler.FileInfo(l.map { LocalVfs(it) }))
+				return true
+			}
+		}
+
+		return Closeable {
+			cc.transferHandler = oldTH
 		}
 	}
 

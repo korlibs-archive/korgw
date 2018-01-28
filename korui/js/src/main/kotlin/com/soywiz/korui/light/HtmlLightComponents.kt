@@ -9,9 +9,10 @@ import com.soywiz.korim.format.CanvasNativeImage
 import com.soywiz.korim.format.HtmlImage
 import com.soywiz.korio.CancellationException
 import com.soywiz.korio.FileNotFoundException
+import com.soywiz.korio.async.SuspendingSequence
+import com.soywiz.korio.async.toAsync
 import com.soywiz.korio.coroutine.korioSuspendCoroutine
 import com.soywiz.korio.lang.Closeable
-import com.soywiz.korio.lang.Dynamic
 import com.soywiz.korio.lang.closeable
 import com.soywiz.korio.stream.AsyncStream
 import com.soywiz.korio.stream.AsyncStreamBase
@@ -47,7 +48,8 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	init {
-		addStyles("""
+		addStyles(
+			"""
 			body {
 				font: 11pt Arial;
 			}
@@ -90,7 +92,8 @@ class HtmlLightComponents : LightComponents() {
 				white-space: nowrap;
 				resize: none;
 			}
-		""")
+		"""
+		)
 
 		document.body?.style?.background = "#f0f0f0"
 		val inputFile = document.createElement("input") as HTMLInputElement
@@ -328,9 +331,35 @@ class HtmlLightComponents : LightComponents() {
 		}
 
 		return listOf(
-			node.addCloseableEventListener("touchstart", { for (info in process(it, preventDefault = true)) listener.start2(info) }),
-			node.addCloseableEventListener("touchend", { for (info in process(it, preventDefault = true)) listener.end2(info) }),
-			node.addCloseableEventListener("touchmove", { for (info in process(it, preventDefault = true)) listener.move2(info) })
+			node.addCloseableEventListener(
+				"touchstart",
+				{ for (info in process(it, preventDefault = true)) listener.start2(info) }),
+			node.addCloseableEventListener(
+				"touchend",
+				{ for (info in process(it, preventDefault = true)) listener.end2(info) }),
+			node.addCloseableEventListener(
+				"touchmove",
+				{ for (info in process(it, preventDefault = true)) listener.move2(info) })
+		).closeable()
+	}
+
+	override fun addHandler(c: Any, listener: LightDropHandler): Closeable {
+		val node = c as HTMLElement
+
+		fun ondrop(e: DragEvent) {
+			val dt = e.dataTransfer ?: return
+			val files = arrayListOf<File>()
+			for (n in 0 until dt.items.length) {
+				val item = dt.items[n] ?: continue
+				val file = item.getAsFile() ?: continue
+				files += file
+			}
+			val fileSystem = JsFilesVfs(files.toTypedArray())
+			listener.files(LightDropHandler.FileInfo(files.map { fileSystem[it.name] }))
+		}
+
+		return listOf(
+			node.addCloseableEventListener("drop") { ondrop(it as DragEvent) }
 		).closeable()
 	}
 
@@ -383,7 +412,8 @@ class HtmlLightComponents : LightComponents() {
 				if (v != null) {
 					val href = HtmlImage.htmlCanvasToDataUrl(HtmlImage.bitmapToHtmlCanvas(v.toBMP32()))
 
-					var link: HTMLLinkElement? = document.querySelector("link[rel*='icon']").unsafeCast<HTMLLinkElement>()
+					var link: HTMLLinkElement? =
+						document.querySelector("link[rel*='icon']").unsafeCast<HTMLLinkElement>()
 					if (link == null) {
 						link = document.createElement("link") as HTMLLinkElement
 					}
@@ -480,18 +510,19 @@ class HtmlLightComponents : LightComponents() {
 		}, 0)
 	}
 
-	suspend override fun dialogPrompt(c: Any, message: String, initialValue: String): String = korioSuspendCoroutine { c ->
-		val result = window.prompt(message, initialValue)
-		window.setTimeout({
-			if (result == null) {
-				c.resumeWithException(CancellationException("cancelled"))
-			} else {
-				c.resume(result)
-			}
-		}, 0)
-	}
+	suspend override fun dialogPrompt(c: Any, message: String, initialValue: String): String =
+		korioSuspendCoroutine { c ->
+			val result = window.prompt(message, initialValue)
+			window.setTimeout({
+				if (result == null) {
+					c.resumeWithException(CancellationException("cancelled"))
+				} else {
+					c.resume(result)
+				}
+			}, 0)
+		}
 
-	suspend override fun dialogOpenFile(c: Any, filter: String): VfsFile = korioSuspendCoroutine { continuation ->
+	override suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = korioSuspendCoroutine { continuation ->
 		val inputFile = windowInputFile
 		var completedOnce = false
 		var files = arrayOf<File>()
@@ -503,9 +534,11 @@ class HtmlLightComponents : LightComponents() {
 				selectedFiles = files
 
 				//console.log('completed', files);
-				if (files.size.toInt() > 0) {
+				if (files.size > 0.0) {
 					val fileName = files[0].name
-					continuation.resume(SelectedFilesVfs[fileName])
+
+					val sf = JsFilesVfs(selectedFiles)
+					continuation.resume(sf[fileName])
 				} else {
 					continuation.resumeWithException(CancellationException("cancel"))
 				}
@@ -543,61 +576,58 @@ class HtmlLightComponents : LightComponents() {
 	}
 }
 
-internal object SelectedFilesVfs : Vfs() {
+class JsFileAsyncStreamBase(val jsfile: File) : AsyncStreamBase() {
+	override suspend fun getLength(): Long = jsfile.size.toDouble().toLong()
+
+	suspend fun _read(jsfile: File, position: Double, len: Int): ByteArray = korioSuspendCoroutine { c ->
+		val reader = FileReader()
+		// @TODO: Blob.slice should use Double
+		val djsfile = jsfile.asDynamic()
+		val slice = djsfile.slice(position, (position + len))
+
+		reader.onload = {
+			val result = reader.result
+			c.resume(Int8Array(result.unsafeCast<ArrayBuffer>()).unsafeCast<ByteArray>())
+		}
+
+		reader.onerror = {
+			c.resumeWithException(RuntimeException("error reading file"))
+		}
+		reader.readAsArrayBuffer(slice)
+	}
+
+	override suspend fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
+		val data = _read(jsfile, position.toDouble(), len)
+		arraycopy(data, 0, buffer, offset, data.size)
+		return data.size
+	}
+}
+
+internal class JsFilesVfs(val files: Array<File>) : Vfs() {
 	private fun _locate(name: String): File? {
-		val length = selectedFiles.size.toInt()
+		val length = files.size
 		for (n in 0 until length) {
-			val file = selectedFiles[n]
-			if (file.name!! == name) {
+			val file = files[n]
+			if (file.name == name) {
 				return file
 			}
 		}
 		return null
 	}
 
-	private fun jsstat(file: File?): JsStat {
-		return JsStat(file?.size?.toDouble() ?: 0.0)
-	}
-
 	private fun locate(path: String): File? = _locate(path.trim('/'))
 
-	suspend override fun open(path: String, mode: VfsOpenMode): AsyncStream {
+	override suspend fun open(path: String, mode: VfsOpenMode): AsyncStream {
 		val jsfile = locate(path) ?: throw FileNotFoundException(path)
-		val jsstat = jsstat(jsfile)
-		return object : AsyncStreamBase() {
-			suspend fun _read(jsfile: File, position: Double, len: Int): ByteArray = korioSuspendCoroutine { c ->
-				val reader = FileReader()
-				// @TODO: Blob.slice should use Double
-				val djsfile = jsfile.asDynamic()
-				val slice = djsfile.slice(position, (position + len))
-
-				reader.onload = {
-					val result = reader.result
-					c.resume(Int8Array(result.unsafeCast<ArrayBuffer>()).unsafeCast<ByteArray>())
-				}
-
-				reader.onerror = {
-					c.resumeWithException(RuntimeException("error reading file"))
-				}
-				reader.readAsArrayBuffer(slice)
-			}
-
-			suspend override fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
-				val data = _read(jsfile, position.toDouble(), len)
-				arraycopy(data, 0, buffer, offset, data.size)
-				return data.size
-			}
-
-			suspend override fun getLength(): Long = jsstat.size.toLong()
-			suspend override fun close() = Unit
-		}.toAsyncStream()
+		return JsFileAsyncStreamBase(jsfile).toAsyncStream()
 	}
 
-	suspend override fun stat(path: String): VfsStat {
-		return jsstat(locate(path)).toStat(path, this)
+	override suspend fun stat(path: String): VfsStat {
+		val file = locate(path) ?: return createNonExistsStat(path)
+		return createExistsStat(path, isDirectory = false, size = file.size.toDouble().toLong())
 	}
-}
 
-data class JsStat(val size: Double, var isDirectory: Boolean = false) {
-	fun toStat(path: String, vfs: Vfs): VfsStat = vfs.createExistsStat(path, isDirectory = isDirectory, size = size.toLong())
+	override suspend fun list(path: String): SuspendingSequence<VfsFile> {
+		return this.files.map { this[it.name] }.toAsync()
+	}
 }
