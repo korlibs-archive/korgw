@@ -32,6 +32,7 @@ import org.w3c.files.File
 import org.w3c.files.FileReader
 import kotlin.browser.document
 import kotlin.browser.window
+import kotlin.coroutines.experimental.suspendCoroutine
 
 var windowInputFile: HTMLInputElement? = null
 var selectedFiles = arrayOf<File>()
@@ -347,19 +348,39 @@ class HtmlLightComponents : LightComponents() {
 		val node = c as HTMLElement
 
 		fun ondrop(e: DragEvent) {
+			e.preventDefault()
+			//console.log("ondrop", e)
 			val dt = e.dataTransfer ?: return
 			val files = arrayListOf<File>()
 			for (n in 0 until dt.items.length) {
 				val item = dt.items[n] ?: continue
 				val file = item.getAsFile() ?: continue
 				files += file
+				//console.log("ondrop", file)
 			}
-			val fileSystem = JsFilesVfs(files.toTypedArray())
+			//jsEmptyArray()
+			val fileSystem = JsFilesVfs(files)
 			listener.files(LightDropHandler.FileInfo(files.map { fileSystem[it.name] }))
 		}
 
+		fun ondragenter(e: DragEvent) {
+			e.preventDefault()
+			listener.enter(LightDropHandler.EnterInfo())
+		}
+
+		fun ondragexit(e: DragEvent) {
+			e.preventDefault()
+			listener.exit()
+		}
+
 		return listOf(
-			node.addCloseableEventListener("drop") { ondrop(it as DragEvent) }
+			node.addCloseableEventListener("drop") {
+				//console.log("html5drop")
+				ondrop(it.unsafeCast<DragEvent>())
+			},
+			node.addCloseableEventListener("dragenter") { ondragenter(it.unsafeCast<DragEvent>()) },
+			node.addCloseableEventListener("dragover") { it.preventDefault() },
+			node.addCloseableEventListener("dragleave") { ondragexit(it.unsafeCast<DragEvent>()) }
 		).closeable()
 	}
 
@@ -536,8 +557,9 @@ class HtmlLightComponents : LightComponents() {
 				//console.log('completed', files);
 				if (files.size > 0.0) {
 					val fileName = files[0].name
-
-					val sf = JsFilesVfs(selectedFiles)
+					val ff = arrayListOf<File>()
+					for (n in 0 until selectedFiles.asDynamic().length) ff += selectedFiles[n].unsafeCast<File>()
+					val sf = JsFilesVfs(ff)
 					continuation.resume(sf[fileName])
 				} else {
 					continuation.resumeWithException(CancellationException("cancel"))
@@ -577,9 +599,18 @@ class HtmlLightComponents : LightComponents() {
 }
 
 class JsFileAsyncStreamBase(val jsfile: File) : AsyncStreamBase() {
-	override suspend fun getLength(): Long = jsfile.size.toDouble().toLong()
+	//val alength = jsfile.size.unsafeCast<Double>().toLong()
+//
+	//init {
+	//	console.log("JsFileAsyncStreamBase.Opened ", jsfile)
+	//	console.log("JsFileAsyncStreamBase.Length: " + alength)
+	//}
 
-	suspend fun _read(jsfile: File, position: Double, len: Int): ByteArray = korioSuspendCoroutine { c ->
+	override suspend fun getLength(): Long {
+		return jsfile.size.unsafeCast<Double>().toLong()
+	}
+
+	suspend fun readBytes(position: Double, len: Int): ByteArray = suspendCoroutine { c ->
 		val reader = FileReader()
 		// @TODO: Blob.slice should use Double
 		val djsfile = jsfile.asDynamic()
@@ -597,13 +628,17 @@ class JsFileAsyncStreamBase(val jsfile: File) : AsyncStreamBase() {
 	}
 
 	override suspend fun read(position: Long, buffer: ByteArray, offset: Int, len: Int): Int {
-		val data = _read(jsfile, position.toDouble(), len)
+		val data = readBytes(position.toDouble(), len)
 		arraycopy(data, 0, buffer, offset, data.size)
+		//console.log("JsFileAsyncStreamBase.read.requested", buffer)
+		//console.log("JsFileAsyncStreamBase.read.requested", position, offset, len)
+		//console.log("JsFileAsyncStreamBase.read", data)
+		//console.log("JsFileAsyncStreamBase.read.result:", data.size)
 		return data.size
 	}
 }
 
-internal class JsFilesVfs(val files: Array<File>) : Vfs() {
+internal class JsFilesVfs(val files: List<File>) : Vfs() {
 	private fun _locate(name: String): File? {
 		val length = files.size
 		for (n in 0 until length) {

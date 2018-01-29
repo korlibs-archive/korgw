@@ -108,6 +108,10 @@ open class LightDropHandler {
 		val files: List<VfsFile>
 	)
 
+	class EnterInfo()
+
+	open fun enter(info: EnterInfo): Boolean = true
+	open fun exit(): Unit = Unit
 	open fun files(info: FileInfo) = Unit
 }
 

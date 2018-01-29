@@ -134,9 +134,25 @@ class AwtLightComponents : LightComponents() {
 				return true
 			}
 		}
+		val adapter = object : DropTargetAdapter() {
+			override fun dragEnter(dtde: DropTargetDragEvent) {
+				if (listener.enter(LightDropHandler.EnterInfo())) {
+					dtde.acceptDrag(DnDConstants.ACTION_COPY_OR_MOVE)
+				}
+			}
+
+			override fun dragExit(dte: DropTargetEvent) {
+				listener.exit()
+			}
+
+			override fun drop(dtde: DropTargetDropEvent?) {
+			}
+		}
+		cc.dropTarget.addDropTargetListener(adapter)
 
 		return Closeable {
 			cc.transferHandler = oldTH
+			cc.dropTarget.removeDropTargetListener(adapter)
 		}
 	}
 

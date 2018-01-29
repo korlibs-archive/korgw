@@ -9,6 +9,7 @@ import com.soywiz.korag.AGInput
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.await
 import com.soywiz.korio.async.execAndForget
+import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.vfs.VfsFile
 import com.soywiz.korma.geom.Anchor
 import com.soywiz.korma.geom.RectangleInt
@@ -25,7 +26,11 @@ open class Component(val app: Application, val type: LightType) : Styled, Extra 
 	val coroutineContext = app.coroutineContext
 	val lc = app.light
 
-	class lightProperty<T>(val key: LightProperty<T>, val getable: Boolean = false, val setHandler: ((v: T) -> Unit)? = null) {
+	class lightProperty<T>(
+		val key: LightProperty<T>,
+		val getable: Boolean = false,
+		val setHandler: ((v: T) -> Unit)? = null
+	) {
 		inline operator fun getValue(thisRef: Component, property: KProperty<*>): T {
 			if (getable) return thisRef.lc.getProperty(thisRef.handle, key)
 			return thisRef.getProperty(key)
@@ -153,7 +158,8 @@ open class Component(val app: Application, val type: LightType) : Styled, Extra 
 	}
 }
 
-open class Container(app: Application, var layout: Layout, type: LightType = LightType.CONTAINER) : Component(app, type) {
+open class Container(app: Application, var layout: Layout, type: LightType = LightType.CONTAINER) :
+	Component(app, type) {
 	val children = arrayListOf<Component>()
 
 	override fun recreate() {
@@ -204,9 +210,23 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 		return lc.dialogOpenFile(handle, filter)
 	}
 
-	suspend fun prompt(message: String, initialValue: String = ""): String = lc.dialogPrompt(handle, message, initialValue)
+	suspend fun prompt(message: String, initialValue: String = ""): String =
+		lc.dialogPrompt(handle, message, initialValue)
+
 	suspend fun alert(message: String): Unit = lc.dialogAlert(handle, message)
 	fun openURL(url: String): Unit = lc.openURL(url)
+
+	fun onDropFiles(
+		enter: () -> Boolean,
+		exit: () -> Unit,
+		drop: (List<VfsFile>) -> Unit
+	): Closeable {
+		return lc.addHandler(handle, object : LightDropHandler() {
+			override fun enter(info: EnterInfo): Boolean = enter()
+			override fun exit() = exit()
+			override fun files(info: FileInfo) = drop(info.files)
+		})
+	}
 
 	override fun toString(): String = "Frame"
 }
@@ -372,9 +392,10 @@ class Image(app: Application) : Component(app, LightType.IMAGE) {
 fun <T : Component> T.setSize(width: Length, height: Length) = this.apply { this.style.size.setTo(width, height) }
 
 suspend fun Container.button(text: String) = add(Button(this.app, text))
-suspend inline fun Container.button(text: String, noinline callback: suspend Button.() -> Unit): Button = add(Button(this.app, text).apply {
-	callback.await(this@apply)
-})
+suspend inline fun Container.button(text: String, noinline callback: suspend Button.() -> Unit): Button =
+	add(Button(this.app, text).apply {
+		callback.await(this@apply)
+	})
 
 suspend inline fun Container.progress(current: Int, max: Int) = add(Progress(this.app, current, max))
 
@@ -385,7 +406,9 @@ inline fun Container.agCanvas(callback: AgCanvas.() -> Unit) = add(AgCanvas(this
 	callback(canvas)
 })
 
-suspend inline fun Container.image(bitmap: Bitmap, noinline callback: suspend Image.() -> Unit) = add(Image(this.app).apply { image = bitmap; callback.await(this) })
+suspend inline fun Container.image(bitmap: Bitmap, noinline callback: suspend Image.() -> Unit) =
+	add(Image(this.app).apply { image = bitmap; callback.await(this) })
+
 suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 	image = bitmap
 	this.style.defaultSize.width = bitmap.width.pt
@@ -394,20 +417,35 @@ suspend inline fun Container.image(bitmap: Bitmap) = add(Image(this.app).apply {
 
 suspend inline fun Container.spacer() = add(Spacer(this.app))
 
-suspend inline fun Container.label(text: String, noinline callback: suspend Label.() -> Unit = {}) = add(Label(this.app, text).apply { callback.await(this) })
+suspend inline fun Container.label(text: String, noinline callback: suspend Label.() -> Unit = {}) =
+	add(Label(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.checkBox(text: String, checked: Boolean = false, noinline callback: suspend CheckBox.() -> Unit = {}) = add(CheckBox(this.app, text, checked).apply { callback.await(this) })
+suspend inline fun Container.checkBox(
+	text: String,
+	checked: Boolean = false,
+	noinline callback: suspend CheckBox.() -> Unit = {}
+) = add(CheckBox(this.app, text, checked).apply { callback.await(this) })
 
-suspend inline fun Container.textField(text: String = "", noinline callback: suspend TextField.() -> Unit = {}) = add(TextField(this.app, text).apply { callback.await(this) })
+suspend inline fun Container.textField(text: String = "", noinline callback: suspend TextField.() -> Unit = {}) =
+	add(TextField(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.textArea(text: String = "", noinline callback: suspend TextArea.() -> Unit = {}) = add(TextArea(this.app, text).apply { callback.await(this) })
+suspend inline fun Container.textArea(text: String = "", noinline callback: suspend TextArea.() -> Unit = {}) =
+	add(TextArea(this.app, text).apply { callback.await(this) })
 
-suspend inline fun Container.layers(noinline callback: suspend Container.() -> Unit): Container = add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) })
-suspend inline fun Container.layersKeepAspectRatio(anchor: Anchor = Anchor.MIDDLE_CENTER, scaleMode: ScaleMode = ScaleMode.SHOW_ALL, noinline callback: suspend Container.() -> Unit): Container {
+suspend inline fun Container.layers(noinline callback: suspend Container.() -> Unit): Container =
+	add(Container(this.app, LayeredLayout(app)).apply { callback.await(this) })
+
+suspend inline fun Container.layersKeepAspectRatio(
+	anchor: Anchor = Anchor.MIDDLE_CENTER,
+	scaleMode: ScaleMode = ScaleMode.SHOW_ALL,
+	noinline callback: suspend Container.() -> Unit
+): Container {
 	return add(Container(this.app, LayeredKeepAspectLayout(app, anchor, scaleMode)).apply { callback.await(this) })
 }
 
-suspend inline fun Container.vertical(noinline callback: suspend Container.() -> Unit): Container = add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) })
+suspend inline fun Container.vertical(noinline callback: suspend Container.() -> Unit): Container =
+	add(Container(this.app, VerticalLayout(app)).apply { callback.await(this) })
+
 suspend inline fun Container.horizontal(noinline callback: suspend Container.() -> Unit): Container {
 	return add(Container(this.app, HorizontalLayout(app)).apply {
 		callback.await(this)
@@ -433,7 +471,14 @@ suspend inline fun Container.scrollPane(noinline callback: suspend ScrollPane.()
 }
 
 
-fun <T : Component> T.click(handler: suspend Component.() -> Unit) = this.apply { onMouseClick { handler.execAndForget(coroutineContext, this) } }
-fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) = this.apply { onMouseOver { handler.execAndForget(coroutineContext, this) } }
-fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) = this.apply { onMouseEnter { handler.execAndForget(coroutineContext, this) } }
-fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) = this.apply { onMouseExit { handler.execAndForget(coroutineContext, this) } }
+fun <T : Component> T.click(handler: suspend Component.() -> Unit) =
+	this.apply { onMouseClick { handler.execAndForget(coroutineContext, this) } }
+
+fun <T : Component> T.mouseOver(handler: suspend Component.() -> Unit) =
+	this.apply { onMouseOver { handler.execAndForget(coroutineContext, this) } }
+
+fun <T : Component> T.mouseEnter(handler: suspend Component.() -> Unit) =
+	this.apply { onMouseEnter { handler.execAndForget(coroutineContext, this) } }
+
+fun <T : Component> T.mouseExit(handler: suspend Component.() -> Unit) =
+	this.apply { onMouseExit { handler.execAndForget(coroutineContext, this) } }
