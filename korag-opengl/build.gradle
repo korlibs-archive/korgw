@@ -1,0 +1,4 @@
+dependencies {
+    commonMainApi project(":kgl")
+    commonMainApi project(":korag")
+}

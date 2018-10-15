@@ -1,13 +1,26 @@
-rootProject.name = 'korui-root'
-include(
-		'korui-common',
-		'korui',
-		'korui-android',
-		'korui-js',
-		//'korui-jtransc-example',
-)
+pluginManagement {
+	resolutionStrategy {
+		eachPlugin {
+			if (requested.id.id == "kotlin-multiplatform") {
+				useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
+			}
+		}
+	}
 
-project(':korui-common').projectDir = file('korui/common')
-project(':korui').projectDir = file('korui/jvm')
-project(':korui-android').projectDir = file('korui/android')
-project(':korui-js').projectDir = file('korui/js')
+	repositories {
+		mavenLocal()
+		maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }
+		maven { url 'https://plugins.gradle.org/m2/' }
+        jcenter()
+        mavenCentral()
+	}
+}
+
+rootProject.name = 'korui-root'
+
+enableFeaturePreview('GRADLE_METADATA')
+
+include ':kgl'
+include ':korag'
+include ':korag-opengl'
+include ':korui'
