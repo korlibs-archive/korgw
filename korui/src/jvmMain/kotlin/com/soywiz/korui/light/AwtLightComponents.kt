@@ -690,6 +690,10 @@ class JFrame2 : JFrame() {
 	init {
 		add(panel)
 	}
+
+    override fun createRootPane(): JRootPane = super.createRootPane().apply {
+        putClientProperty("apple.awt.fullscreenable", true)
+    }
 }
 
 interface ChildContainer {
