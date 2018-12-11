@@ -1,6 +1,7 @@
 package com.soywiz.korui.event
 
 import com.soywiz.kds.*
+import com.soywiz.klock.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korma.*
@@ -39,8 +40,8 @@ data class Touch(
 	val index: Int = -1,
 	var active: Boolean = false,
 	var id: Int = -1,
-	var startTime: Double = 0.0,
-	var currentTime: Double = 0.0,
+	var startTime: DateTime = DateTime.EPOCH,
+	var currentTime: DateTime = DateTime.EPOCH,
 	var start: MVector2 = MVector2(),
 	var current: MVector2 = MVector2()
 ) : Extra by Extra.Mixin() {
