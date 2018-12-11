@@ -11,6 +11,7 @@ import kotlin.coroutines.*
 
 actual val KoruiDispatcher: CoroutineDispatcher get() = Swing
 
+@UseExperimental(InternalCoroutinesApi::class)
 object Swing : CoroutineDispatcher(), Delay, DelayFrame {
 	override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
 
@@ -21,8 +22,8 @@ object Swing : CoroutineDispatcher(), Delay, DelayFrame {
 		continuation.invokeOnCancellation { timer.stop() }
 	}
 
-	override fun invokeOnTimeout(time: Long, unit: TimeUnit, block: Runnable): DisposableHandle {
-		val timer = schedule(time, ActionListener {
+	override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
+		val timer = schedule(timeMillis, ActionListener {
 			block.run()
 		})
 		return object : DisposableHandle {
@@ -38,12 +39,12 @@ object Swing : CoroutineDispatcher(), Delay, DelayFrame {
 			start()
 		}
 
-	var lastFrameTime = Klock.currentTimeMillis()
+	var lastFrameTime = DateTime.now()
 
 	override fun delayFrame(continuation: CancellableContinuation<Unit>) {
-		val startFrameTime = Klock.currentTimeMillis()
-		val time = (16 - (startFrameTime - lastFrameTime)).clamp(0, 16)
-		schedule(time, ActionListener { continuation.resume(Unit) })
+		val startFrameTime = DateTime.now()
+		val time = (16.milliseconds - (startFrameTime - lastFrameTime)).millisecondsInt.clamp(0, 16)
+		schedule(time.toLong(), ActionListener { continuation.resume(Unit) })
 		lastFrameTime = startFrameTime
 	}
 

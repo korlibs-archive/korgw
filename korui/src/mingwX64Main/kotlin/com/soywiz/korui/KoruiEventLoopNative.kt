@@ -22,6 +22,7 @@ import kotlin.coroutines.*
 import kotlinx.coroutines.timeunit.*
 import com.soywiz.korui.input.Key
 
+@UseExperimental(InternalCoroutinesApi::class)
 class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
 	override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 

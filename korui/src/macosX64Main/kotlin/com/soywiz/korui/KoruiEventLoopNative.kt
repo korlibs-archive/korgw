@@ -26,14 +26,14 @@ import com.soywiz.klock.*
 import com.soywiz.kmem.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
-import kotlinx.coroutines.timeunit.*
 import platform.AppKit.*
 import com.soywiz.korui.input.Key
 
+@UseExperimental(InternalCoroutinesApi::class)
 class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
 	override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-	class TimedTask(val ms: Long, val continuation: CancellableContinuation<Unit>)
+	class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
 
 	val tasks = Queue<Runnable>()
 	val timedTasks = PriorityQueue<TimedTask>(Comparator<TimedTask> { a, b -> a.ms.compareTo(b.ms) })
@@ -43,10 +43,7 @@ class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
 	}
 
 	override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
-		val task = TimedTask(
-			Klock.currentTimeMillis() + timeMillis,
-				continuation
-		)
+		val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation)
 		continuation.invokeOnCancellation {
 			timedTasks.remove(task)
 		}
@@ -54,7 +51,7 @@ class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
 	}
 
 	fun executeStep() {
-		val now = Klock.currentTimeMillis()
+		val now = DateTime.now()
 		while (timedTasks.isNotEmpty() && now >= timedTasks.peek().ms) {
 			timedTasks.removeHead().continuation.resume(Unit)
 		}
@@ -166,7 +163,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) {
 				//launch(KoruiDispatcher) { // Doesn't work!
 				println("KoruiWrap.pentry[1]")
 				println("KoruiWrap.entry[0]")
-				launch(KoruiDispatcher) {
+                GlobalScope.launch(KoruiDispatcher) {
 					entry(ctx)
 				}
 				println("KoruiWrap.entry[1]")
@@ -309,7 +306,7 @@ private class MyAppDelegate(val ag: AG, val windowConfig: WindowConfig, val hand
 	val windowStyle = NSWindowStyleMaskTitled or NSWindowStyleMaskMiniaturizable or
 			NSWindowStyleMaskClosable or NSWindowStyleMaskResizable
 
-	val attrs = intArrayOf(
+	val attrs = uintArrayOf(
 		//NSOpenGLPFAOpenGLProfile,
 		//NSOpenGLProfileVersion4_1Core,
 		NSOpenGLPFAColorSize.convert(), 24.convert(),
@@ -320,7 +317,8 @@ private class MyAppDelegate(val ag: AG, val windowConfig: WindowConfig, val hand
 	)
 
 	val pixelFormat = attrs.usePinned {
-		NSOpenGLPixelFormat.alloc()!!.initWithAttributes(it.addressOf(0).reinterpret())!!
+        NSOpenGLPixelFormat(it.addressOf(0).reinterpret<NSOpenGLPixelFormatAttributeVar>())
+        //NSOpenGLPixelFormat.alloc()!!.initWithAttributes(it.addressOf(0).reinterpret())!!
 	}
 
 	private val openglView: NSOpenGLView = NSOpenGLView(NSMakeRect(0.0, 0.0, 16.0, 16.0), pixelFormat)

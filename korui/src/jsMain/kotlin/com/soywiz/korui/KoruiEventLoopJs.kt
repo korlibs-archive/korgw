@@ -3,7 +3,6 @@ package com.soywiz.korui
 import com.soywiz.korio.async.*
 import com.soywiz.korio.util.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.timeunit.*
 import kotlin.browser.*
 import kotlin.coroutines.*
 
@@ -12,16 +11,13 @@ actual val KoruiDispatcher: CoroutineDispatcher get() = if (OS.isNodejs) NodeDis
 private external fun setTimeout(handler: dynamic, timeout: Int = definedExternally): Int
 private external fun clearTimeout(handle: Int = definedExternally)
 
-fun TimeUnit.toMillisFaster(time: Long) = when (this) {
-	TimeUnit.SECONDS -> time.toInt() * 1000
-	TimeUnit.MILLISECONDS -> time.toInt()
-}
-
+@UseExperimental(InternalCoroutinesApi::class)
 object NodeDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 	override fun dispatch(context: CoroutineContext, block: Runnable) {
 		setTimeout({ block.run() }, 0)
 	}
 
+    @InternalCoroutinesApi
 	override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
 		val timeout = setTimeout({ with(continuation) { resumeUndispatched(Unit) } }, timeMillis.toInt())
 		// Actually on cancellation, but clearTimeout is idempotent
@@ -30,8 +26,9 @@ object NodeDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 		}
 	}
 
-	override fun invokeOnTimeout(time: Long, unit: TimeUnit, block: Runnable): DisposableHandle {
-		val timeout = setTimeout({ block.run() }, unit.toMillisFaster(time))
+	@InternalCoroutinesApi
+    override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
+		val timeout = setTimeout({ block.run() }, timeMillis.toInt())
 		return object : DisposableHandle {
 			override fun dispose() {
 				clearTimeout(timeout)
@@ -40,6 +37,7 @@ object NodeDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 	}
 }
 
+@UseExperimental(InternalCoroutinesApi::class)
 object HtmlDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 	private val messageName = "dispatchCoroutine"
 
@@ -67,8 +65,8 @@ object HtmlDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 		//window.setTimeout({ with(continuation) { resume(Unit) } }, unit.toMillis(time).toInt())
 	}
 
-	override fun invokeOnTimeout(time: Long, unit: TimeUnit, block: Runnable): DisposableHandle {
-		val handle = window.setTimeout({ block.run() }, unit.toMillis(time).toInt())
+	override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
+		val handle = window.setTimeout({ block.run() }, timeMillis.toInt())
 		return object : DisposableHandle {
 			override fun dispose() {
 				window.clearTimeout(handle)
