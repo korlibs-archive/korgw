@@ -4,7 +4,9 @@
 
 package com.soywiz.kgl
 
-abstract class KmlGl : IKmlGl {
+import com.soywiz.kds.*
+
+abstract class KmlGl : Extra by Extra.Mixin(), IKmlGl {
     val DEPTH_BUFFER_BIT: Int = 0x0100
     val STENCIL_BUFFER_BIT: Int = 0x0400
     val COLOR_BUFFER_BIT: Int = 0x4000

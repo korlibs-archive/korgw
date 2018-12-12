@@ -361,7 +361,7 @@ abstract class AGOpengl : AG() {
 	private val programs = HashMap<Program, GlProgram>()
 	fun getProgram(program: Program): GlProgram = programs.getOrPut(program) { GlProgram(gl, program) }
 
-	inner class GlProgram(val gl: KmlGl, val program: Program) : Closeable {
+    inner class GlProgram(val gl: KmlGl, val program: Program) : Closeable {
 		var cachedVersion = -1
 		var id: Int = 0
 		var fragmentShaderId: Int = 0
@@ -382,18 +382,15 @@ abstract class AGOpengl : AG() {
 				cachedVersion = contextVersion
 				id = checkErrors { gl.createProgram() }
 
-				val glslVersionString = gl.getString(gl.SHADING_LANGUAGE_VERSION)
-				val glslVersionInt = glslVersionString.replace(".", "").trim().toIntOrNull() ?: 100
-
-				println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
+				//println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
 
 				fragmentShaderId = createShader(
 					gl.FRAGMENT_SHADER,
-					program.fragment.toNewGlslString(gles = false, version = glslVersionInt)
+					program.fragment.toNewGlslString(gles = false, version = gl.versionInt)
 				)
 				vertexShaderId = createShader(
 					gl.VERTEX_SHADER,
-					program.vertex.toNewGlslString(gles = false, version = glslVersionInt)
+					program.vertex.toNewGlslString(gles = false, version = gl.versionInt)
 				)
 				checkErrors { gl.attachShader(id, fragmentShaderId) }
 				checkErrors { gl.attachShader(id, vertexShaderId) }
@@ -413,7 +410,7 @@ abstract class AGOpengl : AG() {
 			if (out != gl.TRUE) {
 				val error = gl.getShaderInfoLog(shaderId)
 				Console.error(str)
-				throw RuntimeException("Error Compiling Shader : $error : source=$str")
+				throw RuntimeException("Error Compiling Shader : $error : source=$str, gl.versionInt=${gl.versionInt}, gl.versionString=${gl.versionString}")
 			}
 			return shaderId
 		}
@@ -679,3 +676,12 @@ inline fun <T> AGOpengl.checkErrors(desc: String = "", callback: () -> T): T {
 	return res
 }
 */
+
+val KmlGl.versionString by Extra.PropertyThis<KmlGl, String> {
+    getString(SHADING_LANGUAGE_VERSION)
+}
+
+val KmlGl.versionInt by Extra.PropertyThis<KmlGl, Int> {
+    versionString.replace(".", "").trim().toIntOrNull() ?: 100
+}
+
