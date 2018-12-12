@@ -7,3 +7,5 @@
 *.ipr
 *.iws
 log.txt
+.DS_Store
+
