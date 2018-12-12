@@ -10,8 +10,6 @@ configurations {
     rtArtifacts
 }
 dependencies {
-    rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-android-aarch64"
-    rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-android-armv6"
     rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
     rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6"
     rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6hf"
@@ -19,8 +17,6 @@ dependencies {
     rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
     rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
     rtArtifacts "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-i586"
-    rtArtifacts "org.jogamp.jogl:jogl-all:$joglVersion:natives-android-aarch64"
-    rtArtifacts "org.jogamp.jogl:jogl-all:$joglVersion:natives-android-armv6"
     rtArtifacts "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
     rtArtifacts "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6"
     rtArtifacts "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6hf"
