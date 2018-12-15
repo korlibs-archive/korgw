@@ -21,7 +21,7 @@ abstract class AGOpengl : AG() {
 
 	override var devicePixelRatio: Double = 1.0
 
-	//val queue = LinkedList<(gl: GL) -> Unit>()
+	//val queue = Deque<(gl: GL) -> Unit>()
 
 	override fun createBuffer(kind: Buffer.Kind): Buffer = GlBuffer(kind)
 

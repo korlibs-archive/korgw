@@ -52,7 +52,7 @@ abstract class AGAwtBase : AGOpengl() {
 
 	val awtBase = this
 
-	//val queue = LinkedList<(gl: GL) -> Unit>()
+	//val queue = Deque<(gl: GL) -> Unit>()
 }
 
 class AGAwt : AGAwtBase(), AGContainer {
