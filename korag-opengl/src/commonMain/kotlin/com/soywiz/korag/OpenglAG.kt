@@ -2,7 +2,6 @@ package com.soywiz.korag
 
 import com.soywiz.kds.*
 import com.soywiz.kgl.*
-import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.*
@@ -409,7 +408,6 @@ abstract class AGOpengl : AG() {
 			val out = gl.getShaderiv(shaderId, gl.COMPILE_STATUS)
 			if (out != gl.TRUE) {
 				val error = gl.getShaderInfoLog(shaderId)
-				Console.error(str)
 				throw RuntimeException("Error Compiling Shader : $error : source=$str, gl.versionInt=${gl.versionInt}, gl.versionString=${gl.versionString}")
 			}
 			return shaderId

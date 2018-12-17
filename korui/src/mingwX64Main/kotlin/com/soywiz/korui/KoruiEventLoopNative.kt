@@ -48,7 +48,7 @@ class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
 
 	fun executeStep() {
 		val now = Klock.currentTimeMillis()
-		while (timedTasks.isNotEmpty() && now >= timedTasks.peek().ms) {
+		while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
 			timedTasks.removeHead().continuation.resume(Unit)
 		}
 

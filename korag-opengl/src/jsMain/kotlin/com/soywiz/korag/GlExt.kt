@@ -1,7 +1,6 @@
 package com.soywiz.korag
 
 import com.soywiz.kgl.*
-import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.*
@@ -37,8 +36,6 @@ fun jsObject(vararg pairs: Pair<String, Any?>): dynamic {
 
 class AGWebgl : AGOpengl(), AGContainer {
 	companion object {
-		val log = Logger("AGWebgl")
-
 		//var UNPACK_PREMULTIPLY_ALPHA_WEBGL = document.createElement('canvas').getContext('webgl').UNPACK_PREMULTIPLY_ALPHA_WEBGL
 		const val UNPACK_PREMULTIPLY_ALPHA_WEBGL = 37441
 	}

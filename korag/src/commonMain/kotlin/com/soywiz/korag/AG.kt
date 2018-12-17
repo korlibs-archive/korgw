@@ -1,7 +1,6 @@
 package com.soywiz.korag
 
 import com.soywiz.kds.*
-import com.soywiz.klogger.*
 import com.soywiz.kmem.*
 import com.soywiz.korag.shader.*
 import com.soywiz.korim.bitmap.*
@@ -673,7 +672,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	open fun readDepth(out: FloatArray2): Unit = readDepth(out.width, out.height, out.data)
 	open fun readColorTexture(texture: Texture, width: Int = backWidth, height: Int = backHeight): Unit = TODO()
 	fun readColor() = Bitmap32(backWidth, backHeight).apply { readColor(this) }
-	fun readDepth() = FloatArray2(backWidth, backHeight).apply { readDepth(this) }
+	fun readDepth() = FloatArray2(backWidth, backHeight) { 0f }.apply { readDepth(this) }
 
 	inner class TextureDrawer {
 		val VERTEX_COUNT = 4

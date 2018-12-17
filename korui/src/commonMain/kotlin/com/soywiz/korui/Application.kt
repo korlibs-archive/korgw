@@ -1,6 +1,5 @@
 package com.soywiz.korui
 
-import com.soywiz.klogger.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
@@ -40,8 +39,6 @@ class Application(val coroutineContext: CoroutineContext, val light: LightCompon
 	}
 }
 
-private val koruiApplicationLog = Logger("korui-application")
-
 fun Application(callback: suspend Application.() -> Unit) =
 	Korui { Application(defaultLightFactory.create(coroutineContext, null)) { callback() } }
 
@@ -57,13 +54,13 @@ internal fun Application.framePre(
 	}
 	frame.icon = icon
 	//light.setBounds(frame.handle, 0, 0, frame.actualBounds.width, frame.actualBounds.height)
-	koruiApplicationLog.info { "Application.frame: ${frame.actualBounds}" }
+	//koruiApplicationLog.info { "Application.frame: ${frame.actualBounds}" }
 	var resizing = false
 	frame.addEventListener<ResizedEvent> { e ->
 		if (!resizing) {
 			resizing = true
 			try {
-				koruiApplicationLog.info { "Application.frame.ResizedEvent: ${e.width},${e.height}" }
+				//koruiApplicationLog.info { "Application.frame.ResizedEvent: ${e.width},${e.height}" }
 				frame.invalidate()
 				frame.setBoundsAndRelayout(0, 0, e.width, e.height)
 				light.repaint(frame.handle)
