@@ -136,21 +136,21 @@ class KmlGlBuffer(val gl: KmlGl, val type: Int, val buf: Int) {
 		}
 	}
 
-	fun setData(data: KmlNativeBuffer, size: Int = data.size): KmlGlBuffer {
+	fun setData(data: FBuffer, size: Int = data.size): KmlGlBuffer {
 		bind()
 		gl.bufferData(type, size, data, gl.STATIC_DRAW)
 		return this
 	}
 
 	fun dispose() {
-		kmlNativeBuffer(4) {
+		fbuffer(4) {
 			gl.deleteBuffers(1, it)
 		}
 	}
 }
 
 fun KmlGl.createBuffer(type: Int): KmlGlBuffer {
-	val id = kmlNativeBuffer(4) {
+	val id = fbuffer(4) {
 		genBuffers(1, it)
 		it.getInt(0)
 	}
@@ -213,7 +213,7 @@ class KmlGlTex(val gl: KmlGl, val tex: Int) {
 	fun upload(
 		width: Int,
 		height: Int,
-		data: KmlNativeBuffer,
+		data: FBuffer,
 		format: Int = gl.RGBA,
 		type: Int = gl.UNSIGNED_BYTE
 	): KmlGlTex {
@@ -237,7 +237,7 @@ class KmlGlTex(val gl: KmlGl, val tex: Int) {
 	}
 
 	fun dispose() {
-		kmlNativeBuffer(1) {
+		fbuffer(1) {
 			it.setInt(0, tex)
 			gl.deleteTextures(1, it)
 		}
@@ -245,11 +245,11 @@ class KmlGlTex(val gl: KmlGl, val tex: Int) {
 }
 
 fun KmlGl.createKmlTexture(): KmlGlTex {
-	val buf = kmlNativeBuffer(4) {
+	val buf = fbuffer(4) {
 		genTextures(1, it)
 		it.getInt(0)
 	}
-	return KmlGlTex(this, buf).upload(1, 1, KmlNativeBuffer(4))
+	return KmlGlTex(this, buf).upload(1, 1, FBuffer(4))
 }
 
 fun KmlGl.uniformTex(location: Int, tex: KmlGlTex, unit: Int) {

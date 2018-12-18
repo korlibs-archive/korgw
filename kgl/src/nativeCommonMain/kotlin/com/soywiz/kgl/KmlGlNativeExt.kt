@@ -25,7 +25,7 @@ class TempBufferAddress {
 	companion object {
 		val ARRAY1 = ByteArray(1)
 	}
-	fun KmlNativeBuffer.unsafeAddress(): CPointer<ByteVar> {
+	fun FBuffer.unsafeAddress(): CPointer<ByteVar> {
 		val byteArray = this.mem.data
 		val rbyteArray = if (byteArray.size > 0) byteArray else ARRAY1
 		val pin = rbyteArray.pin()

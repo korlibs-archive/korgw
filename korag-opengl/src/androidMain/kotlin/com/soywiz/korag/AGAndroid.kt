@@ -306,7 +306,7 @@ class AGAndroid : AG() {
 			if (dirty) {
 				_bind(id)
 				if (mem != null) {
-					val mem2: KmlNativeBuffer? = mem
+					val mem2: FBuffer? = mem
 					val bb = mem2?.buffer?.buffer
 					if (bb != null) {
 						val pos = bb.position()
@@ -343,12 +343,12 @@ class AGAndroid : AG() {
 				null -> ByteBuffer.allocateDirect(0)
 				is NativeImage -> createBufferForBitmap(bmp.toBmp32())
 				is Bitmap8 -> {
-					val mem = KmlNativeBuffer.alloc(bmp.area)
+					val mem = FBuffer.alloc(bmp.area)
 					mem.setAlignedArrayInt8(0, bmp.data, 0, bmp.area)
 					return mem.buffer.buffer
 				}
 				is Bitmap32 -> {
-					val mem = KmlNativeBuffer.alloc(bmp.area * 4)
+					val mem = FBuffer.alloc(bmp.area * 4)
 					mem.setAlignedArrayInt32(0, bmp.data, 0, bmp.area)
 					return mem.buffer.buffer
 				}

@@ -3,6 +3,7 @@ package com.soywiz.korag
 import com.soywiz.kds.*
 import com.soywiz.kgl.*
 import com.soywiz.kmem.*
+import com.soywiz.korag.internal.*
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.*
 import com.soywiz.korim.bitmap.*
@@ -51,8 +52,8 @@ abstract class AGOpengl : AG() {
 
 		val ftex get() = tex as GlTexture
 
-		val depth = KmlNativeBuffer(4)
-		val framebuffer = KmlNativeBuffer(4)
+		val depth = FBuffer(4)
+		val framebuffer = FBuffer(4)
 
 		override fun set() {
 			gl.apply {
@@ -144,8 +145,8 @@ abstract class AGOpengl : AG() {
 		StencilOp.ZERO -> gl.ZERO
 	}
 
-	val tempBuffer1 = KmlNativeBuffer(4)
-	val tempBuffer16 = KmlNativeBuffer(4 * 16)
+	val tempBuffer1 = FBuffer(4)
+	val tempBuffer16 = FBuffer(4 * 16)
 
 	override fun draw(
 		vertices: Buffer,
@@ -472,7 +473,7 @@ abstract class AGOpengl : AG() {
 		}
 
 		override fun close() {
-			kmlNativeBuffer(4) { buffer ->
+			fbuffer(4) { buffer ->
 				buffer.setInt(0, this.id)
 				checkErrors { gl.deleteBuffers(1, buffer) }
 			}
@@ -485,7 +486,7 @@ abstract class AGOpengl : AG() {
 				id = -1
 			}
 			if (id < 0) {
-				id = kmlNativeBuffer(4) {
+				id = fbuffer(4) {
 					checkErrors { gl.genBuffers(1, it) }
 					it.getInt(0)
 				}
@@ -513,7 +514,7 @@ abstract class AGOpengl : AG() {
 
 	inner class GlTexture(val gl: KmlGl, override val premultiplied: Boolean) : Texture() {
 		var cachedVersion = -1
-		val texIds = KmlNativeBuffer(4)
+		val texIds = FBuffer(4)
 
 		val tex: Int
 			get() {
@@ -525,12 +526,12 @@ abstract class AGOpengl : AG() {
 				return texIds.getInt(0)
 			}
 
-		fun createBufferForBitmap(bmp: Bitmap?): KmlNativeBuffer? {
+		fun createBufferForBitmap(bmp: Bitmap?): FBuffer? {
 			return when (bmp) {
 				null -> null
 				is NativeImage -> unsupported("Should not call createBufferForBitmap with a NativeImage")
 				is Bitmap8 -> {
-					val mem = KmlNativeBuffer(bmp.area)
+					val mem = FBuffer(bmp.area)
 					arraycopy(bmp.data, 0, mem.arrayByte, 0, bmp.area)
 					@Suppress("USELESS_CAST")
 					return mem
@@ -540,7 +541,7 @@ abstract class AGOpengl : AG() {
 						if (premultiplied) bmp.premultipliedIfRequired() else bmp.depremultipliedIfRequired()
 					//println("BMP: Bitmap32")
 					//val abmp: Bitmap32 = bmp
-					val mem = KmlNativeBuffer(abmp.area * 4)
+					val mem = FBuffer(abmp.area * 4)
 					arraycopy(abmp.data.array, 0, mem.arrayInt, 0, abmp.area)
 					@Suppress("USELESS_CAST")
 					return mem
@@ -625,7 +626,7 @@ abstract class AGOpengl : AG() {
 	}
 
 	override fun readColor(bitmap: Bitmap32) {
-		kmlNativeBuffer(bitmap.area * 4) { buffer ->
+		fbuffer(bitmap.area * 4) { buffer ->
 			checkErrors("readPixels") {
 				gl.readPixels(
 					0, 0, bitmap.width, bitmap.height,
@@ -639,7 +640,7 @@ abstract class AGOpengl : AG() {
 
 	override fun readDepth(width: Int, height: Int, out: FloatArray) {
 		val area = width * height
-		kmlNativeBuffer(area * 4) { buffer ->
+		fbuffer(area * 4) { buffer ->
 			checkErrors("readPixels") {
 				gl.readPixels(
 					0, 0, width, height, gl.DEPTH_COMPONENT, gl.FLOAT,
@@ -682,4 +683,3 @@ val KmlGl.versionString by Extra.PropertyThis<KmlGl, String> {
 val KmlGl.versionInt by Extra.PropertyThis<KmlGl, Int> {
     versionString.replace(".", "").trim().toIntOrNull() ?: 100
 }
-

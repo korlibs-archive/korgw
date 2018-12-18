@@ -54,7 +54,7 @@ open class LogAG(
 	}
 
 	inner class LogBuffer(val id: Int, kind: Kind) : Buffer(kind) {
-		val logmem: KmlNativeBuffer? get() = mem
+		val logmem: FBuffer? get() = mem
 		val logmemOffset get() = memOffset
 		val logmemLength get() = memLength
 		override fun afterSetMem() = log("$this.afterSetMem(mem[${mem!!.size}])")

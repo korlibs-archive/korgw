@@ -2,7 +2,7 @@ package com.soywiz.kgl
 
 import com.soywiz.kmem.*
 
-fun KmlNativeBuffer.toAsciiString(): String {
+fun FBuffer.toAsciiString(): String {
 	var out = ""
 	for (n in 0 until mem.size) {
 		val b = getByte(n)
@@ -12,7 +12,7 @@ fun KmlNativeBuffer.toAsciiString(): String {
 	return out
 }
 
-fun KmlNativeBuffer.putAsciiString(str: String): KmlNativeBuffer {
+fun FBuffer.putAsciiString(str: String): FBuffer {
 	var n = 0
 	for (c in str) {
 		if (mem.size >= n) setByte(n++, c.toByte())
@@ -22,19 +22,19 @@ fun KmlNativeBuffer.putAsciiString(str: String): KmlNativeBuffer {
 }
 
 fun kmlByteBufferOf(vararg values: Byte) =
-	KmlNativeBuffer(values.size * 1).apply { for (n in 0 until values.size) this.setByte(n, values[n]) }
+	FBuffer(values.size * 1).apply { for (n in 0 until values.size) this.setByte(n, values[n]) }
 
 fun kmlShortBufferOf(vararg values: Short) =
-	KmlNativeBuffer(values.size * 2).apply { for (n in 0 until values.size) this.setShort(n, values[n]) }
+    FBuffer(values.size * 2).apply { for (n in 0 until values.size) this.setShort(n, values[n]) }
 
 fun kmlIntBufferOf(vararg values: Int) =
-	KmlNativeBuffer(values.size * 4).apply { for (n in 0 until values.size) this.setInt(n, values[n]) }
+    FBuffer(values.size * 4).apply { for (n in 0 until values.size) this.setInt(n, values[n]) }
 
 fun kmlFloatBufferOf(vararg values: Float) =
-	KmlNativeBuffer(values.size * 4).apply { for (n in 0 until values.size) this.setFloat(n, values[n]) }
+    FBuffer(values.size * 4).apply { for (n in 0 until values.size) this.setFloat(n, values[n]) }
 
-inline fun <T> DataBufferAlloc(size: Int, callback: (KmlNativeBuffer) -> T): T {
-	val buffer = KmlNativeBuffer(size)
+inline fun <T> DataBufferAlloc(size: Int, callback: (FBuffer) -> T): T {
+	val buffer = FBuffer(size)
 	try {
 		return callback(buffer)
 	} finally {
@@ -42,8 +42,8 @@ inline fun <T> DataBufferAlloc(size: Int, callback: (KmlNativeBuffer) -> T): T {
 	}
 }
 
-fun <T> IntArray.toTempBuffer(callback: (KmlNativeBuffer) -> T): T {
-	return kmlNativeBuffer(this.size) { buffer: KmlNativeBuffer ->
+fun <T> IntArray.toTempBuffer(callback: (FBuffer) -> T): T {
+	return fbuffer(this.size) { buffer: FBuffer ->
 		val ints = buffer.arrayInt
 		for (n in this.indices) ints[n] = this[n]
 		callback(buffer)

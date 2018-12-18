@@ -312,7 +312,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		enum class Kind { INDEX, VERTEX }
 
 		var dirty = false
-		protected var mem: KmlNativeBuffer? = null
+		protected var mem: FBuffer? = null
 		protected var memOffset: Int = 0
 		protected var memLength: Int = 0
 
@@ -320,7 +320,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 
 		fun upload(data: ByteArray, offset: Int = 0, length: Int = data.size): Buffer {
-			mem = KmlNativeBuffer(length)
+			mem = FBuffer(length)
 			mem!!.setAlignedArrayInt8(0, data, offset, length)
 			memOffset = 0
 			memLength = length
@@ -330,7 +330,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 
 		fun upload(data: FloatArray, offset: Int = 0, length: Int = data.size): Buffer {
-			mem = KmlNativeBuffer(length * 4)
+			mem = FBuffer(length * 4)
 			mem!!.setAlignedArrayFloat32(0, data, offset, length)
 			memOffset = 0
 			memLength = length * 4
@@ -340,7 +340,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 
 		fun upload(data: IntArray, offset: Int = 0, length: Int = data.size): Buffer {
-			mem = KmlNativeBuffer(length * 4)
+			mem = FBuffer(length * 4)
 			mem!!.setAlignedArrayInt32(0, data, offset, length)
 			memOffset = 0
 			memLength = length * 4
@@ -350,7 +350,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 
 		fun upload(data: ShortArray, offset: Int = 0, length: Int = data.size): Buffer {
-			mem = KmlNativeBuffer(length * 2)
+			mem = FBuffer(length * 2)
 			mem!!.setAlignedArrayInt16(0, data, offset, length)
 			memOffset = 0
 			memLength = length * 2
@@ -359,7 +359,7 @@ abstract class AG : Extra by Extra.Mixin() {
 			return this
 		}
 
-		fun upload(data: KmlNativeBuffer, offset: Int = 0, length: Int = data.size): Buffer {
+		fun upload(data: FBuffer, offset: Int = 0, length: Int = data.size): Buffer {
 			mem = data
 			memOffset = offset
 			memLength = length
@@ -406,7 +406,7 @@ abstract class AG : Extra by Extra.Mixin() {
 			upload(data, offset, length)
 		}
 
-	fun createIndexBuffer(data: KmlNativeBuffer, offset: Int = 0, length: Int = data.size - offset) =
+	fun createIndexBuffer(data: FBuffer, offset: Int = 0, length: Int = data.size - offset) =
 		createIndexBuffer().apply {
 			upload(data, offset, length)
 		}
@@ -416,7 +416,7 @@ abstract class AG : Extra by Extra.Mixin() {
 			upload(data, offset, length)
 		}
 
-	fun createVertexBuffer(data: KmlNativeBuffer, offset: Int = 0, length: Int = data.size - offset) =
+	fun createVertexBuffer(data: FBuffer, offset: Int = 0, length: Int = data.size - offset) =
 		createVertexBuffer().apply {
 			upload(data, offset, length)
 		}
@@ -678,7 +678,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		val VERTEX_COUNT = 4
 		val vertices = createBuffer(AG.Buffer.Kind.VERTEX)
 		val vertexLayout = VertexLayout(DefaultShaders.a_Pos, DefaultShaders.a_Tex)
-		val verticesData = KmlNativeBuffer(VERTEX_COUNT * vertexLayout.totalSize)
+		val verticesData = FBuffer(VERTEX_COUNT * vertexLayout.totalSize)
 		val program = Program(VertexShader {
 			DefaultShaders.apply {
 				v_Tex setTo a_Tex
