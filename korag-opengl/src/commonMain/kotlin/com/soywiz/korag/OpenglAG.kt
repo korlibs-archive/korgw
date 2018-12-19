@@ -551,7 +551,9 @@ abstract class AGOpengl : AG() {
 		}
 
 		override fun actualSyncUpload(source: BitmapSourceBase, bmp: Bitmap?, requestMipmaps: Boolean) {
-			val bytesPerPixel = if (source.rgba) 4 else 1
+            this.mipmaps = false
+
+            val bytesPerPixel = if (source.rgba) 4 else 1
 			val type = if (source.rgba) {
 				//if (source is NativeImage) gl.BGRA else gl.RGBA
 				gl.RGBA
@@ -576,14 +578,14 @@ abstract class AGOpengl : AG() {
 				//println(buffer)
 			}
 
-			this.mipmaps = false
-
-			if (requestMipmaps) {
+			if (requestMipmaps && source.width.isPowerOfTwo && source.height.isPowerOfTwo) {
 				//println(" - mipmaps")
 				this.mipmaps = true
 				bind()
 				setFilter(true)
 				setWrapST()
+                //println("actualSyncUpload,generateMipmap.SOURCE: ${source.width},${source.height}, source=$source, bmp=$bmp, requestMipmaps=$requestMipmaps")
+                //printStackTrace()
 				checkErrors { gl.generateMipmap(gl.TEXTURE_2D) }
 			} else {
 				//println(" - nomipmaps")
