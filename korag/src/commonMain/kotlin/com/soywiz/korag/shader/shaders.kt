@@ -152,7 +152,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 	class IntLiteral(val value: Int) : Operand(VarType.Int1)
 	class FloatLiteral(val value: Float) : Operand(VarType.Float1)
 	class BoolLiteral(val value: Boolean) : Operand(VarType.Bool1)
-	class Vector(type: VarType, val ops: List<Operand>) : Operand(type)
+	class Vector(type: VarType, val ops: Array<Operand>) : Operand(type)
 	class Swizzle(val left: Operand, val swizzle: String) : Operand(left.type)
 	class ArrayAccess(val left: Operand, val index: Operand) : Operand(left.type)
 
@@ -193,16 +193,16 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 			this.fbody = Stm.Stms(body.outputStms)
 		}
 
-		inline fun IF(cond: Any, callback: Builder.() -> Unit): Stm.If {
+		inline fun IF(cond: Operand, callback: Builder.() -> Unit): Stm.If {
 			val body = Builder(type)
 			body.callback()
-			val stmIf = Stm.If(cond.op, Stm.Stms(body.outputStms))
+			val stmIf = Stm.If(cond, Stm.Stms(body.outputStms))
 			outputStms += stmIf
 			return stmIf
 		}
 
-		fun SET(target: Operand, expr: Any) {
-			outputStms += Stm.Set(target, expr.op)
+		fun SET(target: Operand, expr: Operand) {
+			outputStms += Stm.Set(target, expr)
 		}
 
 		fun DISCARD() {
@@ -212,73 +212,73 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 		private var tempLastId = 3
 		fun createTemp(type: VarType) = Temp(tempLastId++, type)
 
-		infix fun Operand.set(from: Any) = run { outputStms += Stm.Set(this, from.op) }
-		infix fun Operand.setTo(from: Any) = run { outputStms += Stm.Set(this, from.op) }
+		infix fun Operand.set(from: Operand) = run { outputStms += Stm.Set(this, from) }
+		infix fun Operand.setTo(from: Operand) = run { outputStms += Stm.Set(this, from) }
 
-		fun Operand.assign(from: Any) {
-			outputStms += Stm.Set(this, from.op)
+		fun Operand.assign(from: Operand) {
+			outputStms += Stm.Set(this, from)
 		}
 
 		//infix fun Operand.set(to: Operand) = Stm.Set(this, to)
 		val out: Output = Output
 		//fun out(to: Operand) = Stm.Set(if (type == ShaderType.VERTEX) out_Position else out_FragColor, to)
 
-		fun sin(arg: Any) = Func("sin", arg.op)
-		fun cos(arg: Any) = Func("cos", arg.op)
-		fun tan(arg: Any) = Func("tan", arg.op)
+		fun sin(arg: Operand) = Func("sin", arg)
+		fun cos(arg: Operand) = Func("cos", arg)
+		fun tan(arg: Operand) = Func("tan", arg)
 
-		fun asin(arg: Any) = Func("asin", arg.op)
-		fun acos(arg: Any) = Func("acos", arg.op)
-		fun atan(arg: Any) = Func("atan", arg.op)
+		fun asin(arg: Operand) = Func("asin", arg)
+		fun acos(arg: Operand) = Func("acos", arg)
+		fun atan(arg: Operand) = Func("atan", arg)
 
-		fun radians(arg: Any) = Func("radians", arg.op)
-		fun degrees(arg: Any) = Func("degrees", arg.op)
+		fun radians(arg: Operand) = Func("radians", arg)
+		fun degrees(arg: Operand) = Func("degrees", arg)
 
 		// Sampling
-		fun texture2D(a: Any, b: Any) = Func("texture2D", a.op, b.op)
+		fun texture2D(a: Operand, b: Operand) = Func("texture2D", a, b)
 
-		fun func(name: String, vararg args: Any) = Func(name, *args.map { it.op }.toTypedArray())
+		fun func(name: String, vararg args: Operand) = Func(name, *args.map { it }.toTypedArray())
 
-		fun pow(b: Any, e: Any) = Func("pow", b.op, e.op)
-		fun exp(v: Any) = Func("exp", v.op)
-		fun exp2(v: Any) = Func("exp2", v.op)
-		fun log(v: Any) = Func("log", v.op)
-		fun log2(v: Any) = Func("log2", v.op)
-		fun sqrt(v: Any) = Func("sqrt", v.op)
-		fun inversesqrt(v: Any) = Func("inversesqrt", v.op)
+		fun pow(b: Operand, e: Operand) = Func("pow", b, e)
+		fun exp(v: Operand) = Func("exp", v)
+		fun exp2(v: Operand) = Func("exp2", v)
+		fun log(v: Operand) = Func("log", v)
+		fun log2(v: Operand) = Func("log2", v)
+		fun sqrt(v: Operand) = Func("sqrt", v)
+		fun inversesqrt(v: Operand) = Func("inversesqrt", v)
 
-		fun abs(v: Any) = Func("abs", v.op)
-		fun sign(v: Any) = Func("sign", v.op)
-		fun ceil(v: Any) = Func("ceil", v.op)
-		fun floor(v: Any) = Func("floor", v.op)
-		fun fract(v: Any) = Func("fract", v.op)
-		fun clamp(v: Any, min: Any, max: Any) = Func("clamp", v.op, min.op, max.op)
-		fun min(a: Any, b: Any) = Func("min", a.op, b.op)
-		fun max(a: Any, b: Any) = Func("max", a.op, b.op)
-		fun mod(a: Any, b: Any) = Func("mod", a.op, b.op)
-		fun mix(a: Any, b: Any, step: Any) = Func("mix", a.op, b.op, step.op)
-		fun step(a: Any, b: Any) = Func("step", a.op, b.op)
-		fun smoothstep(a: Any, b: Any, c: Any) = Func("smoothstep", a.op, b.op, c.op)
+		fun abs(v: Operand) = Func("abs", v)
+		fun sign(v: Operand) = Func("sign", v)
+		fun ceil(v: Operand) = Func("ceil", v)
+		fun floor(v: Operand) = Func("floor", v)
+		fun fract(v: Operand) = Func("fract", v)
+		fun clamp(v: Operand, min: Operand, max: Operand) = Func("clamp", v, min, max)
+		fun min(a: Operand, b: Operand) = Func("min", a, b)
+		fun max(a: Operand, b: Operand) = Func("max", a, b)
+		fun mod(a: Operand, b: Operand) = Func("mod", a, b)
+		fun mix(a: Operand, b: Operand, step: Operand) = Func("mix", a, b, step)
+		fun step(a: Operand, b: Operand) = Func("step", a, b)
+		fun smoothstep(a: Operand, b: Operand, c: Operand) = Func("smoothstep", a, b, c)
 
-		fun length(a: Any) = Func("length", a.op)
-		fun distance(a: Any, b: Any) = Func("distance", a.op, b.op)
-		fun dot(a: Any, b: Any) = Func("dot", a.op, b.op)
-		fun cross(a: Any, b: Any) = Func("cross", a.op, b.op)
-		fun normalize(a: Any) = Func("normalize", a.op)
-		fun faceforward(a: Any, b: Any, c: Any) = Func("faceforward", a.op, b.op, c.op)
-		fun reflect(a: Any, b: Any) = Func("reflect", a.op, b.op)
-		fun refract(a: Any, b: Any, c: Any) = Func("refract", a.op, b.op, c.op)
+		fun length(a: Operand) = Func("length", a)
+		fun distance(a: Operand, b: Operand) = Func("distance", a, b)
+		fun dot(a: Operand, b: Operand) = Func("dot", a, b)
+		fun cross(a: Operand, b: Operand) = Func("cross", a, b)
+		fun normalize(a: Operand) = Func("normalize", a)
+		fun faceforward(a: Operand, b: Operand, c: Operand) = Func("faceforward", a, b, c)
+		fun reflect(a: Operand, b: Operand) = Func("reflect", a, b)
+		fun refract(a: Operand, b: Operand, c: Operand) = Func("refract", a, b, c)
 
 		val Int.lit: IntLiteral get() = IntLiteral(this)
 		val Double.lit: FloatLiteral get() = FloatLiteral(this.toFloat())
 		val Float.lit: FloatLiteral get() = FloatLiteral(this)
 		val Boolean.lit: BoolLiteral get() = BoolLiteral(this)
-		val Number.lit: Operand get() = this.op
-		fun lit(type: VarType, vararg ops: Any): Operand = Vector(type, ops.toList().ops)
-		fun vec1(vararg ops: Any): Operand = Vector(VarType.Float1, ops.toList().ops)
-		fun vec2(vararg ops: Any): Operand = Vector(VarType.Float2, ops.toList().ops)
-		fun vec3(vararg ops: Any): Operand = Vector(VarType.Float3, ops.toList().ops)
-		fun vec4(vararg ops: Any): Operand = Vector(VarType.Float4, ops.toList().ops)
+        //val Number.lit: Operand get() = this // @TODO: With Kotlin.JS you cannot differentiate Int, Float, Double with 'is'. Since it generates typeof $receiver === 'number' for all of them
+		fun lit(type: VarType, vararg ops: Operand): Operand = Vector(type, ops as Array<Operand>)
+		fun vec1(vararg ops: Operand): Operand = Vector(VarType.Float1, ops as Array<Operand>)
+		fun vec2(vararg ops: Operand): Operand = Vector(VarType.Float2, ops as Array<Operand>)
+		fun vec3(vararg ops: Operand): Operand = Vector(VarType.Float3, ops as Array<Operand>)
+		fun vec4(vararg ops: Operand): Operand = Vector(VarType.Float4, ops as Array<Operand>)
 		//fun Operand.swizzle(swizzle: String): Operand = Swizzle(this, swizzle)
 		operator fun Operand.get(index: Int): Operand {
 			return when {
@@ -303,31 +303,20 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 		val Operand.b get() = this["z"]
 		val Operand.a get() = this["w"]
 
-		val List<Any>.ops: List<Operand> get() = this.map { it.op }
+		operator fun Operand.unaryMinus() = 0.0.lit - this
 
-		val Any.op: Operand get() = when (this) {
-			is Int -> this.lit
-			is Float -> this.lit
-			is Double -> this.lit
-			is Boolean -> this.lit
-			is Operand -> this
-			else -> error("Unsupported $this as Operand for shaders")
-		}
+		operator fun Operand.minus(that: Operand) = Binop(this, "-", that)
+		operator fun Operand.plus(that: Operand) = Binop(this, "+", that)
+		operator fun Operand.times(that: Operand) = Binop(this, "*", that)
+		operator fun Operand.div(that: Operand) = Binop(this, "/", that)
+		operator fun Operand.rem(that: Operand) = Binop(this, "%", that)
 
-		operator fun Any.unaryMinus() = 0.0.lit - this
-
-		operator fun Any.minus(that: Any) = Binop(this.op, "-", that.op)
-		operator fun Any.plus(that: Any) = Binop(this.op, "+", that.op)
-		operator fun Any.times(that: Any) = Binop(this.op, "*", that.op)
-		operator fun Any.div(that: Any) = Binop(this.op, "/", that.op)
-		operator fun Any.rem(that: Any) = Binop(this.op, "%", that.op)
-
-		infix fun Any.eq(that: Any) = Binop(this.op, "==", that.op)
-		infix fun Any.ne(that: Any) = Binop(this.op, "!=", that.op)
-		infix fun Any.lt(that: Any) = Binop(this.op, "<", that.op)
-		infix fun Any.le(that: Any) = Binop(this.op, "<=", that.op)
-		infix fun Any.gt(that: Any) = Binop(this.op, ">", that.op)
-		infix fun Any.ge(that: Any) = Binop(this.op, ">=", that.op)
+		infix fun Operand.eq(that: Operand) = Binop(this, "==", that)
+		infix fun Operand.ne(that: Operand) = Binop(this, "!=", that)
+		infix fun Operand.lt(that: Operand) = Binop(this, "<", that)
+		infix fun Operand.le(that: Operand) = Binop(this, "<=", that)
+		infix fun Operand.gt(that: Operand) = Binop(this, ">", that)
+		infix fun Operand.ge(that: Operand) = Binop(this, ">=", that)
 	}
 
 	open class Visitor<E>(val default: E) {

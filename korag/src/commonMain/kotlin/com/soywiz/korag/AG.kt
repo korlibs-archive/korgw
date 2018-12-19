@@ -682,7 +682,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		val program = Program(VertexShader {
 			DefaultShaders.apply {
 				v_Tex setTo a_Tex
-				out setTo vec4(a_Pos, 0f, 1f)
+				out setTo vec4(a_Pos, 0f.lit, 1f.lit)
 			}
 		}, FragmentShader {
 			DefaultShaders.apply {
