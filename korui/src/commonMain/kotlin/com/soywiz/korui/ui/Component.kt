@@ -288,7 +288,10 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 
 	override fun onResized(x: Int, y: Int, width: Int, height: Int) {
 		super.onResized(x, y, width, height)
-		ag.resized(width, height)
+        val agWidth = (width * lc.xScale).toInt()
+        val agHeight = (height * lc.yScale).toInt()
+        //println("onResized:($x,$y,$width,$height),ag=($agWidth,$agHeight),lc.xScale=${lc.xScale}")
+		ag.resized(agWidth, agHeight)
 	}
 
 	suspend fun waitReady() {

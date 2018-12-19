@@ -42,19 +42,19 @@ class HtmlLightComponents : LightComponents() {
 	val windowWidth: Int get() = document.documentElement?.clientWidth ?: window.innerWidth ?: 128
 	val windowHeight: Int get() = document.documentElement?.clientHeight ?: window.innerHeight ?: 128
 
-	val xScale: Double get() = if (quality == LightQuality.QUALITY) devicePixelRatio else 1.0
-	val yScale: Double get() = if (quality == LightQuality.QUALITY) devicePixelRatio else 1.0
+	override val xScale: Double get() = if (quality == LightQuality.QUALITY) devicePixelRatio else 1.0
+    override val yScale: Double get() = if (quality == LightQuality.QUALITY) devicePixelRatio else 1.0
 
 	//val xEventScale: Double get() = 1.0 / xScale
 	//val yEventScale: Double get() = 1.0 / yScale
 
-	val xEventScale: Double get() = xScale
-	val yEventScale: Double get() = yScale
+    override val xEventScale: Double get() = xScale
+    override val yEventScale: Double get() = yScale
 
 	//val xEventScale: Double get() = 1.0
 	//val yEventScale: Double get() = 1.0
 
-	init {
+    init {
 		addStyles(
 			"""
 			body {
@@ -688,7 +688,11 @@ class HtmlLightComponents : LightComponents() {
 			//lightLog.error { "CANVAS size: $x,$y,$width,$height" }
 			child.width = (width * xScale).toInt()
 			child.height = (height * yScale).toInt()
-		}
+
+            //println("HtmlLightComponents.devicePixelRatio=$devicePixelRatio")
+            //println("HtmlLightComponents.xScale=$xScale")
+            //println("HtmlLightComponents.xEventScale=$xEventScale")
+        }
 	}
 
 	override fun repaint(c: Any) {

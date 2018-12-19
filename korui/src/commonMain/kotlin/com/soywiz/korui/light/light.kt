@@ -27,7 +27,13 @@ enum class LightQuality {
 }
 
 open class LightComponents {
-	class LightComponentInfo(val handle: Any) : Extra by Extra.Mixin()
+    open val xScale: Double get() = 1.0
+    open val yScale: Double get() = 1.0
+
+    open val xEventScale: Double get() = 1.0
+    open val yEventScale: Double get() = 1.0
+
+    class LightComponentInfo(val handle: Any) : Extra by Extra.Mixin()
 
 	open fun create(type: LightType): LightComponentInfo = LightComponentInfo(Unit)
 	open fun setParent(c: Any, parent: Any?): Unit = Unit
