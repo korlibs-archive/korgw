@@ -114,7 +114,7 @@ class GamepadInfo(
 
 abstract class GamepadMapping {
 	abstract val id: String
-	fun Int.getButton(index: Int): Double = if (getBit(index)) 1.0 else 0.0
+	fun Int.getButton(index: Int): Double = if (extract(index)) 1.0 else 0.0
 	abstract fun get(button: GameButton, buttons: Int, axes: DoubleArray): Double
 
 	fun toString(buttons: Int, axes: DoubleArray) = "$id(" + GameButton.values().joinToString(", ") {

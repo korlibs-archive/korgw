@@ -1,4 +1,3 @@
 dependencies {
     commonMainApi "com.soywiz:korim:$korimVersion"
-    commonMainApi "com.soywiz:korio:$korioVersion"
 }
