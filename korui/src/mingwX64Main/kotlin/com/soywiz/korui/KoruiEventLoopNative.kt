@@ -19,7 +19,6 @@ import com.soywiz.klock.*
 import com.soywiz.kmem.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
-import kotlinx.coroutines.timeunit.*
 import com.soywiz.korui.input.Key
 
 @UseExperimental(InternalCoroutinesApi::class)
