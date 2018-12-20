@@ -24,45 +24,42 @@ import com.soywiz.korui.input.Key
 
 @UseExperimental(InternalCoroutinesApi::class)
 class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
-	override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
+    override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-	class TimedTask(val ms: Long, val continuation: CancellableContinuation<Unit>)
+    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
 
-	val tasks = Queue<Runnable>()
-	val timedTasks = PriorityQueue<TimedTask>(Comparator<TimedTask> { a, b -> a.ms.compareTo(b.ms) })
+    val tasks = Queue<Runnable>()
+    val timedTasks = PriorityQueue<TimedTask>(Comparator<TimedTask> { a, b -> a.ms.compareTo(b.ms) })
 
-	override fun dispatch(context: CoroutineContext, block: Runnable) {
-		tasks.enqueue(block)
-	}
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        tasks.enqueue(block)
+    }
 
-	override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
-		val task = TimedTask(
-				Klock.currentTimeMillis() + timeMillis,
-				continuation
-		)
-		continuation.invokeOnCancellation {
-			timedTasks.remove(task)
-		}
-		timedTasks.add(task)
-	}
+    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
+        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation)
+        continuation.invokeOnCancellation {
+            timedTasks.remove(task)
+        }
+        timedTasks.add(task)
+    }
 
-	fun executeStep() {
-		val now = Klock.currentTimeMillis()
-		while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
-			timedTasks.removeHead().continuation.resume(Unit)
-		}
+    fun executeStep() {
+        val now = DateTime.now()
+        while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
+            timedTasks.removeHead().continuation.resume(Unit)
+        }
 
-		while (tasks.isNotEmpty()) {
-			val task = tasks.dequeue()
-			task.run()
-		}
-	}
+        while (tasks.isNotEmpty()) {
+            val task = tasks.dequeue()
+            task.run()
+        }
+    }
 
-	override fun close() {
+    override fun close() {
 
-	}
+    }
 
-	override fun toString(): String = "MyNativeCoroutineDispatcher"
+    override fun toString(): String = "MyNativeCoroutineDispatcher"
 }
 
 @ThreadLocal
@@ -223,7 +220,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) {
 			val msPerFrame = 1000 / fps
 			val msg = alloc<MSG>()
 			//var start = milliStamp()
-			var prev = Klock.currentTimeMillis()
+			var prev = DateTime.nowUnixLong()
 			while (running) {
 				while (
 					PeekMessageW(
@@ -243,7 +240,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) {
 				//println("SLEEP: sleepTime=$sleepTime, start=$start, now=$now, elapsed=$elapsed")
 				//start = now
 				//Sleep(sleepTime)
-				val now = Klock.currentTimeMillis()
+				val now = DateTime.nowUnixLong()
 				val elapsed = now - prev
 				//println("$prev, $now, $elapsed")
 				val sleepTime = kotlin.math.max(0L, (msPerFrame - elapsed)).toInt()
