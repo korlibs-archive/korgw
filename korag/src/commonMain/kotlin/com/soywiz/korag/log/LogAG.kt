@@ -18,7 +18,7 @@ open class LogAG(
 		ready()
 	}
 
-	private fun log(str: String) {
+	protected fun log(str: String) {
 		this.log += str
 		//println(str)
 	}

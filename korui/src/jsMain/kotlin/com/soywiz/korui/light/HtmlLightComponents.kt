@@ -2,6 +2,7 @@ package com.soywiz.korui.light
 
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
+import com.soywiz.korag.log.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
 import com.soywiz.korim.format.*
@@ -10,6 +11,7 @@ import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
+import com.soywiz.korio.util.*
 import com.soywiz.korui.event.*
 import com.soywiz.korui.input.*
 import kotlinx.coroutines.*
@@ -31,7 +33,10 @@ var mainFrame: HTMLElement? = null
 
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
-	val tDevicePixelRatio = window.devicePixelRatio.toDouble()
+    val window: Window? = if (OS.isNodejs) null else kotlin.js.js("self")
+    val document = window?.document
+
+	val tDevicePixelRatio = window?.devicePixelRatio?.toDouble() ?: 1.0
 	val devicePixelRatio = when {
 		tDevicePixelRatio <= 0.0 -> 1.0
 		tDevicePixelRatio.isNaN() -> 1.0
@@ -39,8 +44,8 @@ class HtmlLightComponents : LightComponents() {
 		else -> tDevicePixelRatio
 	}
 
-	val windowWidth: Int get() = document.documentElement?.clientWidth ?: window.innerWidth ?: 128
-	val windowHeight: Int get() = document.documentElement?.clientHeight ?: window.innerHeight ?: 128
+	val windowWidth: Int get() = document?.documentElement?.clientWidth ?: window?.innerWidth ?: 128
+	val windowHeight: Int get() = document?.documentElement?.clientHeight ?: window?.innerHeight ?: 128
 
 	override val xScale: Double get() = if (quality == LightQuality.QUALITY) devicePixelRatio else 1.0
     override val yScale: Double get() = if (quality == LightQuality.QUALITY) devicePixelRatio else 1.0
@@ -53,6 +58,8 @@ class HtmlLightComponents : LightComponents() {
 
 	//val xEventScale: Double get() = 1.0
 	//val yEventScale: Double get() = 1.0
+
+    object Dummy
 
     init {
 		addStyles(
@@ -102,34 +109,42 @@ class HtmlLightComponents : LightComponents() {
 		"""
 		)
 
-		document.body?.style?.background = "#f0f0f0"
-		val inputFile = document.createElement("input") as HTMLInputElement
-		inputFile.type = "file"
-		inputFile.style.visibility = "hidden"
-		windowInputFile = inputFile
-		selectedFiles = arrayOf()
-		document.body?.appendChild(inputFile)
+        if (document != null) {
+            document.body?.style?.background = "#f0f0f0"
+            val inputFile = document.createElement("input").unsafeCast<HTMLInputElement>()
+            inputFile.type = "file"
+            inputFile.style.visibility = "hidden"
+            windowInputFile = inputFile
+            selectedFiles = arrayOf()
+            document.body?.appendChild(inputFile)
+        }
 	}
 
 	fun addStyles(css: String) {
-		val head: HTMLHeadElement = document.head ?: document.getElementsByTagName("head")[0] as HTMLHeadElement
-		val style = document.createElement("style") as HTMLStyleElement
+        val document = this.document ?: return
+		val head: HTMLHeadElement = document.head ?: document.getElementsByTagName("head")[0].unsafeCast<HTMLHeadElement>()
+		val style = document.createElement("style").unsafeCast<HTMLStyleElement>()
 
-		style.type = "text/css"
-		if (style.asDynamic().styleSheet != null) {
-			style.asDynamic().styleSheet.cssText = css
-		} else {
-			style.appendChild(document.createTextNode(css))
-		}
+        style.type = "text/css"
+        if (style.asDynamic().styleSheet != null) {
+            style.asDynamic().styleSheet.cssText = css
+        } else {
+            style.appendChild(document.createTextNode(css))
+        }
 
-		head.appendChild(style)
+        head.appendChild(style)
 	}
 
 	override fun create(type: LightType): LightComponentInfo {
-		var agg: AG? = null
+        val document = this.document ?: return LightComponentInfo(Dummy).apply {
+            if (type == LightType.AGCANVAS) {
+                ag = DummyAG(640, 480)
+            }
+        }
+        var agg: AG? = null
 		val handle: HTMLElement = when (type) {
 			LightType.FRAME -> {
-				(document.createElement("article") as HTMLElement).apply {
+				(document.createElement("article").unsafeCast<HTMLElement>()).apply {
 					this.className = "FRAME"
 					document.body?.appendChild(this)
 					mainFrame = this
@@ -137,54 +152,54 @@ class HtmlLightComponents : LightComponents() {
 				}
 			}
 			LightType.CONTAINER -> {
-				(document.createElement("div") as HTMLElement).apply {
+				(document.createElement("div").unsafeCast<HTMLElement>()).apply {
 					this.className = "CONTAINER"
 				}
 			}
 			LightType.SCROLL_PANE -> {
-				(document.createElement("div") as HTMLElement).apply {
+				(document.createElement("div").unsafeCast<HTMLElement>()).apply {
 					this.className = "SCROLL_PANE"
 				}
 			}
 			LightType.BUTTON -> {
-				(document.createElement("input") as HTMLInputElement).apply {
+				(document.createElement("input").unsafeCast<HTMLInputElement>()).apply {
 					this.className = "BUTTON"
 					this.type = "button"
 				}
 			}
 			LightType.PROGRESS -> {
-				(document.createElement("progress") as HTMLElement).apply {
+				(document.createElement("progress").unsafeCast<HTMLElement>()).apply {
 					this.className = "PROGRESS"
 				}
 			}
 			LightType.IMAGE -> {
-				(document.createElement("canvas") as HTMLCanvasElement)!!.apply {
+				(document.createElement("canvas").unsafeCast<HTMLCanvasElement>())!!.apply {
 					this.className = "IMAGE"
 					this.style.imageRendering = "pixelated"
 				}
 			}
 			LightType.LABEL -> {
-				(document.createElement("label") as HTMLElement).apply {
+				(document.createElement("label").unsafeCast<HTMLElement>()).apply {
 					this.className = "LABEL"
 				}
 			}
 			LightType.TEXT_FIELD -> {
-				(document.createElement("input") as HTMLInputElement)!!.apply {
+				(document.createElement("input").unsafeCast<HTMLInputElement>())!!.apply {
 					this.className = "TEXT_FIELD"
 					this.type = "text"
 				}
 			}
 			LightType.TEXT_AREA -> {
-				(document.createElement("textarea") as HTMLElement).apply {
+				(document.createElement("textarea").unsafeCast<HTMLElement>()).apply {
 					this.className = "TEXT_AREA"
 					//this["type"] = "text"
 				}
 			}
 			LightType.CHECK_BOX -> {
-				(document.createElement("label") as HTMLElement).apply {
+				(document.createElement("label").unsafeCast<HTMLElement>()).apply {
 					this.className = "CHECK_BOX"
 					this.asDynamic()["data-type"] = "checkbox"
-					val input: HTMLInputElement = document.createElement("input") as HTMLInputElement
+					val input: HTMLInputElement = document.createElement("input").unsafeCast<HTMLInputElement>()
 					input.apply {
 						this.className = "TEXT_FIELD"
 						this.type = "checkbox"
@@ -195,13 +210,13 @@ class HtmlLightComponents : LightComponents() {
 			}
 			LightType.AGCANVAS -> {
 				agg = AGOpenglFactory.create(null).create(null)
-				val cc = agg.nativeComponent as HTMLCanvasElement
+				val cc = agg.nativeComponent.unsafeCast<HTMLCanvasElement>()
 				cc.tabIndex = 1
 				cc.style.outline = "none"
 				cc
 			}
 			else -> {
-				(document.createElement("div") as HTMLElement).apply {
+				(document.createElement("div").unsafeCast<HTMLElement>()).apply {
 					this.className = "UNKNOWN"
 				}
 			}
@@ -230,10 +245,11 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun setParent(c: Any, parent: Any?) {
-		val child = c as HTMLElement
+        if (c.isInvalid()) return
+		val child = c.unsafeCast<HTMLElement>()
 		child.parentNode?.removeChild(child)
 		if (parent != null) {
-			(parent as HTMLElement).appendChild(child)
+			(parent.unsafeCast<HTMLElement>()).appendChild(child)
 		}
 	}
 
@@ -245,14 +261,18 @@ class HtmlLightComponents : LightComponents() {
 	override fun <T : com.soywiz.korui.event.Event> registerEventKind(
 		c: Any, clazz: KClass<T>, ed: EventDispatcher
 	): Closeable {
-		val node = c as HTMLElement
+        if (c.isInvalid()) return DummyCloseable
+        val document = this.document ?: return DummyCloseable
+        val window = this.window ?: return DummyCloseable
+
+		val node = c.unsafeCast<HTMLElement>()
 
 		when (clazz) {
 			com.soywiz.korui.event.MouseEvent::class -> {
 				val event = com.soywiz.korui.event.MouseEvent()
 
 				fun dispatchMouseEvent(e: Event) {
-					val me = e as MouseEvent
+					val me = e.unsafeCast<MouseEvent>()
 					//console.error("MOUSE EVENT!")
 					//console.error(me)
 					ed.dispatch(event.apply {
@@ -293,7 +313,7 @@ class HtmlLightComponents : LightComponents() {
 				val event = com.soywiz.korui.event.KeyEvent()
 
 				fun dispatchMouseEvent(e: Event) {
-					val me = e as KeyboardEvent
+					val me = e.unsafeCast<KeyboardEvent>()
 					//console.error("MOUSE EVENT!")
 					//console.error(me)
 					ed.dispatch(event.apply {
@@ -554,6 +574,7 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun <T> callAction(c: Any, key: LightAction<T>, param: T) {
+        if (c.isInvalid()) return
 		when (key) {
 			LightAction.FOCUS -> {
 				val child = c.asDynamic()
@@ -563,7 +584,9 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun <T> setProperty(c: Any, key: LightProperty<T>, value: T) {
-		val child = c as HTMLElement
+        if (c.isInvalid()) return
+        val document = this.document ?: return
+		val child = c.unsafeCast<HTMLElement>()
 		val childOrDocumentBody = if (child.nodeName.toLowerCase() == "article") document.body else child
 		val nodeName = child.nodeName.toLowerCase()
 		when (key) {
@@ -572,7 +595,7 @@ class HtmlLightComponents : LightComponents() {
 				if (nodeName == "article") {
 					document.title = v
 				} else if (nodeName == "input" || nodeName == "textarea") {
-					(child as HTMLInputElement).value = v
+					(child.unsafeCast<HTMLInputElement>()).value = v
 				} else {
 					if ((child.asDynamic()["data-type"]) == "checkbox") {
 						(child.querySelector("span") as? HTMLSpanElement?)?.innerText = v
@@ -583,11 +606,11 @@ class HtmlLightComponents : LightComponents() {
 			}
 			LightProperty.PROGRESS_CURRENT -> {
 				val v = key[value]
-				(child as HTMLInputElement).value = "$v"
+				(child.unsafeCast<HTMLInputElement>()).value = "$v"
 			}
 			LightProperty.PROGRESS_MAX -> {
 				val v = key[value]
-				(child as HTMLInputElement).max = "$v"
+				(child.unsafeCast<HTMLInputElement>()).max = "$v"
 			}
 			LightProperty.BGCOLOR -> {
 				val v = key[value]
@@ -605,7 +628,7 @@ class HtmlLightComponents : LightComponents() {
 					var link: HTMLLinkElement? =
 						document.querySelector("link[rel*='icon']").unsafeCast<HTMLLinkElement>()
 					if (link == null) {
-						link = document.createElement("link") as HTMLLinkElement
+						link = document.createElement("link").unsafeCast<HTMLLinkElement>()
 					}
 					link.type = "image/x-icon"
 					link.rel = "shortcut icon"
@@ -616,7 +639,7 @@ class HtmlLightComponents : LightComponents() {
 			LightProperty.IMAGE -> {
 				val bmp = key[value]
 				if (bmp is HtmlNativeImage) {
-					setCanvas(c, bmp.lazyCanvasElement)
+					setCanvas(c, bmp.lazyCanvasElement.asDynamic())
 				} else {
 					setImage32(c, bmp?.toBMP32())
 				}
@@ -627,57 +650,64 @@ class HtmlLightComponents : LightComponents() {
 			}
 			LightProperty.CHECKED -> {
 				val v = key[value]
-				(child.querySelector("input[type=checkbox]") as HTMLInputElement).checked = v
+				(child.querySelector("input[type=checkbox]").unsafeCast<HTMLInputElement>()).checked = v
 			}
 		}
 	}
 
 	@Suppress("UNCHECKED_CAST")
 	override fun <T> getProperty(c: Any, key: LightProperty<T>): T {
-		val child = c as HTMLElement
+        if (c.isInvalid()) return super.getProperty(c, key)
+		val child = c.unsafeCast<HTMLElement>()
 
 		when (key) {
 			LightProperty.TEXT -> {
-				return (child as HTMLInputElement).value as T
+				return (child.unsafeCast<HTMLInputElement>()).value.unsafeCast<T>()
 			}
 			LightProperty.CHECKED -> {
-				val input = (child as HTMLInputElement).querySelector("input[type=checkbox]")
+				val input = (child.unsafeCast<HTMLInputElement>()).querySelector("input[type=checkbox]")
 				val checked: Boolean = input.asDynamic().checked
-				return checked as T
+				return checked.unsafeCast<T>()
 			}
 		}
 		return super.getProperty(c, key)
 	}
 
 	private fun setCanvas(c: Any, bmp: HTMLCanvasElement?) {
-		val targetCanvas = c as HTMLCanvasElement
+        if (c.isInvalid()) return
+		val targetCanvas = c.unsafeCast<HTMLCanvasElement>()
 		if (bmp != null) {
 			targetCanvas.width = bmp.width
 			targetCanvas.height = bmp.height
-			val ctx = targetCanvas.getContext("2d") as CanvasRenderingContext2D
-			HtmlImage.htmlCanvasClear(targetCanvas)
+			val ctx = targetCanvas.getContext("2d").unsafeCast<CanvasRenderingContext2D>()
+			HtmlImage.htmlCanvasClear(targetCanvas.asDynamic())
 			ctx.drawImage(bmp, 0.0, 0.0)
 			//println("DRAW CANVAS")
 		} else {
-			HtmlImage.htmlCanvasClear(targetCanvas)
+			HtmlImage.htmlCanvasClear(targetCanvas.asDynamic())
 			//println("DRAW CANVAS CLEAR")
 		}
 	}
 
+    private fun Any.isInvalid(): Boolean = this is Dummy
+
 	private fun setImage32(c: Any, bmp: Bitmap32?) {
-		val canvas = c as HTMLCanvasElement
+        if (c.isInvalid()) return
+		val canvas = c.unsafeCast<HTMLCanvasElement>()
 		if (bmp != null) {
-			HtmlImage.htmlCanvasSetSize(canvas, bmp.width, bmp.height)
-			HtmlImage.renderToHtmlCanvas(bmp, canvas)
+            canvas.width = bmp.width
+            canvas.height = bmp.height
+			HtmlImage.renderToHtmlCanvas(bmp, canvas.asDynamic())
 			//println("DRAW IMAGE")
 		} else {
-			HtmlImage.htmlCanvasClear(canvas)
+			HtmlImage.htmlCanvasClear(canvas.asDynamic())
 			//println("DRAW IMAGE CLEAR")
 		}
 	}
 
 	override fun setBounds(c: Any, x: Int, y: Int, width: Int, height: Int) {
-		val child = c as HTMLElement
+        if (c.isInvalid()) return
+		val child = c.unsafeCast<HTMLElement>()
 		val childStyle = child.style
 		childStyle.left = "${x}px"
 		childStyle.top = "${y}px"
@@ -699,15 +729,23 @@ class HtmlLightComponents : LightComponents() {
 		mainFrame?.style?.visibility = "visible"
 	}
 
-	override suspend fun dialogAlert(c: Any, message: String) = suspendCancellableCoroutine<Unit> { c ->
-		window.alert(message)
-		window.setTimeout({
-			c.resume(Unit)
-		}, 0)
-	}
+	override suspend fun dialogAlert(c: Any, message: String) {
+        if (c.isInvalid()) return
+        val window = this.window ?: return
 
-	override suspend fun dialogPrompt(c: Any, message: String, initialValue: String): String =
-		suspendCancellableCoroutine { c ->
+        return suspendCancellableCoroutine { c ->
+            window.alert(message)
+            window.setTimeout({
+                c.resume(Unit)
+            }, 0)
+        }
+    }
+
+	override suspend fun dialogPrompt(c: Any, message: String, initialValue: String): String {
+        if (c.isInvalid()) return "cancelled"
+        val window = this.window ?: return "cancelled"
+
+		return suspendCancellableCoroutine { c ->
 			val result = window.prompt(message, initialValue)
 			window.setTimeout({
 				if (result == null) {
@@ -717,62 +755,72 @@ class HtmlLightComponents : LightComponents() {
 				}
 			}, 0)
 		}
+    }
 
-	override suspend fun dialogOpenFile(c: Any, filter: String): VfsFile = suspendCancellableCoroutine { continuation ->
-		val inputFile = windowInputFile
-		var completedOnce = false
-		var files = arrayOf<File>()
+	override suspend fun dialogOpenFile(c: Any, filter: String): VfsFile {
+        if (c.isInvalid()) throw CancellationException("cancel")
+        val window = this.window ?: throw CancellationException("cancel")
+        val document = this.document ?: throw CancellationException("cancel")
 
-		val completed = {
-			if (!completedOnce) {
-				completedOnce = true
+        return suspendCancellableCoroutine { continuation ->
+            val inputFile = windowInputFile
+            var completedOnce = false
+            var files = arrayOf<File>()
 
-				selectedFiles = files
+            val completed = {
+                if (!completedOnce) {
+                    completedOnce = true
 
-				//console.log('completed', files);
-				if (files.size > 0.0) {
-					val fileName = files[0].name
-					val ff = arrayListOf<File>()
-					for (n in 0 until selectedFiles.asDynamic().length) ff += selectedFiles[n].unsafeCast<File>()
-					val sf = JsFilesVfs(ff)
-					continuation.resume(sf[fileName])
-				} else {
-					continuation.resumeWithException(CancellationException("cancel"))
-				}
-			}
-		}
+                    selectedFiles = files
 
-		windowInputFile?.value = ""
+                    //console.log('completed', files);
+                    if (files.size > 0.0) {
+                        val fileName = files[0].name
+                        val ff = arrayListOf<File>()
+                        for (n in 0 until selectedFiles.asDynamic().length) ff += selectedFiles[n].unsafeCast<File>()
+                        val sf = JsFilesVfs(ff)
+                        continuation.resume(sf[fileName])
+                    } else {
+                        continuation.resumeWithException(CancellationException("cancel"))
+                    }
+                }
+            }
 
-		windowInputFile?.onclick = {
-			document.body?.onfocus = {
-				document.body?.onfocus = null
-				window.setTimeout({
-					completed()
-				}, 2000)
-			}
-			Unit
-		}
+            windowInputFile?.value = ""
 
-		windowInputFile?.onchange = { e ->
-			files = e.target.asDynamic()["files"]
-			//var v = this.value;
-			//console.log(v);
-			completed()
-		}
+            windowInputFile?.onclick = {
+                document.body?.onfocus = {
+                    document.body?.onfocus = null
+                    window.setTimeout({
+                        completed()
+                    }, 2000)
+                }
+                Unit
+            }
 
-		inputFile?.click()
-	}
+            windowInputFile?.onchange = { e ->
+                files = e.target.asDynamic()["files"]
+                //var v = this.value;
+                //console.log(v);
+                completed()
+            }
+
+            inputFile?.click()
+        }
+    }
 
 	override fun openURL(url: String): Unit {
+        val window = this.window ?: return
 		window.open(url, "_blank")
 	}
 
 	override fun getDpi(): Double {
+        val window = this.window ?: return 1.0
 		return (window.devicePixelRatio.toInt() * 96).toDouble()
 	}
 
 	override fun getDevicePixelRatio(): Double {
+        val window = this.window ?: return 1.0
 		return window.devicePixelRatio ?: 1.0
 	}
 
