@@ -510,8 +510,8 @@ class HtmlLightComponents : LightComponents() {
 						//console.error(touch)
 						out += TouchEvent().apply {
 							this.type = type
-							this.touch.current.x = (touch.pageX * xEventScale).unsafeCast<Double>()
-							this.touch.current.y = (touch.pageY * yEventScale).unsafeCast<Double>()
+							this.touch.current.x = (touch.pageX * xEventScale).unsafeCast<Double>().toFloat()
+							this.touch.current.y = (touch.pageY * yEventScale).unsafeCast<Double>().toFloat()
 							this.touch.id = touch.identifier.unsafeCast<Int>()
 							this.scaleCoords = false
 						}

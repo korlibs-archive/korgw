@@ -531,7 +531,7 @@ abstract class BaseCanvas(app: Application) : Container(app, LayeredLayout(app))
 		val rwidth = (width * scale).toInt()
 		val rheight = (height * scale).toInt()
 		val image = NativeImage(rwidth, rheight)
-		val ctx = image.getContext2d(antialiasing = antialiased).withScaledRenderer(scale)
+		val ctx = image.getContext2d(antialiasing = antialiased).withScaledRenderer(scale.toFloat())
 		//val ctx = image.getContext2d(antialiasing = antialiased)
 		ctx.render()
 		img.image = image
@@ -555,8 +555,8 @@ class VectorImage(app: Application) : BaseCanvas(app) {
 	override fun Context2d.render() {
 		val twidth = targetWidth
 		val theight = targetHeight
-		val sx = if (twidth != null) width.toDouble() / twidth.toDouble() else 1.0
-		val sy = if (theight != null) height.toDouble() / theight.toDouble() else 1.0
+		val sx = if (twidth != null) width.toFloat() / twidth.toFloat() else 1f
+		val sy = if (theight != null) height.toFloat() / theight.toFloat() else 1f
 
 		d?.draw(this.withScaledRenderer(sx, sy))
 		//d.draw(this)

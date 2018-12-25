@@ -4,7 +4,7 @@ import com.soywiz.kds.*
 import com.soywiz.klock.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korma.*
+import com.soywiz.korma.geom.*
 import com.soywiz.korui.input.*
 
 data class MouseEvent(
@@ -42,8 +42,8 @@ data class Touch(
 	var id: Int = -1,
 	var startTime: DateTime = DateTime.EPOCH,
 	var currentTime: DateTime = DateTime.EPOCH,
-	var start: MVector2 = MVector2(),
-	var current: MVector2 = MVector2()
+	var start: Point = Point(),
+	var current: Point = Point()
 ) : Extra by Extra.Mixin() {
 	companion object {
 		val dummy = Touch(-1)

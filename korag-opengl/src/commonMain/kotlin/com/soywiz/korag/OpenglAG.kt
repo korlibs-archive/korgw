@@ -8,12 +8,9 @@ import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
-import com.soywiz.korim.format.*
 import com.soywiz.korio.error.*
-import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korma.*
-import kotlinx.coroutines.*
+import com.soywiz.korma.geom.*
 
 abstract class AGOpengl : AG() {
 	open val isGlAvailable = true
@@ -147,6 +144,7 @@ abstract class AGOpengl : AG() {
 
 	val tempBuffer1 = FBuffer(4)
 	val tempBuffer16 = FBuffer(4 * 16)
+    private val tempFloat = FloatArray(16)
 
 	override fun draw(
 		vertices: Buffer,
@@ -221,32 +219,35 @@ abstract class AGOpengl : AG() {
 					textureUnit++
 				}
 				VarType.Mat2 -> {
+                    (value as Matrix3D).copyToFloat2x2(tempFloat)
 					checkErrors {
 						gl.uniformMatrix2fv(
 							location,
 							1,
 							false,
-							tempBuffer16.setFloats(0, (value as Matrix2).data, 0, 4)
+							tempBuffer16.setFloats(0, tempFloat, 0, 4)
 						)
 					}
 				}
 				VarType.Mat3 -> {
+                    (value as Matrix3D).copyToFloat3x3(tempFloat)
 					checkErrors {
 						gl.uniformMatrix3fv(
 							location,
 							1,
 							false,
-							tempBuffer16.setFloats(0, (value as Matrix3).data, 0, 9)
+							tempBuffer16.setFloats(0, tempFloat, 0, 9)
 						)
 					}
 				}
 				VarType.Mat4 -> {
+                    (value as Matrix3D).copyToFloat4x4(tempFloat)
 					checkErrors {
 						gl.uniformMatrix4fv(
 							location,
 							1,
 							false,
-							tempBuffer16.setFloats(0, (value as Matrix4).data, 0, 16)
+							tempBuffer16.setFloats(0, tempFloat, 0, 16)
 						)
 					}
 				}

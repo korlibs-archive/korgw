@@ -2,7 +2,7 @@ package com.soywiz.korag.shader
 
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
-import com.soywiz.korma.*
+import com.soywiz.korma.geom.*
 import kotlin.reflect.*
 
 class DoubleDelegatedUniform(val uniform: Uniform, val values: FloatArray, val index: Int, val onSet: (Double) -> Unit, default: Double) {
@@ -99,7 +99,7 @@ class UniformValueStorage<T : Any>(val uniforms: AG.UniformValues, val uniform: 
 }
 
 fun AG.UniformValues.storageFor(uniform: Uniform, array: FloatArray = FloatArray(4)) = UniformFloatStorage(this, uniform, array)
-fun AG.UniformValues.storageForMatrix2(uniform: Uniform, matrix: Matrix2 = Matrix2()) = UniformValueStorage(this, uniform, matrix)
-fun AG.UniformValues.storageForMatrix3(uniform: Uniform, matrix: Matrix3 = Matrix3()) = UniformValueStorage(this, uniform, matrix)
-fun AG.UniformValues.storageForMatrix4(uniform: Uniform, matrix: Matrix4 = Matrix4()) = UniformValueStorage(this, uniform, matrix)
+fun AG.UniformValues.storageForMatrix2(uniform: Uniform, matrix: Matrix3D = Matrix3D()) = UniformValueStorage(this, uniform, matrix)
+fun AG.UniformValues.storageForMatrix3(uniform: Uniform, matrix: Matrix3D = Matrix3D()) = UniformValueStorage(this, uniform, matrix)
+fun AG.UniformValues.storageForMatrix4(uniform: Uniform, matrix: Matrix3D = Matrix3D()) = UniformValueStorage(this, uniform, matrix)
 
