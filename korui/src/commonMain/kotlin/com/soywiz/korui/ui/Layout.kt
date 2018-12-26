@@ -114,10 +114,11 @@ class LayeredKeepAspectLayout(app: Application, val anchor: Anchor, val scaleMod
 			parent.style.computedPaddingLeft, parent.style.computedPaddingTop,
 			100.percent - parent.style.computedPaddingRight, 100.percent - parent.style.computedPaddingBottom
 		)
+        val actualBoundsSize = SizeInt(actualBounds.width, actualBounds.height)
 
 		for (child in children) {
-			val size1 = child.computedCalcSize(ctx, actualBounds.size, ignoreBounds = true)
-			val asize = size1.applyScaleMode(actualBounds.size, scaleMode)
+			val size1 = child.computedCalcSize(ctx, actualBoundsSize, ignoreBounds = true)
+			val asize = size1.applyScaleMode(actualBoundsSize, scaleMode)
 			//println("$size1, $asize")
 
 			val endSize = asize.anchoredIn(actualBounds, anchor)
