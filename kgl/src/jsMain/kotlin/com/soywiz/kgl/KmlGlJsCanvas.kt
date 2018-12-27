@@ -14,7 +14,8 @@ import com.soywiz.kmem.set
 import com.soywiz.kmem.get
 
 class KmlGlJsCanvas(val canvas: HTMLCanvasElement, val glOpts: dynamic) : KmlGl() {
-    val gl = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)).unsafeCast<WebGLRenderingContext>()
+    val gl = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)).unsafeCast<WebGLRenderingContext?>()
+        ?: error("Can't get webgl context")
     private val items = arrayOfNulls<Any>(8 * 1024)
     private val freeList = (1 until items.size).reversed().toMutableList()
     private fun <T> T.alloc(): Int = run {
