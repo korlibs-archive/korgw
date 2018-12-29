@@ -13,6 +13,9 @@ import com.soywiz.korim.bitmap.*
 import com.soywiz.kmem.set
 import com.soywiz.kmem.get
 
+// https://github.com/shrekshao/MoveWebGL1EngineToWebGL2/blob/master/Move-a-WebGL-1-Engine-To-WebGL-2-Blog-1.md
+// https://webglstats.com/
+// https://caniuse.com/#feat=webgl
 class KmlGlJsCanvas(val canvas: HTMLCanvasElement, val glOpts: dynamic) : KmlGl() {
     val gl = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)).unsafeCast<WebGLRenderingContext?>()
         ?: error("Can't get webgl context")
