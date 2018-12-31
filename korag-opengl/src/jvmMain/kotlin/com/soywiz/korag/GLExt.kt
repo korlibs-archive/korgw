@@ -8,7 +8,7 @@ import com.soywiz.korio.util.*
 
 object AGFactoryAwt : AGFactory {
 	override val supportsNativeFrame: Boolean = true
-	override fun create(nativeControl: Any?): AG = AGAwt()
+	override fun create(nativeControl: Any?, config: AGConfig): AG = AGAwt(config)
 	override fun createFastWindow(title: String, width: Int, height: Int): AGWindow {
 		val glp = GLProfile.getDefault()
 		val caps = GLCapabilities(glp)
@@ -55,7 +55,7 @@ abstract class AGAwtBase : AGOpengl() {
 	//val queue = Deque<(gl: GL) -> Unit>()
 }
 
-class AGAwt : AGAwtBase(), AGContainer {
+class AGAwt(val config: AGConfig) : AGAwtBase(), AGContainer {
 	val glcanvas = GLCanvas(glcapabilities)
 	override val nativeComponent = glcanvas
 

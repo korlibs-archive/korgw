@@ -7,7 +7,7 @@ class LogLightComponents : LightComponents() {
 	val log = arrayListOf<String>()
 	val lastIdPerType = LinkedHashMap<LightType, Int>()
 
-	override fun create(type: LightType): LightComponentInfo {
+	override fun create(type: LightType, config: Any?): LightComponentInfo {
 		val id = lastIdPerType.incr(type, 1) - 1
 		log += "create($type)=$id"
 		return LightComponentInfo("$type$id")

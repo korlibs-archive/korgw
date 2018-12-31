@@ -16,7 +16,7 @@ import com.soywiz.korui.light.*
 import com.soywiz.korui.style.*
 import kotlin.reflect.*
 
-open class Component(override val app: Application, val type: LightType) : Styled, Extra by Extra.Mixin(), EventDispatcher, ApplicationAware {
+open class Component(override val app: Application, val type: LightType, val lightConfig: Any? = null) : Styled, Extra by Extra.Mixin(), EventDispatcher, ApplicationAware {
 	val coroutineContext = app.coroutineContext
 	val lc = app.light
 
@@ -37,7 +37,7 @@ open class Component(override val app: Application, val type: LightType) : Style
 	}
 
 	override var style = Style()
-	val componentInfo = lc.create(type)
+	val componentInfo = lc.create(type, lightConfig)
 	var handle: Any = componentInfo.handle
 	val properties = LinkedHashMap<LightProperty<*>, Any?>()
 	var valid = false
@@ -89,7 +89,7 @@ open class Component(override val app: Application, val type: LightType) : Style
 	}
 
 	open fun recreate() {
-		handle = lc.create(type)
+		handle = lc.create(type, null)
 		lc.setBounds(handle, nativeBounds.x, nativeBounds.y, nativeBounds.width, nativeBounds.height)
 		for ((key, value) in properties) {
 			lc.setProperty(handle, key, value)
@@ -279,7 +279,7 @@ class Frame(app: Application, title: String) : Container(app, LayeredLayout(app)
 	override fun toString(): String = "Frame"
 }
 
-class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContainer {
+class AgCanvas(app: Application, val config: AGConfig = AGConfig()) : Component(app, LightType.AGCANVAS, config), AGContainer {
 	override val ag = componentInfo.ag ?: error("AgCanvas:componentInfo.ag == null")
 
 	override fun repaint() {
@@ -302,7 +302,7 @@ class AgCanvas(app: Application) : Component(app, LightType.AGCANVAS), AGContain
 		ag.onRender { callback(it) }
 	}
 
-	override fun clone(newApp: Application) = AgCanvas(newApp).also { it.copyStateFrom(this) }
+	override fun clone(newApp: Application) = AgCanvas(newApp, config).also { it.copyStateFrom(this) }
 	override fun toString(): String = "AGCanvas"
 }
 
@@ -585,8 +585,8 @@ inline fun Container.progress(current: Int, max: Int, callback: (@ComponentDslMa
 inline fun Container.slider(current: Int, max: Int, callback: (@ComponentDslMarker Slider).() -> Unit = {}) =
 	add(Slider(this.app, current, max).apply(callback))
 
-inline fun Container.agCanvas(callback: (@ComponentDslMarker AgCanvas).() -> Unit = {}) =
-	add(AgCanvas(this.app).apply(callback))
+inline fun Container.agCanvas(config: AGConfig = AGConfig(), callback: (@ComponentDslMarker AgCanvas).() -> Unit = {}) =
+	add(AgCanvas(this.app, config).apply(callback))
 
 inline fun Container.image(bitmap: Bitmap, callback: (@ComponentDslMarker Image).() -> Unit) =
 	add(Image(this.app).apply(callback).apply { image = bitmap })

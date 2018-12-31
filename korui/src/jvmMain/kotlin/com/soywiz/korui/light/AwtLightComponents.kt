@@ -38,7 +38,7 @@ class AwtLightComponents : LightComponents() {
 		}
 	}
 
-	override fun create(type: LightType): LightComponentInfo {
+	override fun create(type: LightType, config: Any?): LightComponentInfo {
 		var agg: AG? = null
 		@Suppress("REDUNDANT_ELSE_IN_WHEN")
 		val handle: Component = when (type) {
@@ -62,7 +62,7 @@ class AwtLightComponents : LightComponents() {
 			LightType.TABPANE -> JTabbedPane()
 			LightType.TABPAGE -> JTabbedPage()
 			LightType.AGCANVAS -> {
-				agg = AGOpenglFactory.create(null).create(null)
+				agg = AGOpenglFactory.create(null).create(null, (config as? AGConfig) ?: AGConfig())
 				agg.nativeComponent as Component
 			}
 			else -> throw UnsupportedOperationException("Type: $type")

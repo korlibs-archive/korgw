@@ -35,7 +35,7 @@ open class LightComponents {
 
     class LightComponentInfo(val handle: Any) : Extra by Extra.Mixin()
 
-	open fun create(type: LightType): LightComponentInfo = LightComponentInfo(Unit)
+	open fun create(type: LightType, config: Any?): LightComponentInfo = LightComponentInfo(Unit)
 	open fun setParent(c: Any, parent: Any?): Unit = Unit
 
 	var quality = LightQuality.PERFORMANCE

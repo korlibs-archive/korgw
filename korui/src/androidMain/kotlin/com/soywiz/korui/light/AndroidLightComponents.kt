@@ -29,7 +29,7 @@ class AndroidLightComponents : LightComponents() {
 	fun scaled_rev(v: Double): Double = v
 	fun scaled_rev(v: Int): Int = v
 
-	override fun create(type: LightType): LightComponentInfo {
+	override fun create(type: LightType, config: Any?): LightComponentInfo {
 		var agg: AG? = null
 		val handle = when (type) {
 			LightType.FRAME -> {

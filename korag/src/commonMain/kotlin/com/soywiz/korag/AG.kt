@@ -15,9 +15,11 @@ import kotlin.coroutines.*
 
 interface AGFactory {
 	val supportsNativeFrame: Boolean
-	fun create(nativeControl: Any?): AG
+	fun create(nativeControl: Any?, config: AGConfig): AG
 	fun createFastWindow(title: String, width: Int, height: Int): AGWindow
 }
+
+data class AGConfig(val antialiasHint: Boolean = true)
 
 interface AGContainer {
 	val ag: AG

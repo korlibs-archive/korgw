@@ -135,7 +135,7 @@ class HtmlLightComponents : LightComponents() {
         head.appendChild(style)
 	}
 
-	override fun create(type: LightType): LightComponentInfo {
+	override fun create(type: LightType, config: Any?): LightComponentInfo {
         val document = this.document ?: return LightComponentInfo(Dummy).apply {
             if (type == LightType.AGCANVAS) {
                 ag = DummyAG(640, 480)
@@ -209,7 +209,7 @@ class HtmlLightComponents : LightComponents() {
 				}
 			}
 			LightType.AGCANVAS -> {
-				agg = AGOpenglFactory.create(null).create(null)
+				agg = AGOpenglFactory.create(null).create(null, (config as? AGConfig?) ?: AGConfig())
 				val cc = agg.nativeComponent.unsafeCast<HTMLCanvasElement>()
 				cc.tabIndex = 1
 				cc.style.outline = "none"

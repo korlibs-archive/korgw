@@ -7,7 +7,7 @@ import kotlin.test.*
 class AGTest {
 	@Test
 	fun testOnReady() = suspendTest {
-		val ag = AGFactorySoftware().create(null)
+		val ag = AGFactorySoftware().create(null, AGConfig())
 		val buffer = ag.createIndexBuffer()
 		buffer.upload(intArrayOf(1, 2, 3, 4))
 		ag.onReady.await()

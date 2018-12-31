@@ -19,7 +19,7 @@ import org.khronos.webgl.WebGLRenderingContext as GL
 
 object AGFactoryWebgl : AGFactory {
 	override val supportsNativeFrame: Boolean = true
-	override fun create(nativeControl: Any?): AG = AGWebgl()
+	override fun create(nativeControl: Any?, config: AGConfig): AG = AGWebgl(config)
 	override fun createFastWindow(title: String, width: Int, height: Int): AGWindow {
 		TODO()
 	}
@@ -34,7 +34,7 @@ fun jsObject(vararg pairs: Pair<String, Any?>): dynamic {
 	return out
 }
 
-class AGWebgl : AGOpengl(), AGContainer {
+class AGWebgl(val config: AGConfig) : AGOpengl(), AGContainer {
 	companion object {
 		//var UNPACK_PREMULTIPLY_ALPHA_WEBGL = document.createElement('canvas').getContext('webgl').UNPACK_PREMULTIPLY_ALPHA_WEBGL
 		const val UNPACK_PREMULTIPLY_ALPHA_WEBGL = 37441
@@ -46,7 +46,8 @@ class AGWebgl : AGOpengl(), AGContainer {
 	val glOpts = jsObject(
 		"premultipliedAlpha" to true,
 		"alpha" to false,
-		"stencil" to true
+		"stencil" to true,
+        "antialias" to config.antialiasHint
 	)
 	//val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)) as GL
 	override val gl = KmlGlCached(KmlGlJsCanvas(canvas, glOpts))

@@ -7,7 +7,7 @@ actual object NativeLightsComponentsFactory : LightComponentsFactory {
 }
 
 class NativeLightComponents : LightComponents() {
-	override fun create(type: LightType): LightComponentInfo {
+	override fun create(type: LightType, config: Any?): LightComponentInfo {
 		var agg: AG? = null
 		val handle: Any = when (type) {
 			LightType.FRAME -> Any()

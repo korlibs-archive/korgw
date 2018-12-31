@@ -1,5 +1,6 @@
 package com.soywiz.korui
 
+import com.soywiz.korag.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
@@ -108,6 +109,7 @@ suspend fun CanvasApplicationEx(
 	light: LightComponents? = null,
 	quality: LightQuality = LightQuality.PERFORMANCE,
 	koruiContext: KoruiContext,
+    agConfig: AGConfig = AGConfig(),
 	callback: suspend (AgCanvas, Frame) -> Unit = { _, _ -> }
 ) {
 	if (OS.isNative) println("CanvasApplicationEx[0]")
@@ -130,7 +132,7 @@ suspend fun CanvasApplicationEx(
 	lateinit var canvas: AgCanvas
 	if (OS.isNative) println("CanvasApplicationEx[3]")
 	val frame = application.frame(title, width, height, icon) {
-		canvas = agCanvas().apply { focus() }
+		canvas = agCanvas(agConfig).apply { focus() }
 	}
 	if (OS.isNative) println("CanvasApplicationEx[4] - canvas.waitReady()")
 	canvas.waitReady()

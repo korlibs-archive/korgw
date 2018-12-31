@@ -83,7 +83,7 @@ class NativeKoruiContext(
 class NativeLightComponents(val nkcAg: AG) : LightComponents() {
 	val frameHandle = Any()
 
-	override fun create(type: LightType): LightComponentInfo {
+	override fun create(type: LightType, config: Any?): LightComponentInfo {
 		@Suppress("REDUNDANT_ELSE_IN_WHEN")
 		val handle: Any = when (type) {
 			LightType.FRAME -> frameHandle
@@ -150,7 +150,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) {
 		val windowConfig = WindowConfig(640, 480, "Korui")
 
 		val agNativeComponent = Any()
-		val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent)
+		val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 		val light = NativeLightComponents(ag)
 
 		app.delegate = MyAppDelegate(ag, windowConfig, object : MyAppHandler {

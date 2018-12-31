@@ -1,7 +1,7 @@
 package com.soywiz.kgl
 
 import com.soywiz.kmem.*
-import com.soywiz.korio.util.*
+import com.soywiz.kgl.internal.*
 
 class KmlGlCached(parent: KmlGl) : KmlGlFastProxy(parent) {
 	private var lastLineWidth = CachedFloat(-1f)
