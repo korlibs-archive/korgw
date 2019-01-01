@@ -1,0 +1,19 @@
+dependencies {
+    commonMainApi project(":korui")
+
+    // Shouldn't be required for external projects
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6hf"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-i586"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-i586"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6hf"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-i586"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
+}
