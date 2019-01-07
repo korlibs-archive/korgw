@@ -21,7 +21,7 @@ abstract class ReactComponent<TState : Any> {
 		get() = _state
 		set(value) {
 			_state = value
-			launchImmediately(KorioDefaultDispatcher) {
+			launchImmediately(virtualApp.coroutineContext) {
 				//val diff = true
 				val diff = false
 				if (diff) {
