@@ -123,7 +123,7 @@ class NativeLightComponents(val nkcAg: AG) : LightComponents() {
 		// openSelectFile(initialDir: String? = null, filters: List<FileFilter> = listOf(FileFilter("All (*.*)", "*.*")), hwnd: HWND? = null)
 		val selectedFile = openSelectFile(hwnd = hwnd)
 		if (selectedFile != null) {
-			return com.soywiz.korio.file.std.LocalVfs(selectedFile)
+			return com.soywiz.korio.file.std.localVfs(selectedFile)
 		} else {
 			throw com.soywiz.korio.lang.CancelException()
 		}

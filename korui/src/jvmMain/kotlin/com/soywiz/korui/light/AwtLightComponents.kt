@@ -164,7 +164,7 @@ class AwtLightComponents : LightComponents() {
 					override fun importData(support: TransferHandler.TransferSupport): Boolean {
 						if (!canImport(support)) return false
 						val l = support.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
-						ed.dispatch(DropFileEvent(DropFileEvent.Type.DROP, l.map { LocalVfs(it) }))
+						ed.dispatch(DropFileEvent(DropFileEvent.Type.DROP, l.map { localVfs(it) }))
 						return true
 					}
 				}
@@ -631,7 +631,7 @@ class AwtLightComponents : LightComponents() {
 		val fd = FileDialog(c as JFrame2, "Open file", FileDialog.LOAD)
 		fd.isVisible = true
 		return if (fd.files.isNotEmpty()) {
-			LocalVfs(fd.files.first())
+			localVfs(fd.files.first())
 		} else {
 			throw CancelException()
 		}
