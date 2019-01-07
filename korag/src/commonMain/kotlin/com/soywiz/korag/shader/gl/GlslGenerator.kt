@@ -1,7 +1,7 @@
 package com.soywiz.korag.shader.gl
 
 import com.soywiz.korag.shader.*
-import com.soywiz.korio.error.*
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 
 class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = true, val version: Int = 100) :

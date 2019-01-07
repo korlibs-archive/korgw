@@ -125,7 +125,7 @@ class NativeLightComponents(val nkcAg: AG) : LightComponents() {
 		if (selectedFile != null) {
 			return com.soywiz.korio.file.std.LocalVfs(selectedFile)
 		} else {
-			throw com.soywiz.korio.error.CancelException()
+			throw com.soywiz.korio.lang.CancelException()
 		}
 	}
 }

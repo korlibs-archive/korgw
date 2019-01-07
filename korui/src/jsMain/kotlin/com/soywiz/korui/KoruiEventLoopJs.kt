@@ -1,12 +1,13 @@
 package com.soywiz.korui
 
+import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.util.*
 import kotlinx.coroutines.*
 import kotlin.browser.*
 import kotlin.coroutines.*
 
-actual val KoruiDispatcher: CoroutineDispatcher get() = if (OS.isNodejs) NodeDispatcher else HtmlDispatcher
+actual val KoruiDispatcher: CoroutineDispatcher get() = if (OS.isJsNodeJs) NodeDispatcher else HtmlDispatcher
 
 private external fun setTimeout(handler: dynamic, timeout: Int = definedExternally): Int
 private external fun clearTimeout(handle: Int = definedExternally)
@@ -39,21 +40,27 @@ object NodeDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 
 @UseExperimental(InternalCoroutinesApi::class)
 object HtmlDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
-	private val messageName = "dispatchCoroutine"
+	private const val messageName = "dispatchCoroutine"
 
 	private val queue = object : MessageQueue() {
 		override fun schedule() {
-			window.postMessage(messageName, "*")
+            if (OS.isJsBrowser) {
+                global.postMessage(messageName, "*")
+            } else {
+                setTimeout({ process() }, 0)
+            }
 		}
 	}
 
 	init {
-		window.addEventListener("message", { event: dynamic ->
-			if (event.source == window && event.data == messageName) {
-				event.stopPropagation()
-				queue.process()
-			}
-		}, true)
+        if (OS.isJsBrowser) {
+            global.addEventListener("message", { event: dynamic ->
+                if (event.source == global && event.data === messageName) {
+                    event.stopPropagation()
+                    queue.process()
+                }
+            }, true)
+        }
 	}
 
 	override fun dispatch(context: CoroutineContext, block: Runnable) {
@@ -61,21 +68,21 @@ object HtmlDispatcher : CoroutineDispatcher(), Delay, DelayFrame {
 	}
 
 	override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
-		window.setTimeout({ with(continuation) { resumeUndispatched(Unit) } }, timeMillis.toInt())
+        global.setTimeout({ with(continuation) { resumeUndispatched(Unit) } }, timeMillis.toInt())
 		//window.setTimeout({ with(continuation) { resume(Unit) } }, unit.toMillis(time).toInt())
 	}
 
 	override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
-		val handle = window.setTimeout({ block.run() }, timeMillis.toInt())
+		val handle = global.setTimeout({ block.run() }, timeMillis.toInt())
 		return object : DisposableHandle {
 			override fun dispose() {
-				window.clearTimeout(handle)
+                global.clearTimeout(handle)
 			}
 		}
 	}
 
 	override fun delayFrame(continuation: CancellableContinuation<Unit>) {
-		window.requestAnimationFrame { with(continuation) { resumeUndispatched(Unit) } }
+        global.requestAnimationFrame { with(continuation) { resumeUndispatched(Unit) } }
 		//window.requestAnimationFrame { with(continuation) { resume(Unit) } }
 	}
 

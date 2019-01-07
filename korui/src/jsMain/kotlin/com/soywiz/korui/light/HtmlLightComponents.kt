@@ -33,7 +33,7 @@ var mainFrame: HTMLElement? = null
 
 @Suppress("unused")
 class HtmlLightComponents : LightComponents() {
-    val window: Window? = if (OS.isNodejs) null else kotlin.js.js("self")
+    val window: Window? = if (OS.isJsNodeJs) null else kotlin.js.js("self")
     val document = window?.document
 
 	val tDevicePixelRatio = window?.devicePixelRatio?.toDouble() ?: 1.0

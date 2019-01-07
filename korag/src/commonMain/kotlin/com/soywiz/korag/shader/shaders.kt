@@ -7,7 +7,6 @@
 package com.soywiz.korag.shader
 
 import com.soywiz.kmem.*
-import com.soywiz.korio.error.*
 import com.soywiz.korio.lang.*
 
 enum class VarKind(val bytesSize: Int) {

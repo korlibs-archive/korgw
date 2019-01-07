@@ -136,7 +136,7 @@ class NativeLightComponents(val nkcAg: AG) : LightComponents() {
 		if (openDlg.runModalForDirectory(null, null).toInt() == NSOKButton.toInt()) {
 			return com.soywiz.korio.file.std.LocalVfs(openDlg.filename())
 		} else {
-			throw com.soywiz.korio.error.CancelException()
+			throw com.soywiz.korio.lang.CancelException()
 		}
 	}
 }

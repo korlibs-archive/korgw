@@ -2,7 +2,6 @@ package com.soywiz.korui.light
 
 import com.soywiz.korag.*
 import com.soywiz.korim.awt.*
-import com.soywiz.korio.error.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*

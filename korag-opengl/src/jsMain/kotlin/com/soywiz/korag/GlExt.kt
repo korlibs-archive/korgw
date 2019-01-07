@@ -2,18 +2,9 @@ package com.soywiz.korag
 
 import com.soywiz.kgl.*
 import com.soywiz.kmem.*
-import com.soywiz.korag.shader.*
-import com.soywiz.korag.shader.gl.*
 import com.soywiz.korim.bitmap.*
-import com.soywiz.korim.color.*
-import com.soywiz.korim.format.*
-import com.soywiz.korio.error.*
-import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
-import com.soywiz.korma.*
-import org.khronos.webgl.*
 import org.w3c.dom.*
-import org.w3c.dom.events.*
 import kotlin.browser.*
 import org.khronos.webgl.WebGLRenderingContext as GL
 
