@@ -13,6 +13,7 @@ import com.soywiz.korio.lang.Closeable
 import com.soywiz.korio.lang.DummyCloseable
 import com.soywiz.korui.event.Event
 import com.soywiz.korui.event.EventDispatcher
+import com.soywiz.korui.input.Key
 import com.soywiz.korui.light.LightComponents
 import com.soywiz.korui.light.LightType
 import com.soywiz.korui.light.ag
@@ -129,7 +130,7 @@ class NativeLightComponents(val nkcAg: AG) : LightComponents() {
 data class WindowConfig(
     val width: Int = 640,
     val height: Int = 480,
-    val title: String = "Sample"
+    val title: String = "Korui"
 )
 
 @ThreadLocal
@@ -150,6 +151,116 @@ val windowConfig = WindowConfig()
 fun glutDisplay() {
     myNativeCoroutineDispatcher.executeStep()
     ag.onRender(ag)
+    glutSwapBuffers()
+}
+
+@ThreadLocal
+val resizedEvent = com.soywiz.korui.event.ResizedEvent()
+
+fun glutReshape(width: Int, height: Int) {
+    ag.resized(width, height)
+    light.dispatch(resizedEvent.apply {
+        this.width = width
+        this.height = height
+    })
+    glutDisplay()
+}
+
+val mevent = com.soywiz.korui.event.MouseEvent()
+
+private fun mouseEvent(etype: com.soywiz.korui.event.MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
+    light.dispatch(mevent.apply {
+        this.type = etype
+        this.x = ex
+        this.y = ey
+        this.buttons = 1 shl ebutton
+        this.isAltDown = false
+        this.isCtrlDown = false
+        this.isShiftDown = false
+        this.isMetaDown = false
+        //this.scaleCoords = false
+    })
+}
+
+fun glutMouseMove(x: Int, y: Int) {
+    mouseEvent(com.soywiz.korui.event.MouseEvent.Type.MOVE, x, y, 0)
+}
+
+fun glutMouse(button: Int, state: Int, x: Int, y: Int) {
+    val up = state == GLUT_UP
+    val event = if (up) {
+        com.soywiz.korui.event.MouseEvent.Type.UP
+    } else {
+        com.soywiz.korui.event.MouseEvent.Type.DOWN
+    }
+    mouseEvent(event, x, y, button)
+    if (up) {
+        mouseEvent(com.soywiz.korui.event.MouseEvent.Type.CLICK, x, y, button)
+    }
+}
+
+private val keyEvent = com.soywiz.korui.event.KeyEvent()
+
+val CharToKeys = mapOf(
+    'a' to Key.A, 'A' to Key.A,
+    'b' to Key.B, 'B' to Key.B,
+    'c' to Key.C, 'C' to Key.C,
+    'd' to Key.D, 'D' to Key.D,
+    'e' to Key.E, 'E' to Key.E,
+    'f' to Key.F, 'F' to Key.F,
+    'g' to Key.G, 'G' to Key.G,
+    'h' to Key.H, 'H' to Key.H,
+    'i' to Key.I, 'I' to Key.I,
+    'j' to Key.J, 'J' to Key.J,
+    'k' to Key.K, 'K' to Key.K,
+    'l' to Key.L, 'L' to Key.L,
+    'm' to Key.M, 'M' to Key.M,
+    'n' to Key.N, 'N' to Key.N,
+    'o' to Key.O, 'O' to Key.O,
+    'p' to Key.P, 'P' to Key.P,
+    'q' to Key.Q, 'Q' to Key.Q,
+    'r' to Key.R, 'R' to Key.R,
+    's' to Key.S, 'S' to Key.S,
+    't' to Key.T, 'T' to Key.T,
+    'u' to Key.U, 'U' to Key.U,
+    'v' to Key.V, 'V' to Key.V,
+    'w' to Key.W, 'W' to Key.W,
+    'x' to Key.X, 'X' to Key.X,
+    'y' to Key.Y, 'Y' to Key.Y,
+    'z' to Key.Z, 'Z' to Key.Z,
+    '0' to Key.N0, '1' to Key.N1, '2' to Key.N2, '3' to Key.N3, '4' to Key.N4,
+    '5' to Key.N5, '6' to Key.N6, '7' to Key.N7, '8' to Key.N8, '9' to Key.N9
+)
+
+private val KeyCodesToKeys = mapOf(
+    GLUT_KEY_LEFT to Key.LEFT,
+    GLUT_KEY_RIGHT to Key.RIGHT,
+    GLUT_KEY_UP to Key.UP,
+    GLUT_KEY_DOWN to Key.DOWN,
+    32 to Key.ENTER,
+    27 to Key.ESCAPE
+)
+
+fun glutKeyUpDown(key: UByte, pressed: Boolean) {
+    GLUT_KEY_LEFT
+    val key = KeyCodesToKeys[key.toInt()] ?: CharToKeys[key.toInt().toChar()] ?: Key.UNKNOWN
+    //println("keyDownUp: char=$char, modifiers=$modifiers, keyCode=${keyCode.toInt()}, key=$key, pressed=$pressed")
+    light.dispatch(keyEvent.apply {
+        this.type =
+            if (pressed) com.soywiz.korui.event.KeyEvent.Type.DOWN else com.soywiz.korui.event.KeyEvent.Type.UP
+        this.id = 0
+        this.key = key
+        this.keyCode = keyCode
+        this.char = char
+    })
+}
+
+fun glutKeyDown(key: UByte, x: Int, y: Int) {
+    glutKeyUpDown(key, true)
+}
+
+fun glutKeyUp(key: UByte, x: Int, y: Int) {
+    glutKeyUpDown(key, false)
 }
 
 internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) {
@@ -162,9 +273,16 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) {
     glutInitWindowSize(windowConfig.width, windowConfig.height)
     glutCreateWindow(windowConfig.title)
 
+    glutReshapeFunc(staticCFunction(::glutReshape))
     glutDisplayFunc(staticCFunction(::glutDisplay))
     glutIdleFunc(staticCFunction(::glutDisplay))
+    glutMotionFunc(staticCFunction(::glutMouseMove))
+    glutPassiveMotionFunc(staticCFunction(::glutMouseMove))
+    glutMouseFunc(staticCFunction(::glutMouse))
+    glutKeyboardFunc(staticCFunction(::glutKeyDown))
+    glutKeyboardFunc(staticCFunction(::glutKeyUp))
 
+    ag.__ready()
     var running = true
     CoroutineScope(coroutineContext).launch(KoruiDispatcher) {
         try {

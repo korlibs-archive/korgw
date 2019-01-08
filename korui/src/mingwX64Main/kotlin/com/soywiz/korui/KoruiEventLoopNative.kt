@@ -136,7 +136,7 @@ var hwnd: HWND? = null
 data class WindowConfig(
 	val width: Int = 640,
 	val height: Int = 480,
-	val title: String = "Sample"
+	val title: String = "Korui"
 )
 
 @ThreadLocal

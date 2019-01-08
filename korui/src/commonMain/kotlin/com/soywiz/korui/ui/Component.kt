@@ -292,6 +292,7 @@ class AgCanvas(app: Application, val config: AGConfig = AGConfig()) : Component(
         val agHeight = (height * lc.yScale).toInt()
         //println("onResized:($x,$y,$width,$height),ag=($agWidth,$agHeight),lc.xScale=${lc.xScale}")
 		ag.resized(agWidth, agHeight)
+        //ag.repaint()
 	}
 
 	suspend fun waitReady() {

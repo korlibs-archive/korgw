@@ -8,6 +8,8 @@ import com.soywiz.korui.event.*
 import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.light.*
 import com.soywiz.korui.ui.*
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.*
 
 interface ApplicationAware {
@@ -135,7 +137,17 @@ suspend fun CanvasApplicationEx(
 		canvas = agCanvas(agConfig).apply { focus() }
 	}
 	if (OS.isNative) println("CanvasApplicationEx[4] - canvas.waitReady()")
-	canvas.waitReady()
+    while (true) {
+        try {
+            withTimeout(5000L) {
+                canvas.waitReady()
+            }
+            break
+        } catch (e: TimeoutCancellationException) {
+            println("canvas.waitReady() was not called after 5 seconds. Retrying...")
+            continue
+        }
+    }
 	if (OS.isNative) println("CanvasApplicationEx[5]")
 	callback(canvas, frame)
 	if (OS.isNative) println("CanvasApplicationEx[6]")
