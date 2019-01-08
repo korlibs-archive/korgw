@@ -170,8 +170,7 @@ subprojects {
     }
 
     afterEvaluate {
-        //for (target in ["macosX64", "linuxX64", "mingwX64"]) {
-        for (target in ["macosX64", "mingwX64"]) {
+        for (target in ["macosX64", "linuxX64", "mingwX64"]) {
             String taskName = "copyResourcesToExecutable_${target}"
             def targetTestTask = tasks.getByName("${target}Test")
             tasks.create(name: taskName, type: Copy) {
