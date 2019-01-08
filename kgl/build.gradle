@@ -47,4 +47,17 @@ kotlin {
     }
 }
 
+kotlin {
+    targets {
+        //configure([macosX64, mingwX64]) {
+        configure([linuxX64]) {
+            compilations.main {
+                cinterops {
+                    GL {}
+                }
+            }
+        }
+    }
+}
+
 jvmProcessResources.dependsOn(processrtRtArtifacts)
