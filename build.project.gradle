@@ -1,0 +1,4 @@
+(new File(projectDir, "korui/src/commonMain/kotlin/com/soywiz/korui/internal/KoruiVersion.kt")).with {
+    parentFile.mkdirs()
+    write("package com.soywiz.korui.internal\n\ninternal const val KORUI_VERSION = \"$projectVersion\"")
+}

@@ -15,6 +15,7 @@ import com.soywiz.korio.util.*
 import com.soywiz.korui.event.*
 import com.soywiz.korui.input.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
 import org.khronos.webgl.*
 import org.w3c.dom.*
 import org.w3c.dom.events.*
@@ -891,8 +892,8 @@ internal class JsFilesVfs(val files: List<File>) : Vfs() {
 		return createExistsStat(path, isDirectory = false, size = file.size.toDouble().toLong())
 	}
 
-	override suspend fun list(path: String): SuspendingSequence<VfsFile> {
-		return this.files.map { this[it.name] }.toAsync()
+	override suspend fun list(path: String): ReceiveChannel<VfsFile> {
+		return this.files.map { this[it.name] }.toChannel()
 	}
 
 	override fun toString(): String = "JsFilesVfs"

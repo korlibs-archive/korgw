@@ -3,6 +3,7 @@ package com.soywiz.korui
 import com.soywiz.klock.*
 import com.soywiz.kmem.*
 import com.soywiz.korio.async.*
+import com.soywiz.korui.async.*
 import kotlinx.coroutines.*
 import java.awt.event.*
 import java.util.concurrent.*

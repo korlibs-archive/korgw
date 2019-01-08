@@ -3,6 +3,7 @@ package com.soywiz.korui
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.util.*
+import com.soywiz.korui.async.*
 import kotlinx.coroutines.*
 import kotlin.browser.*
 import kotlin.coroutines.*

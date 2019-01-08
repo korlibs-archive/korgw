@@ -15,6 +15,10 @@ allprojects {
         jcenter()
         mavenCentral()
     }
+
+    if (project.file('build.project.gradle').exists()) {
+        apply from: project.file('build.project.gradle')
+    }
 }
 
 subprojects {
@@ -242,9 +246,5 @@ subprojects {
                 generatePom(pom)
             }
         }
-    }
-
-    if (project.file('build.project.gradle').exists()) {
-        apply from: project.file('build.project.gradle')
     }
 }
