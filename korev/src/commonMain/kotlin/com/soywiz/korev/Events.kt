@@ -71,7 +71,7 @@ data class GamePadStickEvent(var gamepad: Int, var stick: GameStick, var x: Doub
 
 data class ChangeEvent(var oldValue: Any? = null, var newValue: Any? = null) : Event()
 
-data class ReshapeEvent(var width: Int = 0, var height: Int = 0) : Event()
+data class ReshapeEvent(var x: Int = 0, var y: Int = 0, var width: Int = 0, var height: Int = 0) : Event()
 
 data class FullScreenEvent(var fullscreen: Boolean = false) : Event()
 
