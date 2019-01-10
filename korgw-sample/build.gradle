@@ -17,16 +17,20 @@ dependencies {
     commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
 }
 
-kotlin.targets.macosX64.compilations.main.outputKinds("EXECUTABLE")
-kotlin.targets.mingwX64.compilations.main.outputKinds("EXECUTABLE")
+def targets = ['macosX64', 'mingwX64', 'linuxX64']
+
+for (target in targets) {
+    kotlin.targets[target].compilations.main.outputKinds("EXECUTABLE")
+}
 
 afterEvaluate {
-    task runMacosX64Main(type: Exec, dependsOn: [linkDebugExecutableMacosX64]) {
-        executable = kotlin.targets.macosX64.compilations.main.getBinary("EXECUTABLE", "debug")
-        args = []
-    }
-    task runMingwX64Main(type: Exec, dependsOn: [linkDebugExecutableMingwX64]) {
-        executable = kotlin.targets.mingwX64.compilations.main.getBinary("EXECUTABLE", "debug")
-        args = []
+    // runMingwX64Main, runLinuxX64Main, runMacosX64Main
+    for (target in targets) {
+        def ctarget = target.capitalize()
+        tasks.create("run${ctarget}Main", Exec) {
+            dependsOn(tasks.findByName("linkDebugExecutable${ctarget}"))
+            executable = kotlin.targets[target].compilations.main.getBinary("EXECUTABLE", "debug")
+            args = []
+        }
     }
 }
