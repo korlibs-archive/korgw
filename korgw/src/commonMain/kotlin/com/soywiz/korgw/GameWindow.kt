@@ -6,6 +6,7 @@ import com.soywiz.korag.*
 import com.soywiz.korag.log.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korio.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
@@ -54,6 +55,48 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay {
     }
 }
 
+/*
+@UseExperimental(InternalCoroutinesApi::class)
+class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
+    override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
+
+    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
+
+    val tasks = Queue<Runnable>()
+    val timedTasks = PriorityQueue<TimedTask>(Comparator<TimedTask> { a, b -> a.ms.compareTo(b.ms) })
+
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        tasks.enqueue(block)
+    }
+
+    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
+        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation)
+        continuation.invokeOnCancellation {
+            timedTasks.remove(task)
+        }
+        timedTasks.add(task)
+    }
+
+    fun executeStep() {
+        val now = DateTime.now()
+        while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
+            timedTasks.removeHead().continuation.resume(Unit)
+        }
+
+        while (tasks.isNotEmpty()) {
+            val task = tasks.dequeue()
+            task.run()
+        }
+    }
+
+    override fun close() {
+
+    }
+
+    override fun toString(): String = "MyNativeCoroutineDispatcher"
+}
+*/
+
 open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     open val ag: AG = LogAG()
 
@@ -93,6 +136,8 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
 
     open suspend fun loop(entry: suspend GameWindow.() -> Unit) = Unit
 }
+
+fun GameWindow.mainLoop(entry: suspend GameWindow.() -> Unit) = Korio { loop(entry) }
 
 fun GameWindow.toggleFullScreen() = run { fullscreen = !fullscreen }
 

@@ -17,5 +17,4 @@ dependencies {
     jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
     jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
     jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
-
 }

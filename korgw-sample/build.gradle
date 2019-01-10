@@ -1,0 +1,27 @@
+dependencies {
+    commonMainApi project(":korgw")
+
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6"
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6hf"
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-i586"
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
+    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-i586"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6hf"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-i586"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
+    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
+}
+
+kotlin.targets.macosX64.compilations.main.outputKinds("EXECUTABLE")
+
+afterEvaluate {
+    task runMacosX64Main(type: Exec, dependsOn: [linkDebugExecutableMacosX64]) {
+        executable = kotlin.targets.macosX64.compilations.main.getBinary("EXECUTABLE", "debug")
+        args = []
+    }
+}
