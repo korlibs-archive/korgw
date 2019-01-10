@@ -16,8 +16,11 @@ fun main(args: Array<String>) = Korio {
             //}
             //println(e)
         }
+        var n = 0
         addEventListener<RenderEvent> {
-            ag.clear(Colors.GREEN)
+            //println("render")
+            ag.clear(if (n % 2 == 0) Colors.GREEN else Colors.RED)
+            n++
             //ag.flip()
         }
     }

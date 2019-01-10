@@ -1,14 +1,13 @@
 package com.soywiz.korgw
 
-import com.jogamp.opengl.*
 import com.soywiz.klock.*
+import com.soywiz.kmem.*
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.dynamic.*
 import com.soywiz.korio.util.*
-import com.soywiz.korma.geom.*
 import java.awt.*
 import java.awt.event.*
 import java.awt.event.MouseEvent
@@ -16,15 +15,16 @@ import javax.swing.*
 
 
 actual val DefaultGameWindow: GameWindow = object : GameWindow() {
-    val glp by lazy { GLProfile.getDefault() }
-    val caps by lazy { GLCapabilities(glp) }
-    val frame by lazy {
-        object : JFrame() {
-            override fun createRootPane(): JRootPane = super.createRootPane().apply {
-                putClientProperty("apple.awt.fullscreenable", true)
-            }
+    val frame = object : JFrame() {
+        init {
+            defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        }
+
+        override fun createRootPane(): JRootPane = super.createRootPane().apply {
+            putClientProperty("apple.awt.fullscreenable", true)
         }
     }
+
     override val ag: AGAwt = AGAwt(AGConfig())
 
     init {
@@ -37,19 +37,23 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
             frame.title = value
         }
 
-    override var size: SizeInt = SizeInt(0, 0)
-        set(value) {
-            field = SizeInt(value.width, value.height)
-            frame.setSize(value.width, value.height)
-            frame.setLocationRelativeTo(null)
+    override var width: Int = 0; private set
+    override var height: Int = 0; private set
 
-            //val screenSize = Toolkit.getDefaultToolkit().screenSize
-            //frame.setPosition(
-            //    (screenSize.width - value.width) / 2,
-            //    (screenSize.height - value.height) / 2
-            //)
-            //window.setLocationRelativeTo(null)
-        }
+    override fun setSize(width: Int, height: Int) {
+        this.width = width
+        this.height = height
+        frame.setSize(width, height)
+        frame.setLocationRelativeTo(null)
+
+        //val screenSize = Toolkit.getDefaultToolkit().screenSize
+        //frame.setPosition(
+        //    (screenSize.width - value.width) / 2,
+        //    (screenSize.height - value.height) / 2
+        //)
+        //window.setLocationRelativeTo(null)
+    }
+
     override var icon: Bitmap?
         get() = super.icon
         set(value) {
@@ -59,7 +63,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         get() = if (OS.isMac) {
             val screenSize = Toolkit.getDefaultToolkit().screenSize
             val frameSize = frame.size
-            println("screenSize=$screenSize, frameSize=$frameSize")
+            //println("screenSize=$screenSize, frameSize=$frameSize")
             (screenSize == frameSize)
         } else {
             frame.graphicsConfiguration.device.fullScreenWindow == frame
@@ -100,7 +104,9 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+
         ag.onResized {
+            //println("RESIZED")
             dispatch(reshapeEvent {
                 this.width = ag.backWidth
                 this.height = ag.backHeight
@@ -141,10 +147,24 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
                 })
             }
         })
-        entry()
-        while (true) {
-            frame.repaint()
-            delay(16.milliseconds)
+
+        frame.addComponentListener(object : ComponentAdapter() {
+            override fun componentResized(e: ComponentEvent) {
+                ag.resized(e.component.width, e.component.height)
+            }
+        })
+        launchAsap(coroutineDispatcher) {
+            entry()
         }
+        var lastTime = PerformanceCounter.milliseconds
+        while (true) {
+            val currentTime = PerformanceCounter.milliseconds
+            val elapsedTime = (currentTime - lastTime).milliseconds
+            coroutineDispatcher.executePending()
+            ag.glcanvas.repaint()
+            delay((timePerFrame - elapsedTime).milliseconds.clamp(0.0, 32.0).milliseconds)
+            lastTime = currentTime
+        }
+
     }
 }
