@@ -2,7 +2,6 @@ package com.soywiz.korui
 
 import com.soywiz.korev.*
 import com.soywiz.korio.util.*
-import com.soywiz.korev.*
 import com.soywiz.korui.light.log.*
 import com.soywiz.korui.ui.*
 import kotlin.test.*
@@ -25,8 +24,8 @@ class BasicTest {
 				button("Hello")
 			}
 
-			frame.dispatch(ResizedEvent(100, 100))
-			frame.dispatch(ResizedEvent(200, 200))
+			frame.dispatch(ReshapeEvent(100, 100))
+			frame.dispatch(ReshapeEvent(200, 200))
 
 			assertEquals(
 				"""

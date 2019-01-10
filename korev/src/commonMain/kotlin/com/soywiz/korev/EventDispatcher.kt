@@ -22,7 +22,7 @@ interface EventDispatcher {
 			return Closeable { getHandlersFor(clazz) -= handler }
 		}
 
-		override fun copyFrom(other: EventDispatcher) {
+		final override fun copyFrom(other: EventDispatcher) {
 			handlers.clear()
 			if (other is Mixin) {
 				for ((clazz, events) in other.handlers) {
@@ -36,7 +36,7 @@ interface EventDispatcher {
 
 		private val tempHandlers = Pool<ArrayList<(Event) -> Unit>>(reset = { it.clear() }) { arrayListOf() }
 
-		override fun <T : Event> dispatch(clazz: KClass<T>, event: T) {
+        override fun <T : Event> dispatch(clazz: KClass<T>, event: T) {
 			tempHandlers.alloc { temp ->
 				//try {
 					@Suppress("UNCHECKED_CAST")
@@ -72,6 +72,8 @@ object DummyEventDispatcher : EventDispatcher, Closeable {
 
 inline fun <reified T : Event> EventDispatcher.addEventListener(noinline handler: (T) -> Unit) = addEventListener(T::class, handler)
 inline fun <reified T : Event> EventDispatcher.dispatch(event: T) = dispatch(T::class, event)
+
+inline operator fun <T : Event> T.invoke(callback: T.() -> Unit): T = this.apply(callback)
 
 open class Event {
 	var target: Any? = null

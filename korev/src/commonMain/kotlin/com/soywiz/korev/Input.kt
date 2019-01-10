@@ -4,11 +4,11 @@ import com.soywiz.kmem.*
 import kotlin.math.*
 
 enum class MouseButton(val id: Int) {
-	LEFT(0), RIGHT(1), MIDDLE(2), BUTTON3(3), BUTTON4(4), BUTTON5(5);
+	LEFT(0), RIGHT(1), MIDDLE(2), BUTTON3(3), BUTTON4(4), BUTTON5(5), BUTTON_UNKNOWN(6);
 
 	companion object {
 		val BUTTONS = values()
-		operator fun get(id: Int) = BUTTONS[id]
+		operator fun get(id: Int) = BUTTONS.getOrElse(id) { BUTTON_UNKNOWN }
 	}
 }
 

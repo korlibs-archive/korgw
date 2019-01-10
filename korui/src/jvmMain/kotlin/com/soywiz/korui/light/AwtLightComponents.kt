@@ -8,9 +8,7 @@ import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.lang.Closeable
-import com.soywiz.korev.*
 import com.soywiz.korev.Event
-import com.soywiz.korev.*
 import java.awt.*
 import java.awt.datatransfer.*
 import java.awt.dnd.*
@@ -192,8 +190,8 @@ class AwtLightComponents : LightComponents() {
 					cc.dropTarget.removeDropTargetListener(adapter)
 				}
 			}
-			ResizedEvent::class -> {
-				val info = ResizedEvent(0, 0)
+			ReshapeEvent::class -> {
+				val info = ReshapeEvent(0, 0)
 				val cc = c as? Container?
 
 				fun send() {

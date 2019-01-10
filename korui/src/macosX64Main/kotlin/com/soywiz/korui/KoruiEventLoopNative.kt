@@ -6,8 +6,6 @@ import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korev.*
-import com.soywiz.korev.*
 import com.soywiz.korui.light.*
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
@@ -226,7 +224,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) = a
             })
         }
 
-        val resizedEvent = ResizedEvent()
+        val resizedEvent = ReshapeEvent()
         override fun windowDidResize(width: Int, height: Int, context: NSOpenGLContext?) {
             //macTrace("windowDidResize")
             ag.resized(width, height)

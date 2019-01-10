@@ -13,6 +13,9 @@ data class MouseEvent(
     var y: Int = 0,
     var button: MouseButton = MouseButton.LEFT,
     var buttons: Int = 0,
+    var scrollDeltaX: Double = 0.0,
+    var scrollDeltaY: Double = 0.0,
+    var scrollDeltaZ: Double = 0.0,
     var isShiftDown: Boolean = false,
     var isCtrlDown: Boolean = false,
     var isAltDown: Boolean = false,
@@ -20,19 +23,7 @@ data class MouseEvent(
     var scaleCoords: Boolean = true
 ) :
 	Event() {
-	enum class Type { MOVE, DRAG, UP, DOWN, CLICK, ENTER, EXIT }
-}
-
-data class MouseScrollEvent(
-	var id: Int = 0,
-	var x: Int = 0,
-	var y: Int = 0,
-	var delta: Double = 0.0,
-	var isShiftDown: Boolean = false,
-	var isCtrlDown: Boolean = false,
-	var isAltDown: Boolean = false,
-	var isMetaDown: Boolean = false
-) : Event() {
+	enum class Type { MOVE, DRAG, UP, DOWN, CLICK, ENTER, EXIT, SCROLL }
 }
 
 data class Touch(
@@ -80,9 +71,15 @@ data class GamePadStickEvent(var gamepad: Int, var stick: GameStick, var x: Doub
 
 data class ChangeEvent(var oldValue: Any? = null, var newValue: Any? = null) : Event()
 
-data class ResizedEvent(var width: Int = 0, var height: Int = 0) : Event()
+data class ReshapeEvent(var width: Int = 0, var height: Int = 0) : Event()
 
 data class FullScreenEvent(var fullscreen: Boolean = false) : Event()
+
+class RenderEvent() : Event()
+
+class InitEvent() : Event()
+
+class DisposeEvent() : Event()
 
 data class DropFileEvent(var type: Type = Type.ENTER, var files: List<VfsFile>? = null) : Event() {
 	enum class Type { ENTER, EXIT, DROP }

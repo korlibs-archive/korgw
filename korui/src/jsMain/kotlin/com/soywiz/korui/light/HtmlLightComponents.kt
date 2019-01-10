@@ -11,8 +11,6 @@ import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
-import com.soywiz.korev.*
-import com.soywiz.korev.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import org.khronos.webgl.*
@@ -388,9 +386,9 @@ class HtmlLightComponents : LightComponents() {
 					.map { node.addCloseableEventListener(it) { dispatchChangeEvent(it) } }
 					.closeable().cancellable()
 			}
-			ResizedEvent::class -> {
+			ReshapeEvent::class -> {
 				val node = window
-				val info = ResizedEvent()
+				val info = ReshapeEvent()
 
 				var lastWidth = -1
 				var lastHeight = -1
@@ -823,7 +821,7 @@ class HtmlLightComponents : LightComponents() {
 	}
 
 	override fun configuredFrame(handle: Any) {
-		getEventListener(handle).dispatch(ResizedEvent(windowWidth, windowHeight))
+		getEventListener(handle).dispatch(ReshapeEvent(windowWidth, windowHeight))
 	}
 }
 

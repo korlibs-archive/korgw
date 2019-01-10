@@ -43,7 +43,7 @@ abstract class AGAwtBase : AGOpengl() {
 	override var isGlAvailable: Boolean = false
 	override var devicePixelRatio: Double = 1.0
 
-	protected fun setAutoDrawable(d: GLAutoDrawable) {
+	fun setAutoDrawable(d: GLAutoDrawable) {
 		glThread = Thread.currentThread()
 		ad = d
 		gl = KmlGlCached(JvmKmlGl(d.gl as GL2))

@@ -5,7 +5,6 @@ import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
-import com.soywiz.korev.*
 import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.light.*
 import com.soywiz.korui.ui.*
@@ -60,7 +59,7 @@ internal fun Application.framePre(
 	//light.setBounds(frame.handle, 0, 0, frame.actualBounds.width, frame.actualBounds.height)
 	//koruiApplicationLog.info { "Application.frame: ${frame.actualBounds}" }
 	var resizing = false
-	frame.addEventListener<ResizedEvent> { e ->
+	frame.addEventListener<ReshapeEvent> { e ->
 		if (!resizing) {
 			resizing = true
 			try {
