@@ -6,7 +6,7 @@ import com.soywiz.korio.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.file.*
 import com.soywiz.korag.*
-import com.soywiz.korui.event.*
+import com.soywiz.korev.*
 import com.soywiz.kds.*
 import com.soywiz.kgl.*
 import kotlinx.cinterop.*
@@ -19,7 +19,7 @@ import com.soywiz.klock.*
 import com.soywiz.kmem.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
-import com.soywiz.korui.input.Key
+import com.soywiz.korev.Key
 
 @UseExperimental(InternalCoroutinesApi::class)
 class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
@@ -340,7 +340,7 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
 	return DefWindowProcW(hWnd, message, wParam, lParam)
 }
 
-val resizedEvent = com.soywiz.korui.event.ResizedEvent()
+val resizedEvent = com.soywiz.korev.ResizedEvent()
 
 fun resized(width: Int, height: Int) {
 	ag.resized(width, height)
@@ -363,21 +363,21 @@ fun tryRender() {
 	}
 }
 
-val keyEvent = com.soywiz.korui.event.KeyEvent()
+val keyEvent = com.soywiz.korev.KeyEvent()
 
 fun keyUpdate(keyCode: Int, down: Boolean) {
 	// @TODO: KeyEvent.Tpe.TYPE
 	light.dispatch(keyEvent.apply {
-		this.type = if (down) com.soywiz.korui.event.KeyEvent.Type.DOWN else com.soywiz.korui.event.KeyEvent.Type.UP
+		this.type = if (down) com.soywiz.korev.KeyEvent.Type.DOWN else com.soywiz.korev.KeyEvent.Type.UP
 		this.id = 0
-		this.key = KEYS[keyCode] ?: com.soywiz.korui.input.Key.UNKNOWN
+		this.key = KEYS[keyCode] ?: com.soywiz.korev.Key.UNKNOWN
 		this.keyCode = keyCode
 		this.char = keyCode.toChar()
 	})
 }
 
-val mevent = com.soywiz.korui.event.MouseEvent()
-private fun mouseEvent(etype: com.soywiz.korui.event.MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
+val mevent = com.soywiz.korev.MouseEvent()
+private fun mouseEvent(etype: com.soywiz.korev.MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
 	light.dispatch(mevent.apply {
 		this.type = etype
 		this.x = ex
@@ -431,16 +431,16 @@ fun mouseMove(x: Int, y: Int) {
 	mouseX = x
 	mouseY = y
 	SetCursor(ARROW_CURSOR)
-	mouseEvent(com.soywiz.korui.event.MouseEvent.Type.MOVE, mouseX, mouseY, 0)
+	mouseEvent(com.soywiz.korev.MouseEvent.Type.MOVE, mouseX, mouseY, 0)
 }
 
 fun mouseButton(button: Int, down: Boolean) {
 	//buttons[button] = down
 	if (down) {
-		mouseEvent(com.soywiz.korui.event.MouseEvent.Type.DOWN, mouseX, mouseY, button)
+		mouseEvent(com.soywiz.korev.MouseEvent.Type.DOWN, mouseX, mouseY, button)
 	} else {
-		mouseEvent(com.soywiz.korui.event.MouseEvent.Type.UP, mouseX, mouseY, button)
-		mouseEvent(com.soywiz.korui.event.MouseEvent.Type.CLICK, mouseX, mouseY, button) // @TODO: Conditionally depending on the down x,y & time
+		mouseEvent(com.soywiz.korev.MouseEvent.Type.UP, mouseX, mouseY, button)
+		mouseEvent(com.soywiz.korev.MouseEvent.Type.CLICK, mouseX, mouseY, button) // @TODO: Conditionally depending on the down x,y & time
 	}
 }
 

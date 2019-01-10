@@ -1,14 +1,16 @@
 package com.soywiz.korui.light
 
 import com.soywiz.korag.*
+import com.soywiz.korev.*
+import com.soywiz.korev.ChangeEvent
 import com.soywiz.korim.awt.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.lang.Closeable
-import com.soywiz.korui.event.*
-import com.soywiz.korui.event.Event
-import com.soywiz.korui.input.*
+import com.soywiz.korev.*
+import com.soywiz.korev.Event
+import com.soywiz.korev.*
 import java.awt.*
 import java.awt.datatransfer.*
 import java.awt.dnd.*
@@ -25,9 +27,9 @@ import javax.swing.event.*
 import javax.swing.text.*
 import kotlin.reflect.*
 
-typealias KoruiMouseEvent = com.soywiz.korui.event.MouseEvent
-typealias KoruiMouseEventType = com.soywiz.korui.event.MouseEvent.Type
-typealias KoruiChangeEvent = com.soywiz.korui.event.ChangeEvent
+typealias KoruiMouseEvent = com.soywiz.korev.MouseEvent
+typealias KoruiMouseEventType = com.soywiz.korev.MouseEvent.Type
+typealias KoruiChangeEvent = ChangeEvent
 
 @Suppress("EXPERIMENTAL_FEATURE_WARNING")
 class AwtLightComponents : LightComponents() {
@@ -113,7 +115,7 @@ class AwtLightComponents : LightComponents() {
 					cc.removeMouseMotionListener(adapter)
 				}
 			}
-			com.soywiz.korui.event.ChangeEvent::class -> {
+			ChangeEvent::class -> {
 				var rc = c as Component
 				if (rc is JScrollableTextArea) rc = rc.textArea
 				val cc = rc as? JTextComponent
@@ -218,12 +220,12 @@ class AwtLightComponents : LightComponents() {
 					cc?.removeComponentListener(adapter)
 				}
 			}
-			com.soywiz.korui.event.KeyEvent::class -> {
+			com.soywiz.korev.KeyEvent::class -> {
 				val cc = c as Component
-				val ev = com.soywiz.korui.event.KeyEvent()
+				val ev = com.soywiz.korev.KeyEvent()
 
 				val adapter = object : KeyAdapter() {
-					private fun populate(type: com.soywiz.korui.event.KeyEvent.Type, e: KeyEvent) = ev.apply {
+					private fun populate(type: com.soywiz.korev.KeyEvent.Type, e: KeyEvent) = ev.apply {
 						this.type = type
 						this.key = when (e.keyCode) {
 							KeyEvent.VK_ENTER          -> Key.ENTER
@@ -421,13 +423,13 @@ class AwtLightComponents : LightComponents() {
 					}
 
 					override fun keyTyped(e: KeyEvent) =
-						ed.dispatch(populate(com.soywiz.korui.event.KeyEvent.Type.TYPE, e))
+						ed.dispatch(populate(com.soywiz.korev.KeyEvent.Type.TYPE, e))
 
 					override fun keyPressed(e: KeyEvent) =
-						ed.dispatch(populate(com.soywiz.korui.event.KeyEvent.Type.DOWN, e))
+						ed.dispatch(populate(com.soywiz.korev.KeyEvent.Type.DOWN, e))
 
 					override fun keyReleased(e: KeyEvent) =
-						ed.dispatch(populate(com.soywiz.korui.event.KeyEvent.Type.UP, e))
+						ed.dispatch(populate(com.soywiz.korev.KeyEvent.Type.UP, e))
 				}
 
 				cc.addKeyListener(adapter)

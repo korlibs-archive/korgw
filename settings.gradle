@@ -23,7 +23,9 @@ rootProject.name = (new File(rootProject.projectDir, 'gradle.properties')).withI
 }.getProperty("project.name")
 
 include ':kgl'
+include ':korev'
 include ':korag'
 include ':korag-opengl'
+include ':korgw'
 include ':korui'
 include ':korui-sample'

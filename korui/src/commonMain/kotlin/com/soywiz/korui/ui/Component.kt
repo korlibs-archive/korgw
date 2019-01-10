@@ -4,19 +4,21 @@ package com.soywiz.korui.ui
 
 import com.soywiz.kds.*
 import com.soywiz.korag.*
+import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.vector.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korma.geom.*
 import com.soywiz.korui.*
-import com.soywiz.korui.event.*
+import com.soywiz.korev.*
 import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.light.*
 import com.soywiz.korui.style.*
 import kotlin.reflect.*
 
-open class Component(override val app: Application, val type: LightType, val lightConfig: Any? = null) : Styled, Extra by Extra.Mixin(), EventDispatcher, ApplicationAware {
+open class Component(override val app: Application, val type: LightType, val lightConfig: Any? = null) : Styled, Extra by Extra.Mixin(),
+    EventDispatcher, ApplicationAware {
 	val coroutineContext = app.coroutineContext
 	val lc = app.light
 

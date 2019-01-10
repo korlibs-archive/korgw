@@ -1,4 +1,4 @@
-package com.soywiz.korui.event
+package com.soywiz.korev
 
 import com.soywiz.kds.*
 import com.soywiz.korio.lang.*
@@ -24,7 +24,7 @@ interface EventDispatcher {
 
 		override fun copyFrom(other: EventDispatcher) {
 			handlers.clear()
-			if (other is EventDispatcher.Mixin) {
+			if (other is Mixin) {
 				for ((clazz, events) in other.handlers) {
 					//println("EventDispatcher.copyFrom($clazz, $events)")
 					for (event in events) {
@@ -53,7 +53,7 @@ interface EventDispatcher {
 	}
 
 	companion object {
-		operator fun invoke(): EventDispatcher = EventDispatcher.Mixin()
+		operator fun invoke(): EventDispatcher = Mixin()
 	}
 }
 
@@ -77,6 +77,7 @@ open class Event {
 	var target: Any? = null
 }
 
+fun Event.preventDefault(reason: Any? = null): Nothing = throw PreventDefaultException(reason)
 fun preventDefault(reason: Any? = null): Nothing = throw PreventDefaultException(reason)
 
 class PreventDefaultException(val reason: Any? = null) : Exception()

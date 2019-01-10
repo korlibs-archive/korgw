@@ -3,10 +3,11 @@ package com.soywiz.korui
 import com.soywiz.kds.*
 import com.soywiz.klock.*
 import com.soywiz.korag.*
+import com.soywiz.korev.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korui.event.*
-import com.soywiz.korui.input.*
+import com.soywiz.korev.*
+import com.soywiz.korev.*
 import com.soywiz.korui.light.*
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
@@ -179,9 +180,9 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) = a
             println("KoruiWrap.pentry[2]")
         }
 
-        val mevent = com.soywiz.korui.event.MouseEvent()
+        val mevent = MouseEvent()
 
-        private fun mouseEvent(etype: com.soywiz.korui.event.MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
+        private fun mouseEvent(etype: MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
             light.dispatch(mevent.apply {
                 this.type = etype
                 this.x = ex
@@ -196,9 +197,9 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) = a
         }
 
         override fun mouseUp(x: Int, y: Int, button: Int) {
-            mouseEvent(com.soywiz.korui.event.MouseEvent.Type.UP, x, y, button)
+            mouseEvent(MouseEvent.Type.UP, x, y, button)
             mouseEvent(
-                com.soywiz.korui.event.MouseEvent.Type.CLICK,
+                MouseEvent.Type.CLICK,
                 x,
                 y,
                 button
@@ -206,18 +207,18 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) = a
         }
 
         override fun mouseDown(x: Int, y: Int, button: Int) =
-            mouseEvent(com.soywiz.korui.event.MouseEvent.Type.DOWN, x, y, button)
+            mouseEvent(MouseEvent.Type.DOWN, x, y, button)
 
-        override fun mouseMoved(x: Int, y: Int) = mouseEvent(com.soywiz.korui.event.MouseEvent.Type.MOVE, x, y, 0)
+        override fun mouseMoved(x: Int, y: Int) = mouseEvent(MouseEvent.Type.MOVE, x, y, 0)
 
-        val keyEvent = com.soywiz.korui.event.KeyEvent()
+        val keyEvent = KeyEvent()
 
         override fun keyDownUp(char: Char, modifiers: Int, keyCode: Int, pressed: Boolean) {
             val key = KeyCodesToKeys[keyCode] ?: CharToKeys[char] ?: Key.UNKNOWN
             //println("keyDownUp: char=$char, modifiers=$modifiers, keyCode=${keyCode.toInt()}, key=$key, pressed=$pressed")
             light.dispatch(keyEvent.apply {
                 this.type =
-                    if (pressed) com.soywiz.korui.event.KeyEvent.Type.DOWN else com.soywiz.korui.event.KeyEvent.Type.UP
+                    if (pressed) KeyEvent.Type.DOWN else KeyEvent.Type.UP
                 this.id = 0
                 this.key = key
                 this.keyCode = keyCode
@@ -225,7 +226,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) = a
             })
         }
 
-        val resizedEvent = com.soywiz.korui.event.ResizedEvent()
+        val resizedEvent = ResizedEvent()
         override fun windowDidResize(width: Int, height: Int, context: NSOpenGLContext?) {
             //macTrace("windowDidResize")
             ag.resized(width, height)

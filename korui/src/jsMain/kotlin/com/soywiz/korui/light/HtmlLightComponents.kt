@@ -3,17 +3,16 @@ package com.soywiz.korui.light
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
 import com.soywiz.korag.log.*
+import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
-import com.soywiz.korim.color.*
 import com.soywiz.korim.format.*
-import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.stream.*
 import com.soywiz.korio.util.*
-import com.soywiz.korui.event.*
-import com.soywiz.korui.input.*
+import com.soywiz.korev.*
+import com.soywiz.korev.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import org.khronos.webgl.*
@@ -23,8 +22,6 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.files.*
 import kotlin.RuntimeException
-import kotlin.browser.*
-import kotlin.coroutines.*
 import kotlin.coroutines.*
 import kotlin.reflect.*
 
@@ -259,7 +256,7 @@ class HtmlLightComponents : LightComponents() {
 		return Closeable { this.removeEventListener(name, func) }
 	}
 
-	override fun <T : com.soywiz.korui.event.Event> registerEventKind(
+	override fun <T : com.soywiz.korev.Event> registerEventKind(
 		c: Any, clazz: KClass<T>, ed: EventDispatcher
 	): Closeable {
         if (c.isInvalid()) return DummyCloseable
@@ -269,8 +266,8 @@ class HtmlLightComponents : LightComponents() {
 		val node = c.unsafeCast<HTMLElement>()
 
 		when (clazz) {
-			com.soywiz.korui.event.MouseEvent::class -> {
-				val event = com.soywiz.korui.event.MouseEvent()
+			com.soywiz.korev.MouseEvent::class -> {
+				val event = com.soywiz.korev.MouseEvent()
 
 				fun dispatchMouseEvent(e: Event) {
 					val me = e.unsafeCast<MouseEvent>()
@@ -288,19 +285,19 @@ class HtmlLightComponents : LightComponents() {
 						this.isMetaDown = me.metaKey
 						this.scaleCoords = false
 						this.type = when (me.type) {
-							"click" -> com.soywiz.korui.event.MouseEvent.Type.CLICK
+							"click" -> com.soywiz.korev.MouseEvent.Type.CLICK
 							"mousemove" -> {
 								if (me.button.toInt() == 0) {
-									com.soywiz.korui.event.MouseEvent.Type.MOVE
+									com.soywiz.korev.MouseEvent.Type.MOVE
 								} else {
-									com.soywiz.korui.event.MouseEvent.Type.DRAG
+									com.soywiz.korev.MouseEvent.Type.DRAG
 								}
 							}
-							"mouseup" -> com.soywiz.korui.event.MouseEvent.Type.UP
-							"mousedown" -> com.soywiz.korui.event.MouseEvent.Type.DOWN
-							"mouseenter" -> com.soywiz.korui.event.MouseEvent.Type.DOWN
-							"mouseover" -> com.soywiz.korui.event.MouseEvent.Type.ENTER
-							"mouseout" -> com.soywiz.korui.event.MouseEvent.Type.EXIT
+							"mouseup" -> com.soywiz.korev.MouseEvent.Type.UP
+							"mousedown" -> com.soywiz.korev.MouseEvent.Type.DOWN
+							"mouseenter" -> com.soywiz.korev.MouseEvent.Type.DOWN
+							"mouseover" -> com.soywiz.korev.MouseEvent.Type.ENTER
+							"mouseout" -> com.soywiz.korev.MouseEvent.Type.EXIT
 							else -> error("Unsupported event type ${me.type}")
 						}
 					})
@@ -310,8 +307,8 @@ class HtmlLightComponents : LightComponents() {
 					.map { node.addCloseableEventListener(it) { dispatchMouseEvent(it) } }
 					.closeable()
 			}
-			com.soywiz.korui.event.KeyEvent::class -> {
-				val event = com.soywiz.korui.event.KeyEvent()
+			KeyEvent::class -> {
+				val event = KeyEvent()
 
 				fun dispatchMouseEvent(e: Event) {
 					val me = e.unsafeCast<KeyboardEvent>()
@@ -365,9 +362,9 @@ class HtmlLightComponents : LightComponents() {
 						}
 						this.char = me.charCode.toChar()
 						this.type = when (me.type) {
-							"keydown" -> com.soywiz.korui.event.KeyEvent.Type.DOWN
-							"keyup" -> com.soywiz.korui.event.KeyEvent.Type.UP
-							"keypress" -> com.soywiz.korui.event.KeyEvent.Type.TYPE
+							"keydown" -> KeyEvent.Type.DOWN
+							"keyup" -> KeyEvent.Type.UP
+							"keypress" -> KeyEvent.Type.TYPE
 							else -> error("Unsupported event type ${me.type}")
 						}
 					})
@@ -377,8 +374,8 @@ class HtmlLightComponents : LightComponents() {
 					.map { node.addCloseableEventListener(it) { dispatchMouseEvent(it) } }
 					.closeable()
 			}
-			com.soywiz.korui.event.ChangeEvent::class -> {
-				val event = com.soywiz.korui.event.ChangeEvent()
+			ChangeEvent::class -> {
+				val event = ChangeEvent()
 
 				fun dispatchChangeEvent(e: Event) {
 					ed.dispatch(event.apply {
@@ -391,7 +388,7 @@ class HtmlLightComponents : LightComponents() {
 					.map { node.addCloseableEventListener(it) { dispatchChangeEvent(it) } }
 					.closeable().cancellable()
 			}
-			com.soywiz.korui.event.ResizedEvent::class -> {
+			ResizedEvent::class -> {
 				val node = window
 				val info = ResizedEvent()
 
@@ -435,7 +432,7 @@ class HtmlLightComponents : LightComponents() {
 					}
 				).closeable()
 			}
-			com.soywiz.korui.event.GamePadConnectionEvent::class -> {
+			GamePadConnectionEvent::class -> {
 				val info = GamePadConnectionEvent()
 
 				val rnode: HTMLElement = if (node.tagName.toUpperCase() == "CANVAS") window.asDynamic() else node
@@ -499,7 +496,7 @@ class HtmlLightComponents : LightComponents() {
 
 			//	return super.addHandler(c, listener)
 			//
-			com.soywiz.korui.event.TouchEvent::class -> {
+			TouchEvent::class -> {
 				fun process(type: TouchEvent.Type, e: Event, preventDefault: Boolean): List<TouchEvent> {
 					//console.error("TOUCH EVENT!")
 					val out = arrayListOf<TouchEvent>()
@@ -533,7 +530,7 @@ class HtmlLightComponents : LightComponents() {
 					}
 				).closeable()
 			}
-			com.soywiz.korui.event.DropFileEvent::class -> {
+			DropFileEvent::class -> {
 				fun ondrop(e: DragEvent) {
 					e.preventDefault()
 					//console.log("ondrop", e)

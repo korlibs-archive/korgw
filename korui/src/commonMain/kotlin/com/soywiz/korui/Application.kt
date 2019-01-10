@@ -1,10 +1,11 @@
 package com.soywiz.korui
 
 import com.soywiz.korag.*
+import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
-import com.soywiz.korui.event.*
+import com.soywiz.korev.*
 import com.soywiz.korui.geom.len.*
 import com.soywiz.korui.light.*
 import com.soywiz.korui.ui.*

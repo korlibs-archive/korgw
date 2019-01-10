@@ -1,4 +1,4 @@
-package com.soywiz.korui.input
+package com.soywiz.korev
 
 import com.soywiz.kmem.*
 import kotlin.math.*
@@ -92,12 +92,12 @@ enum class GameButton(val index: Int) {
 }
 
 class GamepadInfo(
-	var index: Int = 0,
-	var connected: Boolean = false,
-	var name: String = "unknown",
-	var mapping: GamepadMapping = StandardGamepadMapping,
-	var buttons: Int = 0,
-	val axes: DoubleArray = DoubleArray(16)
+    var index: Int = 0,
+    var connected: Boolean = false,
+    var name: String = "unknown",
+    var mapping: GamepadMapping = StandardGamepadMapping,
+    var buttons: Int = 0,
+    val axes: DoubleArray = DoubleArray(16)
 ) {
 	fun copyFrom(that: GamepadInfo) {
 		this.index = that.index
