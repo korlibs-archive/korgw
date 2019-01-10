@@ -3,6 +3,7 @@ package com.soywiz.korgw
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korim.color.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
@@ -38,7 +39,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
     val windowConfigWidth = 640
     val windowConfigHeight = 480
-    val windowConfigTitle = "Title"
+    val windowConfigTitle = ""
 
     val windowRect = NSScreen.mainScreen()!!.frame.useContents<CGRect, CValue<CGRect>> {
         NSMakeRect(
@@ -53,6 +54,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     var timer: NSTimer? = null
 
     private val window: NSWindow = NSWindow(windowRect, windowStyle, NSBackingStoreBuffered, false).apply {
+        setIsVisible(false)
         title = windowConfigTitle
         opaque = true
         hasShadow = true
@@ -159,8 +161,6 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
             fun mouseMoved(x: Int, y: Int) = mouseEvent(MouseEvent.Type.MOVE, x, y, 0)
 
-
-
             override fun mouseDragged(event: NSEvent) {
                 super.mouseDragged(event)
                 event.locationInWindow.useContents<CGPoint, Unit> {
@@ -204,6 +204,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         }
         openglView.setNextResponder(responder)
         setNextResponder(responder)
+        setIsVisible(false)
     }
 
     private fun doRender() {
@@ -214,6 +215,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
         //context?.flushBuffer()
         context?.makeCurrentContext()
+        ag.clear(Colors.BLACK)
         ag.onRender(ag)
         dispatch(renderEvent)
         context?.flushBuffer()
@@ -224,7 +226,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     override var fps: Int = 60
     override val width: Int get() = window.frame.useContents { this.size.width }.toInt()
     override val height: Int get() = window.frame.useContents { this.size.height }.toInt()
-    override var title: String = "Title"
+    override var title: String = ""
         set(value) {
             field = value
             window.title = value
@@ -242,10 +244,18 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         }
     override var visible: Boolean
         get() = window.visible
-        set(value) {}
-    override var quality: Quality
-        get() = Quality.AUTO
-        set(value) {}
+        set(value) {
+            window.setIsVisible(value)
+            if (value) {
+                window.makeKeyAndOrderFront(this)
+            }
+            //if (value) {
+            //    window.makeKeyAndOrderFront(this)
+            //    app.activateIgnoringOtherApps(true)
+            //} else {
+            //    window.orderOut(this)
+            //}
+        }
 
     override fun setSize(width: Int, height: Int) {
         val rect = NSScreen.mainScreen()!!.frame.useContents {
@@ -254,7 +264,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
                 width.toDouble(), height.toDouble()
             )
         }
-        window.setFrame(rect, true, true)
+        window.setFrame(rect, true, false)
     }
 
     override suspend fun browse(url: URL) {
@@ -316,7 +326,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
             override fun applicationWillFinishLaunching(notification: NSNotification) {
                 println("applicationWillFinishLaunching")
-                window.makeKeyAndOrderFront(this)
+                //window.makeKeyAndOrderFront(this)
             }
 
             override fun applicationDidFinishLaunching(notification: NSNotification) {
@@ -364,7 +374,6 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         coroutineDispatcher.executePending()
         app.run()
     }
-
 }
 
 
