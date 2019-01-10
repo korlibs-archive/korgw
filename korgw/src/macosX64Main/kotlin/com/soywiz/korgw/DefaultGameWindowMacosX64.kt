@@ -52,7 +52,6 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     private val openglView: NSOpenGLView = NSOpenGLView(NSMakeRect(0.0, 0.0, 16.0, 16.0), pixelFormat)
     var timer: NSTimer? = null
 
-
     private val window: NSWindow = NSWindow(windowRect, windowStyle, NSBackingStoreBuffered, false).apply {
         title = windowConfigTitle
         opaque = true
@@ -225,9 +224,11 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     override var fps: Int = 60
     override val width: Int get() = window.frame.useContents { this.size.width }.toInt()
     override val height: Int get() = window.frame.useContents { this.size.height }.toInt()
-    override var title: String
-        get() = window.title
-        set(value) = run { window.title = value }
+    override var title: String = "Title"
+        set(value) {
+            field = value
+            window.title = value
+        }
 
     override var icon: Bitmap?
         get() = super.icon
