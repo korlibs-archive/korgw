@@ -7,6 +7,7 @@ import com.soywiz.korag.log.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.*
+import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
@@ -25,7 +26,7 @@ interface DialogInterface {
 }
 
 @UseExperimental(InternalCoroutinesApi::class)
-class GameWindowCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
+class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
     class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
@@ -101,7 +102,17 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     override suspend fun prompt(message: String, default: String): String = unsupported()
     override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> = unsupported()
 
-    open suspend fun loop(entry: suspend GameWindow.() -> Unit) = Unit
+    open suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+        launchImmediately(coroutineDispatcher) {
+            entry()
+        }
+        while (true) {
+            coroutineDispatcher.executePending()
+            ag.onRender(ag)
+            dispatch(renderEvent)
+            delay(16.milliseconds)
+        }
+    }
 }
 
 fun GameWindow.mainLoop(entry: suspend GameWindow.() -> Unit) = Korio { loop(entry) }
