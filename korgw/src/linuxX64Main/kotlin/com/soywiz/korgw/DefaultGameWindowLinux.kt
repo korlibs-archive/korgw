@@ -30,8 +30,8 @@ class GlutGameWindow : GameWindow() {
     override val width: Int get() = glutGet(GLUT_WINDOW_WIDTH)
     override val height: Int get() = glutGet(GLUT_WINDOW_HEIGHT)
 
-    private var widthBeforeFullScreen = 640
-    private var heightBeforeFullScreen = 480
+    private var widthInternal = 640
+    private var heightInternal = 480
 
     override var icon: Bitmap?
         get() = super.icon
@@ -41,31 +41,39 @@ class GlutGameWindow : GameWindow() {
             if (field != value) {
                 field = value
                 if (value) {
-                    widthBeforeFullScreen = width
-                    heightBeforeFullScreen = height
+                    widthInternal = width
+                    heightInternal = height
                     glutFullScreen()
                 } else {
-                    setSize(widthBeforeFullScreen, heightBeforeFullScreen)
+                    setSizeInternal(widthInternal, heightInternal)
                 }
             }
         }
-    override var visible: Boolean
-        get() = glutGet(GLUT_VISIBLE) != 0
+    override var visible: Boolean = false
         set(value) {
-            if (value) {
-                glutShowWindow()
-            } else {
-                glutHideWindow()
+            if (field != value) {
+                field = value
+                if (value) {
+                    glutShowWindow()
+                    setSize(widthInternal, heightInternal)
+                } else {
+                    widthInternal = width
+                    heightInternal = height
+                    glutHideWindow()
+                }
             }
         }
-    override var quality: Quality
-        get() = super.quality
-        set(value) {}
+    override var quality: Quality = Quality.AUTO
 
     override fun setSize(width: Int, height: Int) {
+        widthInternal = width
+        heightInternal = height
+        setSizeInternal(width, height)
+    }
+
+    private fun setSizeInternal(width: Int, height: Int) {
         glutReshapeWindow(width, height)
         glutPositionWindow((screenWidth - width) / 2, (screenHeight - height) / 2)
-        glutPostRedisplay()
     }
 
     override suspend fun browse(url: URL) {
@@ -97,7 +105,7 @@ class GlutGameWindow : GameWindow() {
         glutInitDisplayMode((GLUT_RGB or GLUT_DOUBLE or GLUT_DEPTH).convert())
         glutInitWindowSize(640, 480)
         glutCreateWindow("")
-
+        glutHideWindow()
 
         glutReshapeFunc(staticCFunction(::glutReshape))
         glutDisplayFunc(staticCFunction(::glutDisplay))
