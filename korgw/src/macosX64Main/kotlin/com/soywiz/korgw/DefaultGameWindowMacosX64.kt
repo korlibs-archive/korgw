@@ -248,12 +248,10 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         set(value) {}
 
     override fun setSize(width: Int, height: Int) {
-        val rect = NSScreen.mainScreen()!!.frame.useContents<CGRect, CValue<CGRect>> {
+        val rect = NSScreen.mainScreen()!!.frame.useContents {
             NSMakeRect(
-                (size.width * 0.5 - windowConfigWidth * 0.5),
-                (size.height * 0.5 - windowConfigHeight * 0.5),
-                windowConfigWidth.toDouble(),
-                windowConfigHeight.toDouble()
+                ((size.width - width) * 0.5), ((size.height - height) * 0.5),
+                width.toDouble(), height.toDouble()
             )
         }
         window.setFrame(rect, true, true)
