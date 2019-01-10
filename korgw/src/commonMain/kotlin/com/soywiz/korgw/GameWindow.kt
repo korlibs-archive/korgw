@@ -25,51 +25,19 @@ interface DialogInterface {
 }
 
 @UseExperimental(InternalCoroutinesApi::class)
-open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay {
-    data class TimedTask(val time: DateTime, val task: () -> Unit) : Comparable<TimedTask> {
-        override fun compareTo(other: TimedTask): Int = this.time.compareTo(other.time)
-    }
+class GameWindowCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
+    override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-    private val tasks = Queue<Runnable>()
-    private val timedTasks = PriorityQueue<TimedTask>()
+    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
+
+    val tasks = Queue<Runnable>()
+    val timedTasks = PriorityQueue<TimedTask> { a, b -> a.ms.compareTo(b.ms) }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         tasks.enqueue(block)
     }
 
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val timedTask = TimedTask(DateTime.now() + timeMillis.milliseconds) {
-            continuation.resume(Unit)
-        }
-        timedTasks += timedTask
-        continuation.invokeOnCancellation {
-            timedTasks -= timedTask
-        }
-    }
-
-    fun executePending() {
-        while (tasks.isNotEmpty()) {
-            val task = tasks.dequeue()
-            task.run()
-        }
-    }
-}
-
-/*
-@UseExperimental(InternalCoroutinesApi::class)
-class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
-    override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
-
-    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
-
-    val tasks = Queue<Runnable>()
-    val timedTasks = PriorityQueue<TimedTask>(Comparator<TimedTask> { a, b -> a.ms.compareTo(b.ms) })
-
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        tasks.enqueue(block)
-    }
-
-    override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>): Unit {
         val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation)
         continuation.invokeOnCancellation {
             timedTasks.remove(task)
@@ -77,7 +45,7 @@ class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
         timedTasks.add(task)
     }
 
-    fun executeStep() {
+    fun executePending() {
         val now = DateTime.now()
         while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
             timedTasks.removeHead().continuation.resume(Unit)
@@ -95,7 +63,6 @@ class MyNativeCoroutineDispatcher() : CoroutineDispatcher(), Delay, Closeable {
 
     override fun toString(): String = "MyNativeCoroutineDispatcher"
 }
-*/
 
 open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     open val ag: AG = LogAG()
