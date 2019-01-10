@@ -18,10 +18,15 @@ dependencies {
 }
 
 kotlin.targets.macosX64.compilations.main.outputKinds("EXECUTABLE")
+kotlin.targets.mingwX64.compilations.main.outputKinds("EXECUTABLE")
 
 afterEvaluate {
     task runMacosX64Main(type: Exec, dependsOn: [linkDebugExecutableMacosX64]) {
         executable = kotlin.targets.macosX64.compilations.main.getBinary("EXECUTABLE", "debug")
+        args = []
+    }
+    task runMingwX64Main(type: Exec, dependsOn: [linkDebugExecutableMingwX64]) {
+        executable = kotlin.targets.mingwX64.compilations.main.getBinary("EXECUTABLE", "debug")
         args = []
     }
 }
