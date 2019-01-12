@@ -155,11 +155,11 @@ fun glutDisplay() {
 }
 
 @ThreadLocal
-val resizedEvent = com.soywiz.korev.ResizedEvent()
+val reshapeEvent = com.soywiz.korev.ReshapeEvent()
 
 fun glutReshape(width: Int, height: Int) {
     ag.resized(width, height)
-    light.dispatch(resizedEvent.apply {
+    light.dispatch(reshapeEvent.apply {
         this.width = width
         this.height = height
     })
