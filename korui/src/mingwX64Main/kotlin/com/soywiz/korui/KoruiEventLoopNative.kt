@@ -340,11 +340,11 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
 	return DefWindowProcW(hWnd, message, wParam, lParam)
 }
 
-val resizedEvent = com.soywiz.korev.ResizedEvent()
+val reshapeEvent = com.soywiz.korev.ReshapeEvent()
 
 fun resized(width: Int, height: Int) {
 	ag.resized(width, height)
-	light.dispatch(resizedEvent.apply {
+	light.dispatch(reshapeEvent.apply {
 		this.width = width
 		this.height = height
 	})
