@@ -31,8 +31,9 @@ object AGFactoryAwt : AGFactory {
 	}
 }
 
-abstract class AGAwtBase : AGOpengl() {
+abstract class AGAwtBase(val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl() {
 	var glprofile = GLProfile.getDefault()
+    //val glprofile = GLProfile.get( GLProfile.GL2 )
 	var glcapabilities = GLCapabilities(glprofile).apply {
 		stencilBits = 8
 		depthBits = 24
@@ -46,7 +47,10 @@ abstract class AGAwtBase : AGOpengl() {
 	fun setAutoDrawable(d: GLAutoDrawable) {
 		glThread = Thread.currentThread()
 		ad = d
-		gl = KmlGlCached(JvmKmlGl(d.gl as GL2))
+        if (!::gl.isInitialized) {
+            //gl = KmlGlCached(JvmKmlGl(d.gl as GL2))
+            gl = glDecorator(JvmKmlGl(d.gl as GL2))
+        }
 		isGlAvailable = true
 	}
 
@@ -55,7 +59,7 @@ abstract class AGAwtBase : AGOpengl() {
 	//val queue = Deque<(gl: GL) -> Unit>()
 }
 
-class AGAwt(val config: AGConfig) : AGAwtBase(), AGContainer {
+class AGAwt(val config: AGConfig, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(glDecorator), AGContainer {
 	val glcanvas = GLCanvas(glcapabilities)
 	override val nativeComponent = glcanvas
 
@@ -111,6 +115,7 @@ class AGAwt(val config: AGConfig) : AGAwtBase(), AGContainer {
 			//}
 
 			onReadyOnce {
+                //println(glcanvas.chosenGLCapabilities.depthBits)
 				ready()
 			}
 			onRender(awtBase)
@@ -157,6 +162,6 @@ class AGAwt(val config: AGConfig) : AGAwtBase(), AGContainer {
 	//}
 }
 
-class AGAwtNative(override val nativeComponent: Any) : AGAwtBase() {
+class AGAwtNative(override val nativeComponent: Any, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(glDecorator) {
 
 }

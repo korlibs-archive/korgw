@@ -27,10 +27,61 @@ afterEvaluate {
     // runMingwX64Main, runLinuxX64Main, runMacosX64Main
     for (target in targets) {
         def ctarget = target.capitalize()
-        tasks.create("run${ctarget}Main", Exec) {
+        tasks.create("run${ctarget}", Exec) {
             dependsOn(tasks.findByName("linkDebugExecutable${ctarget}"))
             executable = kotlin.targets[target].compilations.main.getBinary("EXECUTABLE", "debug")
             args = []
         }
     }
+
+    tasks.create("jsWeb", Task) {
+        dependsOn(kotlin.targets.js.compilations.test.compileKotlinTaskName, populateNodeModules)
+        doLast {
+            new File("$buildDir/node_modules/index.html").write("""<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Sample</title>
+</head>
+<body style="background:black;">
+
+<script data-main="korgw-sample" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+    function toggleFullScreen() {
+        var doc = window.document;
+        var docEl = doc.documentElement;
+
+        var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+        var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+        if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            requestFullScreen.call(docEl);
+        }
+        else {
+            cancelFullScreen.call(doc);
+        }
+    }
+
+    window.addEventListener('touchend', function() {
+        if ((!document.mozFullScreen && !document.webkitIsFullScreen)) {
+            //FullScreen is disabled
+            toggleFullScreen();
+        } else {
+            //FullScreen is enabled
+        }
+    });
+</script>
+
+</body>
+</html>
+
+""")
+        }
+
+    }
+
 }
+

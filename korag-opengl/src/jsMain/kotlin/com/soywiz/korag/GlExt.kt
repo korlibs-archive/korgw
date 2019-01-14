@@ -25,7 +25,7 @@ fun jsObject(vararg pairs: Pair<String, Any?>): dynamic {
 	return out
 }
 
-class AGWebgl(val config: AGConfig) : AGOpengl(), AGContainer {
+class AGWebgl(val config: AGConfig, val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl(), AGContainer {
 	companion object {
 		//var UNPACK_PREMULTIPLY_ALPHA_WEBGL = document.createElement('canvas').getContext('webgl').UNPACK_PREMULTIPLY_ALPHA_WEBGL
 		const val UNPACK_PREMULTIPLY_ALPHA_WEBGL = 37441
@@ -41,7 +41,8 @@ class AGWebgl(val config: AGConfig) : AGOpengl(), AGContainer {
         "antialias" to config.antialiasHint
 	)
 	//val gl: GL = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)) as GL
-	override val gl = KmlGlCached(KmlGlJsCanvas(canvas, glOpts))
+	//override val gl = KmlGlCached(KmlGlJsCanvas(canvas, glOpts))
+    override val gl = glDecorator(KmlGlJsCanvas(canvas, glOpts))
 
 	init {
 		(window.asDynamic()).ag = this

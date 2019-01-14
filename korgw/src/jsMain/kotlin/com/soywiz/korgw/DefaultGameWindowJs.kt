@@ -63,8 +63,8 @@ class BrowserGameWindow : GameWindow() {
         canvas.style.height = "${window.innerHeight}px"
         ag.resized(canvas.width, canvas.height)
         dispatch(reshapeEvent.apply {
-            this.width = width
-            this.height = height
+            this.width = window.innerWidth
+            this.height = window.innerHeight
         })
     }
 

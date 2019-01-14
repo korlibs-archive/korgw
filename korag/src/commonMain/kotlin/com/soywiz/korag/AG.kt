@@ -452,12 +452,17 @@ abstract class AG : Extra by Extra.Mixin() {
 		//val enabled = !red || !green || !blue || !alpha
 	}
 
+    enum class FrontFace {
+        BOTH, CW, CCW
+    }
+
 	data class RenderState(
 		var depthFunc: CompareMode = CompareMode.ALWAYS,
 		var depthMask: Boolean = true,
 		var depthNear: Float = 0f,
 		var depthFar: Float = 1f,
-		var lineWidth: Float = 1f
+		var lineWidth: Float = 1f,
+        var frontFace: FrontFace = FrontFace.BOTH
 	)
 
 	data class StencilState(
@@ -598,7 +603,7 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	open fun clear(
 		color: RGBA = Colors.TRANSPARENT_BLACK,
-		depth: Float = 0f,
+		depth: Float = 1f,
 		stencil: Int = 0,
 		clearColor: Boolean = true,
 		clearDepth: Boolean = true,
