@@ -43,6 +43,14 @@ class BrowserGameWindow : GameWindow() {
         onResized()
     }
 
+    override var quality: Quality = Quality.AUTO
+        set(value) {
+            if (field != value) {
+                field = value
+                onResized()
+            }
+        }
+
     private fun onResized() {
         val doQuality = quality == GameWindow.Quality.QUALITY
         val scale = if (doQuality) ag.devicePixelRatio.toInt() else 1
@@ -155,9 +163,6 @@ class BrowserGameWindow : GameWindow() {
     override var visible: Boolean
         get() = canvas.style.visibility == "visible"
         set(value) = run { canvas.style.visibility = if (value) "visible" else "hidden" }
-    override var quality: Quality
-        get() = super.quality
-        set(value) {}
 
     override fun setSize(width: Int, height: Int) {
         // Do nothing!
