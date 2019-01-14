@@ -44,11 +44,15 @@ class BrowserGameWindow : GameWindow() {
     }
 
     private fun onResized() {
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
+        val doQuality = quality == GameWindow.Quality.QUALITY
+        val scale = if (doQuality) ag.devicePixelRatio.toInt() else 1
+        canvas.width = window.innerWidth * scale
+        canvas.height = window.innerHeight * scale
         canvas.style.position = "absolute"
         canvas.style.left = "0"
         canvas.style.right = "0"
+        canvas.style.width = "${window.innerWidth}px"
+        canvas.style.height = "${window.innerHeight}px"
         ag.resized(canvas.width, canvas.height)
         dispatch(reshapeEvent.apply {
             this.width = width

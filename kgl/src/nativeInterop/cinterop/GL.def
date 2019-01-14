@@ -1,7 +1,6 @@
 headers = GL/glx.h GL/gl.h GL/glut.h
 compilerOpts = -I/usr/include -I/usr/include/x86_64-linux-gnu/
 linkerOpts = -L/usr/X11R6/lib -L/usr/lib/x86_64-linux-gnu -lGL -lGLU -lglut
-
 ---
 
 // gcc hello-x.c -L/usr/X11R6/lib -lX11 -o hello-x
