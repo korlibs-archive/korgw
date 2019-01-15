@@ -220,7 +220,7 @@ abstract class AGOpengl : AG() {
                 }
                 VarType.Mat2 -> {
                     checkErrors {
-                        (value as Matrix3D).copyToFloat2x2(tempFloats)
+                        (value as Matrix3D).copyToFloat2x2(tempFloats, MajorOrder.COLUMN)
                         gl.uniformMatrix2fv(
                             location,
                             1,
@@ -232,7 +232,7 @@ abstract class AGOpengl : AG() {
                 }
                 VarType.Mat3 -> {
                     checkErrors {
-                        (value as Matrix3D).copyToFloat3x3(tempFloats)
+                        (value as Matrix3D).copyToFloat3x3(tempFloats, MajorOrder.COLUMN)
                         gl.uniformMatrix3fv(
                             location,
                             1,
@@ -244,7 +244,7 @@ abstract class AGOpengl : AG() {
                 }
                 VarType.Mat4 -> {
                     checkErrors {
-                        (value as Matrix3D).copyToFloat4x4(tempFloats)
+                        (value as Matrix3D).copyToFloat4x4(tempFloats, MajorOrder.COLUMN)
                         gl.uniformMatrix4fv(
                         	location,
                         	1,
@@ -255,15 +255,20 @@ abstract class AGOpengl : AG() {
                     }
                 }
                 VarType.Float1 -> {
-                    if (value is FloatArray) {
-                        checkErrors { gl.uniform1f(location, value[0]) }
-                    } else {
-                        checkErrors { gl.uniform1f(location, (value as Number).toFloat()) }
+                    when (value) {
+                        is Number -> checkErrors { gl.uniform1f(location, value.toFloat()) }
+                        is Vector3D -> checkErrors { gl.uniform1f(location, value.x) }
+                        is FloatArray -> checkErrors { gl.uniform1f(location, value[0]) }
+                        else -> error("Unknown type '$value'")
                     }
                 }
                 VarType.Float2 -> {
-                    val fa = value as FloatArray
-                    checkErrors { gl.uniform2f(location, fa[0], fa[1]) }
+                    when (value) {
+                        is Vector3D -> checkErrors { gl.uniform2f(location, value.x, value.y) }
+                        is Point -> checkErrors { gl.uniform2f(location, value.x.toFloat(), value.y.toFloat()) }
+                        is FloatArray -> checkErrors { gl.uniform2f(location, value[0], value[1]) }
+                        else -> error("Unknown type '$value'")
+                    }
                 }
                 VarType.Float3 -> {
                     val fa = value as FloatArray
