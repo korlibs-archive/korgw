@@ -27,10 +27,13 @@ afterEvaluate {
     // runMingwX64Main, runLinuxX64Main, runMacosX64Main
     for (target in targets) {
         def ctarget = target.capitalize()
-        tasks.create("run${ctarget}", Exec) {
-            dependsOn(tasks.findByName("linkDebugExecutable${ctarget}"))
-            executable = kotlin.targets[target].compilations.main.getBinary("EXECUTABLE", "debug")
-            args = []
+        def debugExecutableTask = tasks.findByName("linkMainDebugExecutable${ctarget}")
+        if (debugExecutableTask != null) {
+            tasks.create("run${ctarget}", Exec) {
+                dependsOn(debugExecutableTask)
+                executable = kotlin.targets[target].compilations.main.getBinary("EXECUTABLE", "debug")
+                args = []
+            }
         }
     }
 
