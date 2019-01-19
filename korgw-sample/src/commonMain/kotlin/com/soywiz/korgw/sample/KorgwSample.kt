@@ -36,6 +36,8 @@ class KCube {
             name = "MY_PROG"
         )
         val vertexLayout = VertexLayout(point, a_col)
+
+        private val FLOATS_PER_VERTEX = vertexLayout.totalSize / Int.SIZE_BYTES /*Float.SIZE_BYTES is not defined*/
     }
 
     val cubeSize = 1f
@@ -81,7 +83,7 @@ class KCube {
     }
 
     private lateinit var vertexBuffer: AG.Buffer
-    private var numPoints: Int = 0
+    private var vertexCount: Int = 0
 
     fun render(ag: AG) {
         ag.clear(color = Colors.BLACK, depth = far)
@@ -90,7 +92,7 @@ class KCube {
             vertexBuffer = ag.createVertexBuffer()
             vertexBuffer.upload(floatArrayListOf().apply {
                 this += getCubeVertices()
-            }.also { numPoints = it.size }.toFloatArray())
+            }.also { vertexCount = it.size / FLOATS_PER_VERTEX }.toFloatArray())
         }
 
         ag.draw(
@@ -98,7 +100,7 @@ class KCube {
             program = prog,
             type = AG.DrawType.TRIANGLES,
             vertexLayout = vertexLayout,
-            vertexCount = numPoints / 6,
+            vertexCount = vertexCount ,
             uniforms = uniformValues.apply {
                 this[u_ProjMat] = projMat
                 this[u_ViewMat] = viewMat
