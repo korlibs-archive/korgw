@@ -43,7 +43,7 @@ suspend fun main(args: Array<String>) {
                                     vertexLayout = DefaultShaders.LAYOUT_DEBUG,
                                     vertexCount = 3,
                                     uniforms = AG.UniformValues(
-                                        DefaultShaders.u_ProjMat to Matrix3D().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+                                        DefaultShaders.u_ProjMat to Matrix3D().setToOrtho(Rectangle(0f, 0f, 640f, 480f), -1f, +1f)
                                     )
                                 )
                             }

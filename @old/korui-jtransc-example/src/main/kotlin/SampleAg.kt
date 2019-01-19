@@ -58,7 +58,7 @@ object SampleAg {
 								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
 								vertexCount = 3,
 								uniforms = mapOf(
-									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(Rectangle(0f, 0f, 640f, 480f), -1f, +1f)
 								)
 							)
 
@@ -100,7 +100,7 @@ object SampleAg {
 								vertexLayout = DefaultShaders.LAYOUT_DEBUG,
 								vertexCount = 3,
 								uniforms = mapOf(
-									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(0f, 0f, 640f, 480f, -1f, +1f)
+									DefaultShaders.u_ProjMat to Matrix4().setToOrtho(Rectangle(0f, 0f, 640f, 480f), -1f, +1f)
 								)
 							)
 						}

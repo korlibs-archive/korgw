@@ -8,7 +8,6 @@ import com.soywiz.korgw.*
 import com.soywiz.korim.color.*
 import com.soywiz.korma.geom.*
 import kotlin.jvm.*
-import com.soywiz.korio.lang.use
 import kotlin.math.*
 import com.soywiz.korio.Korio
 
@@ -19,6 +18,24 @@ class KCube {
             val app = KCube()
             app.run()
         }
+
+        val u_ProjMat = Uniform("u_ProjMat", VarType.Mat4)
+        val u_ViewMat = Uniform("u_ViewMat", VarType.Mat4)
+        val u_ModMat = Uniform("u_ModMat", VarType.Mat4)
+        val point = Attribute("point", VarType.Float3, normalized = false)
+        val a_col = Attribute("a_Col", VarType.Float3, normalized = true)
+        val v_col = Varying("v_Col", VarType.Float3)
+        val prog = Program(
+            vertex = VertexShader {
+                SET(v_col, a_col)
+                SET(out, u_ProjMat * u_ViewMat * u_ModMat * vec4(point, 1f.lit))
+            },
+            fragment = FragmentShader {
+                SET(out, vec4(v_col, 1f.lit))
+            },
+            name = "MY_PROG"
+        )
+        val vertexLayout = VertexLayout(point, a_col)
     }
 
     val cubeSize = 1f
@@ -36,26 +53,11 @@ class KCube {
     var rotAxis = Vector3D(1f, 1f, 1f)
 
     val rs = AG.RenderState(depthFunc = AG.CompareMode.LESS_EQUAL)
-    val u_ProjMat = Uniform("u_ProjMat", VarType.Mat4)
-    val u_ViewMat = Uniform("u_ViewMat", VarType.Mat4)
-    val u_ModMat = Uniform("u_ModMat", VarType.Mat4)
-    val point = Attribute("point", VarType.Float3, normalized = false)
-    val a_col = Attribute("a_Col", VarType.Float3, normalized = true)
-    val v_col = Varying("v_Col", VarType.Float3)
-    val prog = Program(
-        vertex = VertexShader {
-            SET(v_col, a_col)
-            SET(out, u_ProjMat * u_ViewMat * u_ModMat * vec4(point, 1f.lit))
-        },
-        fragment = FragmentShader {
-            SET(out, vec4(v_col, 1f.lit))
-        },
-        name = "MY_PROG"
-    )
 
     var projMat = Matrix3D().setToPerspective(aov, ar, near, far)
     var viewMat = Matrix3D().setToTranslation(xPos, yPos, zPos)
     var modlMat = Matrix3D().identity()
+    private val uniformValues = AG.UniformValues()
 
     fun run() = Korio {
         DefaultGameWindow.loop {
@@ -71,85 +73,85 @@ class KCube {
     }
 
     fun reshape(event: ReshapeEvent, ag: AG) {
-        width = event.width
-        height = event.height
-        if (height <= 0)
-            height = 1
+        width = max(event.width, 1)
+        height = max(event.height, 1)
         ar = (width.toFloat() / height.toFloat())
         ag.setViewport(0, 0, width, height)
-        projMat = Matrix3D().setToPerspective(aov, ar, near, far)
+        projMat.setToPerspective(aov, ar, near, far)
     }
+
+    private lateinit var vertexBuffer: AG.Buffer
+    private var numPoints: Int = 0
 
     fun render(ag: AG) {
         ag.clear(color = Colors.BLACK, depth = far)
 
-        modlMat = Matrix3D().identity().setToRotation(rquad, rotAxis);
-
-        val points = mutableListOf<Float>()
-        points += drawCube()
-        ag.createVertexBuffer(points.toFloatArray()).use { vertices ->
-            ag.draw(
-                vertices,
-                program = prog,
-                type = AG.DrawType.TRIANGLES,
-                vertexLayout = VertexLayout(point, a_col),
-                vertexCount = points.size / 6,
-                uniforms = AG.UniformValues(
-                    u_ProjMat to projMat,
-                    u_ViewMat to viewMat,
-                    u_ModMat to modlMat
-                ),
-                renderState = rs
-            )
+        if (!::vertexBuffer.isInitialized) {
+            vertexBuffer = ag.createVertexBuffer()
+            vertexBuffer.upload(floatArrayListOf().apply {
+                this += getCubeVertices()
+            }.also { numPoints = it.size }.toFloatArray())
         }
 
-        rquad = rquad.plus(Angle.fromDegrees(0.15))
-
-    }
-
-    fun drawCube(): List<Float> {
-        return listOf(
-            -cubeSize, -cubeSize, -cubeSize,  1f, 0f, 0f,  //p1
-            -cubeSize, -cubeSize, +cubeSize,  1f, 0f, 0f,  //p2
-            -cubeSize, +cubeSize, +cubeSize,  1f, 0f, 0f,  //p3
-            -cubeSize, -cubeSize, -cubeSize,  1f, 0f, 0f,  //p1
-            -cubeSize, +cubeSize, +cubeSize,  1f, 0f, 0f,  //p3
-            -cubeSize, +cubeSize, -cubeSize,  1f, 0f, 0f,  //p4
-
-            +cubeSize, +cubeSize, -cubeSize,  0f, 1f, 0f,  //p5
-            -cubeSize, -cubeSize, -cubeSize,  0f, 1f, 0f,  //p1
-            -cubeSize, +cubeSize, -cubeSize,  0f, 1f, 0f,  //p4
-            +cubeSize, +cubeSize, -cubeSize,  0f, 1f, 0f,  //p5
-            +cubeSize, -cubeSize, -cubeSize,  0f, 1f, 0f,  //p7
-            -cubeSize, -cubeSize, -cubeSize,  0f, 1f, 0f,  //p1
-
-            +cubeSize, -cubeSize, +cubeSize,  0f, 0f, 1f,  //p6
-            -cubeSize, -cubeSize, -cubeSize,  0f, 0f, 1f,  //p1
-            +cubeSize, -cubeSize, -cubeSize,  0f, 0f, 1f,  //p7
-            +cubeSize, -cubeSize, +cubeSize,  0f, 0f, 1f,  //p6
-            -cubeSize, -cubeSize, +cubeSize,  0f, 0f, 1f,  //p2
-            -cubeSize, -cubeSize, -cubeSize,  0f, 0f, 1f,  //p1
-
-            +cubeSize, +cubeSize, +cubeSize,  0f, 1f, 1f,  //p8
-            +cubeSize, +cubeSize, -cubeSize,  0f, 1f, 1f,  //p5
-            -cubeSize, +cubeSize, -cubeSize,  0f, 1f, 1f,  //p4
-            +cubeSize, +cubeSize, +cubeSize,  0f, 1f, 1f,  //p8
-            -cubeSize, +cubeSize, -cubeSize,  0f, 1f, 1f,  //p4
-            -cubeSize, +cubeSize, +cubeSize,  0f, 1f, 1f,  //p3
-
-            +cubeSize, +cubeSize, +cubeSize,  1f, 1f, 0f,  //p8
-            -cubeSize, +cubeSize, +cubeSize,  1f, 1f, 0f,  //p3
-            +cubeSize, -cubeSize, +cubeSize,  1f, 1f, 0f,  //p6
-            -cubeSize, +cubeSize, +cubeSize,  1f, 1f, 0f,  //p3
-            -cubeSize, -cubeSize, +cubeSize,  1f, 1f, 0f,  //p2
-            +cubeSize, -cubeSize, +cubeSize,  1f, 1f, 0f,  //p6
-
-            +cubeSize, +cubeSize, +cubeSize,  1f, 0f, 1f,  //p8
-            +cubeSize, -cubeSize, -cubeSize,  1f, 0f, 1f,  //p7
-            +cubeSize, +cubeSize, -cubeSize,  1f, 0f, 1f,  //p5
-            +cubeSize, -cubeSize, -cubeSize,  1f, 0f, 1f,  //p7
-            +cubeSize, +cubeSize, +cubeSize,  1f, 0f, 1f,  //p8
-            +cubeSize, -cubeSize, +cubeSize,  1f, 0f, 1f   //p6
+        ag.draw(
+            vertexBuffer,
+            program = prog,
+            type = AG.DrawType.TRIANGLES,
+            vertexLayout = vertexLayout,
+            vertexCount = numPoints / 6,
+            uniforms = uniformValues.apply {
+                this[u_ProjMat] = projMat
+                this[u_ViewMat] = viewMat
+                this[u_ModMat] = modlMat.identity().setToRotation(rquad, rotAxis)
+            },
+            renderState = rs
         )
+
+        rquad += 0.5.degrees
+
     }
+
+    fun getCubeVertices(): FloatArray = floatArrayOf(
+        -cubeSize, -cubeSize, -cubeSize,  1f, 0f, 0f,  //p1
+        -cubeSize, -cubeSize, +cubeSize,  1f, 0f, 0f,  //p2
+        -cubeSize, +cubeSize, +cubeSize,  1f, 0f, 0f,  //p3
+        -cubeSize, -cubeSize, -cubeSize,  1f, 0f, 0f,  //p1
+        -cubeSize, +cubeSize, +cubeSize,  1f, 0f, 0f,  //p3
+        -cubeSize, +cubeSize, -cubeSize,  1f, 0f, 0f,  //p4
+
+        +cubeSize, +cubeSize, -cubeSize,  0f, 1f, 0f,  //p5
+        -cubeSize, -cubeSize, -cubeSize,  0f, 1f, 0f,  //p1
+        -cubeSize, +cubeSize, -cubeSize,  0f, 1f, 0f,  //p4
+        +cubeSize, +cubeSize, -cubeSize,  0f, 1f, 0f,  //p5
+        +cubeSize, -cubeSize, -cubeSize,  0f, 1f, 0f,  //p7
+        -cubeSize, -cubeSize, -cubeSize,  0f, 1f, 0f,  //p1
+
+        +cubeSize, -cubeSize, +cubeSize,  0f, 0f, 1f,  //p6
+        -cubeSize, -cubeSize, -cubeSize,  0f, 0f, 1f,  //p1
+        +cubeSize, -cubeSize, -cubeSize,  0f, 0f, 1f,  //p7
+        +cubeSize, -cubeSize, +cubeSize,  0f, 0f, 1f,  //p6
+        -cubeSize, -cubeSize, +cubeSize,  0f, 0f, 1f,  //p2
+        -cubeSize, -cubeSize, -cubeSize,  0f, 0f, 1f,  //p1
+
+        +cubeSize, +cubeSize, +cubeSize,  0f, 1f, 1f,  //p8
+        +cubeSize, +cubeSize, -cubeSize,  0f, 1f, 1f,  //p5
+        -cubeSize, +cubeSize, -cubeSize,  0f, 1f, 1f,  //p4
+        +cubeSize, +cubeSize, +cubeSize,  0f, 1f, 1f,  //p8
+        -cubeSize, +cubeSize, -cubeSize,  0f, 1f, 1f,  //p4
+        -cubeSize, +cubeSize, +cubeSize,  0f, 1f, 1f,  //p3
+
+        +cubeSize, +cubeSize, +cubeSize,  1f, 1f, 0f,  //p8
+        -cubeSize, +cubeSize, +cubeSize,  1f, 1f, 0f,  //p3
+        +cubeSize, -cubeSize, +cubeSize,  1f, 1f, 0f,  //p6
+        -cubeSize, +cubeSize, +cubeSize,  1f, 1f, 0f,  //p3
+        -cubeSize, -cubeSize, +cubeSize,  1f, 1f, 0f,  //p2
+        +cubeSize, -cubeSize, +cubeSize,  1f, 1f, 0f,  //p6
+
+        +cubeSize, +cubeSize, +cubeSize,  1f, 0f, 1f,  //p8
+        +cubeSize, -cubeSize, -cubeSize,  1f, 0f, 1f,  //p7
+        +cubeSize, +cubeSize, -cubeSize,  1f, 0f, 1f,  //p5
+        +cubeSize, -cubeSize, -cubeSize,  1f, 0f, 1f,  //p7
+        +cubeSize, +cubeSize, +cubeSize,  1f, 0f, 1f,  //p8
+        +cubeSize, -cubeSize, +cubeSize,  1f, 0f, 1f   //p6
+    )
 }
