@@ -33,3 +33,15 @@ dependencies {
     commonTestApi "com.soywiz:korim:$korimVersion"
 
 }
+
+kotlin {
+    sourceSets {
+        iosMain
+        iosTest
+
+        configure([iosX64Main, iosArm32Main, iosArm64Main]) {
+            dependsOn iosMain
+            dependsOn iosTest
+        }
+    }
+}
