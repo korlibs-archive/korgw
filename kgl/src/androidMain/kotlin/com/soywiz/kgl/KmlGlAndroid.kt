@@ -7,6 +7,8 @@ package com.soywiz.kgl
 import android.opengl.GLES20.*
 import com.soywiz.kmem.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korim.format.AndroidNativeImage
+import java.nio.ByteBuffer
 
 class KmlGlAndroid : KmlGl() {
     override fun activeTexture(texture: Int): Unit = glActiveTexture(texture)
@@ -115,7 +117,14 @@ class KmlGlAndroid : KmlGl() {
     override fun stencilOp(fail: Int, zfail: Int, zpass: Int): Unit = glStencilOp(fail, zfail, zpass)
     override fun stencilOpSeparate(face: Int, sfail: Int, dpfail: Int, dppass: Int): Unit = glStencilOpSeparate(face, sfail, dpfail, dppass)
     override fun texImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: FBuffer?): Unit = glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels?.nioBuffer)
-    override fun texImage2D(target: Int, level: Int, internalformat: Int, format: Int, type: Int, data: NativeImage): Unit = TODO()
+    override fun texImage2D(target: Int, level: Int, internalformat: Int, format: Int, type: Int, data: NativeImage): Unit {
+        val out = ByteBuffer.allocateDirect(data.width * data.height * 4)
+        val image = (data as AndroidNativeImage)
+        image.androidBitmap.copyPixelsToBuffer(out)
+        out.flip()
+        glTexImage2D(target, level, internalformat, data.width, data.height, 0, format, type, out)
+        out.clear()
+    }
     override fun texParameterf(target: Int, pname: Int, param: Float): Unit = glTexParameterf(target, pname, param)
     override fun texParameterfv(target: Int, pname: Int, params: FBuffer): Unit = glTexParameterfv(target, pname, params.nioFloatBuffer)
     override fun texParameteri(target: Int, pname: Int, param: Int): Unit = glTexParameteri(target, pname, param)
