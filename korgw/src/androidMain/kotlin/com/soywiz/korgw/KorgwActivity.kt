@@ -81,7 +81,8 @@ abstract class KorgwActivity : Activity() {
                 setRenderer(object : GLSurfaceView.Renderer {
                     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
                         //GLES20.glClearColor(0.0f, 0.4f, 0.7f, 1.0f)
-                        gameWindow?.dispatch(initEvent)
+                        println("---------------- onSurfaceCreated --------------")
+                        ag.contextVersion++
                     }
 
                     override fun onDrawFrame(unused: GL10) {
@@ -101,6 +102,7 @@ abstract class KorgwActivity : Activity() {
                         ag.setViewport(0, 0, width, height)
                     }
                 })
+                gameWindow?.dispatch(initEvent)
             }
         }
 
