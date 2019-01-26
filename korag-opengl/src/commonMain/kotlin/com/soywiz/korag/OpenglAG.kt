@@ -15,6 +15,9 @@ abstract class AGOpengl : AG() {
     open val isGlAvailable = true
     abstract val gl: KmlGl
 
+    open val gles: Boolean = false
+    open val checkErrors: Boolean = false
+
     override var devicePixelRatio: Double = 1.0
 
     //val queue = Deque<(gl: GL) -> Unit>()
@@ -399,11 +402,11 @@ abstract class AGOpengl : AG() {
 
                 fragmentShaderId = createShader(
                     gl.FRAGMENT_SHADER,
-                    program.fragment.toNewGlslString(gles = false, version = gl.versionInt)
+                    program.fragment.toNewGlslString(gles = gles, version = gl.versionInt)
                 )
                 vertexShaderId = createShader(
                     gl.VERTEX_SHADER,
-                    program.vertex.toNewGlslString(gles = false, version = gl.versionInt)
+                    program.vertex.toNewGlslString(gles = gles, version = gl.versionInt)
                 )
                 checkErrors { gl.attachShader(id, fragmentShaderId) }
                 checkErrors { gl.attachShader(id, vertexShaderId) }
@@ -673,23 +676,20 @@ abstract class AGOpengl : AG() {
             texture.unbind()
         }
     }
+
+    inline fun <T> checkErrors(desc: String = "", callback: () -> T): T {
+        val res = callback()
+        if (checkErrors) {
+            val error = gl.getError()
+            if (error != gl.NO_ERROR) {
+                println("OpenGL error[$desc]: $error")
+                printStackTrace()
+            }
+        }
+        return res
+    }
 }
 
-inline fun <T> AGOpengl.checkErrors(desc: String = "", callback: () -> T): T = callback()
-
-/*
-inline fun <T> AGOpengl.checkErrors(desc: String = "", callback: () -> T): T {
-	val res = callback()
-	val error = gl.getError()
-	if (error != gl.NO_ERROR) {
-		Console.error("OpenGL error[$desc]: $error")
-		//System.err.println(Throwable().stackTrace)
-		Throwable().printStackTrace()
-		//throw RuntimeException("OpenGL error: $error")
-	}
-	return res
-}
-*/
 
 val KmlGl.versionString by Extra.PropertyThis<KmlGl, String> {
     getString(SHADING_LANGUAGE_VERSION)

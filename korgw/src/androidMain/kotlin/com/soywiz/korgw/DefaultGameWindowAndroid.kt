@@ -1,32 +1,31 @@
 package com.soywiz.korgw
 
+import android.content.DialogInterface
+import android.support.v7.app.AlertDialog
+import androidContext
 import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
+import com.soywiz.korio.util.redirected
+import kotlinx.coroutines.CompletableDeferred
+import kotlin.coroutines.coroutineContext
 
-actual val DefaultGameWindow: GameWindow = NodeJsGameWindow()
+actual val DefaultGameWindow: GameWindow = AndroidGameWindow()
 
-class NodeJsGameWindow : GameWindow() {
-    override val ag: AG
-        get() = super.ag
-    override val coroutineDispatcher: GameWindowCoroutineDispatcher
-        get() = super.coroutineDispatcher
-    override var fps: Int
-        get() = super.fps
-        set(value) {}
-    override var title: String
-        get() = super.title
-        set(value) {}
-    override val width: Int
-        get() = super.width
-    override val height: Int
-        get() = super.height
+class AndroidGameWindow : GameWindow() {
+    lateinit var activity: KorgwActivity
+
+    override val ag: AG by lazy { activity.ag }
+    override var fps: Int by { activity::fps }.redirected()
+    override var title: String; get() = activity.title.toString(); set(value) = run { activity.title = value }
+    override val width: Int get() = activity.window.decorView.width
+    override val height: Int get() = activity.window.decorView.height
     override var icon: Bitmap?
         get() = super.icon
         set(value) {}
     override var fullscreen: Boolean
-        get() = super.fullscreen
+        get() = true
         set(value) {}
     override var visible: Boolean
         get() = super.visible
@@ -36,7 +35,6 @@ class NodeJsGameWindow : GameWindow() {
         set(value) {}
 
     override fun setSize(width: Int, height: Int) {
-        super.setSize(width, height)
     }
 
     override suspend fun browse(url: URL) {
@@ -48,7 +46,15 @@ class NodeJsGameWindow : GameWindow() {
     }
 
     override suspend fun confirm(message: String): Boolean {
-        return super.confirm(message)
+        val deferred = CompletableDeferred<Boolean>()
+        AlertDialog.Builder(activity)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setTitle("message")
+            .setMessage(message)
+            .setPositiveButton("Yes") { dialog, which -> deferred.complete(which == DialogInterface.BUTTON_POSITIVE) }
+            .setNegativeButton("No", null)
+            .show()
+        return deferred.await()
     }
 
     override suspend fun prompt(message: String, default: String): String {
@@ -60,7 +66,9 @@ class NodeJsGameWindow : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        super.loop(entry)
+        activity = (androidContext() as KorgwActivity)
+        activity.gameWindow = this
+        entry(this)
     }
 }
 

@@ -16,9 +16,7 @@ actual object AGOpenglFactory {
 object AGFactoryAndroid : AGFactory {
     override val supportsNativeFrame: Boolean = false
 
-    override fun create(nativeControl: Any?, config: AGConfig): AG {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    override fun create(nativeControl: Any?, config: AGConfig): AG = AGAndroid(nativeControl as Context)
 
     override fun createFastWindow(title: String, width: Int, height: Int): AGWindow {
         TODO()

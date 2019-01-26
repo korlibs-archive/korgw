@@ -1,7 +1,9 @@
 dependencies {
     if (hasAndroid) {
+        androidMainApi "com.android.support:appcompat-v7:28.0.0"
         androidMainApi "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
         androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+        androidMainApi project(":kgl")
     }
 
     commonMainApi "com.soywiz:korim:$korimVersion"
