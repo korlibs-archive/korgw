@@ -1,21 +1,51 @@
 dependencies {
+    if (hasAndroid) {
+        androidMainApi "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+        androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+    }
+
+    commonMainApi project(":korag")
+    commonMainApi project(":korev")
     commonMainApi project(":korgw")
     commonMainApi project(":korag-format")
 
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6"
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6hf"
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-i586"
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
-    commonMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-i586"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6hf"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-i586"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
-    commonMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
+    commonTestApi project(":korag")
+    commonTestApi project(":korev")
+    commonTestApi project(":korgw")
+    commonTestApi project(":korag-format")
+
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6hf"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-i586"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
+    jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-i586"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6hf"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-i586"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
+    jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
+
+    ///////////
+
+    commonMainApi "com.soywiz:klock:$klockVersion"
+    commonMainApi "com.soywiz:kmem:$kmemVersion"
+    commonMainApi "com.soywiz:kds:$kdsVersion"
+    commonMainApi "com.soywiz:korio:$korioVersion"
+
+    commonMainApi "com.soywiz:korma:$kormaVersion"
+    commonMainApi "com.soywiz:korim:$korimVersion"
+
+    commonTestApi "com.soywiz:klock:$klockVersion"
+    commonTestApi "com.soywiz:kmem:$kmemVersion"
+    commonTestApi "com.soywiz:kds:$kdsVersion"
+    commonTestApi "com.soywiz:korio:$korioVersion"
+
+    commonTestApi "com.soywiz:korma:$kormaVersion"
+    commonTestApi "com.soywiz:korim:$korimVersion"
 }
 
 //apply plugin: 'application'

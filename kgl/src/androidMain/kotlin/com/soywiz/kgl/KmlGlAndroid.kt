@@ -2,10 +2,9 @@
 // https://www.khronos.org/registry/OpenGL/api/GLES2/gl2.h
 @file:Suppress("unused", "RedundantUnitReturnType", "PropertyName")
 
-package kgl
+package com.soywiz.kgl
 
 import android.opengl.GLES20.*
-import com.soywiz.kgl.*
 import com.soywiz.kmem.*
 import com.soywiz.korim.bitmap.*
 

@@ -1,7 +1,20 @@
 package com.soywiz.korui.light
 
-import com.soywiz.korio.android.KorioActivity
+import android.app.Activity
+import android.os.Bundle
+import android.os.PersistableBundle
+import com.soywiz.korio.Korio
 
-open class KoruiActivity : KorioActivity() {
-	lateinit var rootLayout: RootKoruiAbsoluteLayout
+open class KoruiActivity : Activity() {
+    lateinit var rootLayout: RootKoruiAbsoluteLayout
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Korio(this) {
+            main()
+        }
+    }
+
+    open suspend fun main() {
+    }
 }

@@ -1,8 +1,16 @@
 dependencies {
     //androidMainCompileOnly 'com.google.android:android:4.1.1.4'
 
-    commonMainApi "com.soywiz:korim:$korimVersion"
+    if (hasAndroid) {
+        //androidMainApi "com.soywiz:korim-android:$korimVersion"
+    }
+
+    commonMainApi "com.soywiz:klock:$klockVersion"
+    commonMainApi "com.soywiz:kmem:$kmemVersion"
+    commonMainApi "com.soywiz:kds:$kdsVersion"
+    commonMainApi "com.soywiz:korio:$korioVersion"
     commonMainApi "com.soywiz:korma:$kormaVersion"
+    commonMainApi "com.soywiz:korim:$korimVersion"
 
     jvmMainApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion"
     jvmMainApi "org.jogamp.jogl:jogl-all:$joglVersion"
