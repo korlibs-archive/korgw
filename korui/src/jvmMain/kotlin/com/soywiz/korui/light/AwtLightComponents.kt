@@ -551,7 +551,7 @@ class AwtLightComponents : LightComponents() {
 			}
 			LightProperty.BGCOLOR -> {
 				val v = key[value]
-				(c as? Component)?.background = Color(v.rgba, true)
+				(c as? Component)?.background = Color(v.value, true)
 			}
 			LightProperty.PROGRESS_CURRENT -> {
 				(c as? JProgressBar)?.value = key[value]

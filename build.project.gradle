@@ -1,7 +1,0 @@
-(new File(projectDir, "korui/src/commonMain/kotlin/com/soywiz/korui/internal/KoruiVersion.kt")).with {
-    parentFile.mkdirs()
-    String newText = "package com.soywiz.korui.internal\n\ninternal const val KORUI_VERSION = \"$projectVersion\""
-    if (it.text != newText) {
-        it.text = newText
-    }
-}

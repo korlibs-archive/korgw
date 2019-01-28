@@ -558,7 +558,7 @@ abstract class AGOpengl : AG() {
                     //println("BMP: Bitmap32")
                     //val abmp: Bitmap32 = bmp
                     val mem = FBuffer(abmp.area * 4)
-                    arraycopy(abmp.data.array, 0, mem.arrayInt, 0, abmp.area)
+                    arraycopy(abmp.data.ints, 0, mem.arrayInt, 0, abmp.area)
                     @Suppress("USELESS_CAST")
                     return mem
                 }
@@ -651,7 +651,7 @@ abstract class AGOpengl : AG() {
                     gl.RGBA, gl.UNSIGNED_BYTE, buffer
                 )
             }
-            buffer.getAlignedArrayInt32(0, bitmap.data.array, 0, bitmap.area)
+            buffer.getAlignedArrayInt32(0, bitmap.data.ints, 0, bitmap.area)
             //println("readColor.HASH:" + bitmap.computeHash())
         }
     }

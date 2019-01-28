@@ -93,6 +93,6 @@ class AGWebgl(val config: AGConfig, val glDecorator: (KmlGl) -> KmlGl = { it }) 
 	}
 
 	override fun prepareUploadNativeTexture(bmp: NativeImage) {
-		gl.pixelStorei(UNPACK_PREMULTIPLY_ALPHA_WEBGL, bmp.premult.toInt())
+		gl.pixelStorei(UNPACK_PREMULTIPLY_ALPHA_WEBGL, bmp.premultiplied.toInt())
 	}
 }

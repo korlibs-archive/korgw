@@ -1,20 +1,37 @@
+/*
 dependencies {
     if (hasAndroid) {
+        androidMainApi "com.android.support:appcompat-v7:28.0.0"
         androidMainApi "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
         androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+        androidMainApi project(":kgl")
     }
 
-    //androidMainCompileOnly 'com.google.android:android:4.1.1.4'
     commonMainApi "com.soywiz:korim:$korimVersion"
     commonMainApi project(":korag")
     commonMainApi project(":korag-opengl")
     commonMainApi project(":korev")
 
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-amd64"
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6"
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-armv6hf"
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-linux-i586"
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-macosx-universal"
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-amd64"
+    jvmTestApi "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-windows-i586"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-amd64"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-armv6hf"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-linux-i586"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-macosx-universal"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-amd64"
+    jvmTestApi "org.jogamp.jogl:jogl-all:$joglVersion:natives-windows-i586"
+
+    //////////////////
+
     commonTestApi project(":korag")
     commonTestApi project(":korag-opengl")
     commonTestApi project(":korev")
-
-    /////////////////////
 
     commonMainApi "com.soywiz:klock:$klockVersion"
     commonMainApi "com.soywiz:kmem:$kmemVersion"
@@ -32,6 +49,7 @@ dependencies {
     commonTestApi "com.soywiz:korma:$kormaVersion"
     commonTestApi "com.soywiz:korim:$korimVersion"
 
+
 }
 
 kotlin {
@@ -45,3 +63,4 @@ kotlin {
         }
     }
 }
+*/

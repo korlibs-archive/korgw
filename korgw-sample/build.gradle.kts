@@ -1,3 +1,4 @@
+/*
 dependencies {
     if (hasAndroid) {
         androidMainApi "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
@@ -128,3 +129,4 @@ tasks.create("jsWeb", Task) {
 
 }
 
+*/

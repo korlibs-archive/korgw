@@ -2,7 +2,7 @@ package com.soywiz.korgw
 
 import android.content.DialogInterface
 import android.support.v7.app.AlertDialog
-import androidContext
+import com.soywiz.korio.android.androidContext
 import com.soywiz.korag.AG
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.file.VfsFile

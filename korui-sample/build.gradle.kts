@@ -1,3 +1,4 @@
+/*
 dependencies {
     if (hasAndroid) {
         androidMainApi "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
@@ -54,4 +55,4 @@ dependencies {
     commonTestApi "com.soywiz:korma:$kormaVersion"
     commonTestApi "com.soywiz:korim:$korimVersion"
 }
-
+*/
