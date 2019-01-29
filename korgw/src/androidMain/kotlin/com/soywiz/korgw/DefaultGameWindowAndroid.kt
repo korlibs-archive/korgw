@@ -9,11 +9,12 @@ import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
 import com.soywiz.korio.util.redirected
 import kotlinx.coroutines.CompletableDeferred
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 actual val DefaultGameWindow: GameWindow = AndroidGameWindow()
 
-class AndroidGameWindow : GameWindow() {
+class AndroidGameWindow() : GameWindow() {
     lateinit var activity: KorgwActivity
 
     override val ag: AG by lazy { activity.ag }
@@ -65,7 +66,9 @@ class AndroidGameWindow : GameWindow() {
         return super.openFileDialog(filter, write, multi)
     }
 
+    lateinit var coroutineContext: CoroutineContext
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+        this.coroutineContext = kotlin.coroutines.coroutineContext
         activity = (androidContext() as KorgwActivity)
         activity.gameWindow = this
         entry(this)
