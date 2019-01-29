@@ -358,7 +358,7 @@ class HtmlLightComponents : LightComponents() {
 								else -> Key.UNKNOWN
 							}
 						}
-						this.char = me.charCode.toChar()
+						this.character = me.charCode.toChar()
 						this.type = when (me.type) {
 							"keydown" -> KeyEvent.Type.DOWN
 							"keyup" -> KeyEvent.Type.UP

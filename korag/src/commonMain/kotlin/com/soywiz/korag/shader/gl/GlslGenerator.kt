@@ -22,7 +22,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		VarType.TextureUnit -> "sampler2D"
 		else -> {
 			when (type.kind) {
-				VarKind.BYTE, VarKind.UNSIGNED_BYTE, VarKind.SHORT, VarKind.UNSIGNED_SHORT, VarKind.FLOAT -> {
+				VarKind.TBYTE, VarKind.TUNSIGNED_BYTE, VarKind.TSHORT, VarKind.TUNSIGNED_SHORT, VarKind.TFLOAT -> {
 					when (type.elementCount) {
 						1 -> "float"
 						2 -> "vec2"
@@ -31,7 +31,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 						else -> errorType(type)
 					}
 				}
-				VarKind.INT -> {
+				VarKind.TINT -> {
 					when (type.elementCount) {
 						1 -> "int"
 						2 -> "ivec2"

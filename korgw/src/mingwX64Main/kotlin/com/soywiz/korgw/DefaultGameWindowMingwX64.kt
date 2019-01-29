@@ -236,7 +236,7 @@ class WindowsGameWindow : GameWindow() {
             this.id = 0
             this.key = KEYS[keyCode] ?: com.soywiz.korev.Key.UNKNOWN
             this.keyCode = keyCode
-            this.char = keyCode.toChar()
+            this.character = keyCode.toChar()
         })
     }
 

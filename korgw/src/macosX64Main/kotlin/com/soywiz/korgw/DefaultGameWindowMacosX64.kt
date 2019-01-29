@@ -188,7 +188,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
                     this.id = 0
                     this.key = key
                     this.keyCode = keyCode
-                    this.char = char
+                    this.character = char
                 })
             }
 

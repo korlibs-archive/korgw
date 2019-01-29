@@ -251,7 +251,7 @@ fun glutKeyUpDown(key: UByte, pressed: Boolean) {
         this.id = 0
         this.key = key
         this.keyCode = keyCode
-        this.char = char
+        this.character = char
     })
 }
 

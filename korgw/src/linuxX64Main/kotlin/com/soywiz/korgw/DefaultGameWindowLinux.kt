@@ -63,7 +63,7 @@ class GlutGameWindow : GameWindow() {
                 }
             }
         }
-    override var quality: Quality = Quality.AUTO
+    override var quality: Quality = Quality.AUTOMATIC
 
     override fun setSize(width: Int, height: Int) {
         widthInternal = width
@@ -169,7 +169,7 @@ class GlutGameWindow : GameWindow() {
             this.id = 0
             this.key = key
             this.keyCode = keyCode
-            this.char = char
+            this.character = char
         })
     }
 }

@@ -220,7 +220,7 @@ internal actual suspend fun KoruiWrap(entry: suspend (KoruiContext) -> Unit) = a
                 this.id = 0
                 this.key = key
                 this.keyCode = keyCode
-                this.char = char
+                this.character = char
             })
         }
 

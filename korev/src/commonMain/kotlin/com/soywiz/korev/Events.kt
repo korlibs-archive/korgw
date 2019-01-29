@@ -54,7 +54,8 @@ data class KeyEvent(
     var id: Int = 0,
     var key: Key = Key.UP,
     var keyCode: Int = 0,
-    var char: Char = '\u0000'
+    //var char: Char = '\u0000' // @TODO: This caused problem on Kotlin/Native because it is a keyword (framework H)
+    var character: Char = '\u0000'
 ) : Event() {
 	enum class Type { UP, DOWN, TYPE }
 }

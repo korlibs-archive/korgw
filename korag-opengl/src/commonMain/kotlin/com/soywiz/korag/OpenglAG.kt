@@ -366,12 +366,12 @@ abstract class AGOpengl : AG() {
 
     val VarType.glElementType: Int
         get() = when (this.kind) {
-            VarKind.BYTE -> gl.BYTE
-            VarKind.UNSIGNED_BYTE -> gl.UNSIGNED_BYTE
-            VarKind.SHORT -> gl.SHORT
-            VarKind.UNSIGNED_SHORT -> gl.UNSIGNED_SHORT
-            VarKind.INT -> gl.UNSIGNED_INT
-            VarKind.FLOAT -> gl.FLOAT
+            VarKind.TBYTE -> gl.BYTE
+            VarKind.TUNSIGNED_BYTE -> gl.UNSIGNED_BYTE
+            VarKind.TSHORT -> gl.SHORT
+            VarKind.TUNSIGNED_SHORT -> gl.UNSIGNED_SHORT
+            VarKind.TINT -> gl.UNSIGNED_INT
+            VarKind.TFLOAT -> gl.FLOAT
         }
 
     private val programs = HashMap<Program, GlProgram>()

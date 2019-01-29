@@ -8,7 +8,6 @@ import com.soywiz.korio.file.*
 import com.soywiz.korio.net.*
 import com.soywiz.korio.util.*
 import kotlinx.coroutines.*
-import org.w3c.dom.*
 import org.w3c.dom.events.*
 import org.w3c.dom.events.MouseEvent
 import kotlin.browser.*
@@ -43,7 +42,7 @@ class BrowserGameWindow : GameWindow() {
         onResized()
     }
 
-    override var quality: Quality = Quality.AUTO
+    override var quality: Quality = Quality.AUTOMATIC
         set(value) {
             if (field != value) {
                 field = value
@@ -126,7 +125,7 @@ class BrowserGameWindow : GameWindow() {
                     else -> Key.UNKNOWN
                 }
             }
-            this.char = me.charCode.toChar()
+            this.character = me.charCode.toChar()
         })
     }
 

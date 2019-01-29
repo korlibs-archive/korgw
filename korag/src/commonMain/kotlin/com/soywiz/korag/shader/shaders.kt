@@ -10,80 +10,81 @@ import com.soywiz.kmem.*
 import com.soywiz.korio.lang.*
 
 enum class VarKind(val bytesSize: Int) {
-	BYTE(1), UNSIGNED_BYTE(1), SHORT(2), UNSIGNED_SHORT(2), INT(4), FLOAT(4)
+    //BYTE(1), UNSIGNED_BYTE(1), SHORT(2), UNSIGNED_SHORT(2), INT(4), FLOAT(4) // @TODO: This cause problems on Kotlin/Native Objective-C header.h
+    TBYTE(1), TUNSIGNED_BYTE(1), TSHORT(2), TUNSIGNED_SHORT(2), TINT(4), TFLOAT(4)
 }
 
 enum class VarType(val kind: VarKind, val elementCount: Int, val isMatrix: Boolean = false) {
-	VOID(VarKind.BYTE, elementCount = 0),
+	TVOID(VarKind.TBYTE, elementCount = 0),
 
-	Mat2(VarKind.FLOAT, elementCount = 4, isMatrix = true),
-	Mat3(VarKind.FLOAT, elementCount = 9, isMatrix = true),
-	Mat4(VarKind.FLOAT, elementCount = 16, isMatrix = true),
+	Mat2(VarKind.TFLOAT, elementCount = 4, isMatrix = true),
+	Mat3(VarKind.TFLOAT, elementCount = 9, isMatrix = true),
+	Mat4(VarKind.TFLOAT, elementCount = 16, isMatrix = true),
 
-	TextureUnit(VarKind.INT, elementCount = 1),
+	TextureUnit(VarKind.TINT, elementCount = 1),
 
-	Int1(VarKind.INT, elementCount = 1),
+	Int1(VarKind.TINT, elementCount = 1),
 
-	Float1(VarKind.FLOAT, elementCount = 1),
-	Float2(VarKind.FLOAT, elementCount = 2),
-	Float3(VarKind.FLOAT, elementCount = 3),
-	Float4(VarKind.FLOAT, elementCount = 4),
+	Float1(VarKind.TFLOAT, elementCount = 1),
+	Float2(VarKind.TFLOAT, elementCount = 2),
+	Float3(VarKind.TFLOAT, elementCount = 3),
+	Float4(VarKind.TFLOAT, elementCount = 4),
 
-	Short1(VarKind.SHORT, elementCount = 1),
-	Short2(VarKind.SHORT, elementCount = 2),
-	Short3(VarKind.SHORT, elementCount = 3),
-	Short4(VarKind.SHORT, elementCount = 4),
+	Short1(VarKind.TSHORT, elementCount = 1),
+	Short2(VarKind.TSHORT, elementCount = 2),
+	Short3(VarKind.TSHORT, elementCount = 3),
+	Short4(VarKind.TSHORT, elementCount = 4),
 
-	Bool1(VarKind.UNSIGNED_BYTE, elementCount = 1),
+	Bool1(VarKind.TUNSIGNED_BYTE, elementCount = 1),
 
-	Byte4(VarKind.UNSIGNED_BYTE, elementCount = 4), // OLD: Is this right?
+	Byte4(VarKind.TUNSIGNED_BYTE, elementCount = 4), // OLD: Is this right?
 
-	SByte1(VarKind.BYTE, elementCount = 1),
-	SByte2(VarKind.BYTE, elementCount = 2),
-	SByte3(VarKind.BYTE, elementCount = 3),
-	SByte4(VarKind.BYTE, elementCount = 4),
+	SByte1(VarKind.TBYTE, elementCount = 1),
+	SByte2(VarKind.TBYTE, elementCount = 2),
+	SByte3(VarKind.TBYTE, elementCount = 3),
+	SByte4(VarKind.TBYTE, elementCount = 4),
 
-	UByte1(VarKind.UNSIGNED_BYTE, elementCount = 1),
-	UByte2(VarKind.UNSIGNED_BYTE, elementCount = 2),
-	UByte3(VarKind.UNSIGNED_BYTE, elementCount = 3),
-	UByte4(VarKind.UNSIGNED_BYTE, elementCount = 4),
+	UByte1(VarKind.TUNSIGNED_BYTE, elementCount = 1),
+	UByte2(VarKind.TUNSIGNED_BYTE, elementCount = 2),
+	UByte3(VarKind.TUNSIGNED_BYTE, elementCount = 3),
+	UByte4(VarKind.TUNSIGNED_BYTE, elementCount = 4),
 
-	SShort1(VarKind.SHORT, elementCount = 1),
-	SShort2(VarKind.SHORT, elementCount = 2),
-	SShort3(VarKind.SHORT, elementCount = 3),
-	SShort4(VarKind.SHORT, elementCount = 4),
+	SShort1(VarKind.TSHORT, elementCount = 1),
+	SShort2(VarKind.TSHORT, elementCount = 2),
+	SShort3(VarKind.TSHORT, elementCount = 3),
+	SShort4(VarKind.TSHORT, elementCount = 4),
 
-	UShort1(VarKind.UNSIGNED_SHORT, elementCount = 1),
-	UShort2(VarKind.UNSIGNED_SHORT, elementCount = 2),
-	UShort3(VarKind.UNSIGNED_SHORT, elementCount = 3),
-	UShort4(VarKind.UNSIGNED_SHORT, elementCount = 4),
+	UShort1(VarKind.TUNSIGNED_SHORT, elementCount = 1),
+	UShort2(VarKind.TUNSIGNED_SHORT, elementCount = 2),
+	UShort3(VarKind.TUNSIGNED_SHORT, elementCount = 3),
+	UShort4(VarKind.TUNSIGNED_SHORT, elementCount = 4),
 
-	SInt1(VarKind.INT, elementCount = 1),
-	SInt2(VarKind.INT, elementCount = 2),
-	SInt3(VarKind.INT, elementCount = 3),
-	SInt4(VarKind.INT, elementCount = 4),
+	SInt1(VarKind.TINT, elementCount = 1),
+	SInt2(VarKind.TINT, elementCount = 2),
+	SInt3(VarKind.TINT, elementCount = 3),
+	SInt4(VarKind.TINT, elementCount = 4),
 	;
 
 	val bytesSize: Int = kind.bytesSize * elementCount
 
 	companion object {
 		fun BYTE(count: Int) =
-			when (count) { 0 -> VOID; 1 -> SByte1; 2 -> SByte2; 3 -> SByte3; 4 -> SByte4; else -> invalidOp; }
+			when (count) { 0 -> TVOID; 1 -> SByte1; 2 -> SByte2; 3 -> SByte3; 4 -> SByte4; else -> invalidOp; }
 
 		fun UBYTE(count: Int) =
-			when (count) { 0 -> VOID; 1 -> UByte1; 2 -> UByte2; 3 -> UByte3; 4 -> UByte4; else -> invalidOp; }
+			when (count) { 0 -> TVOID; 1 -> UByte1; 2 -> UByte2; 3 -> UByte3; 4 -> UByte4; else -> invalidOp; }
 
 		fun SHORT(count: Int) =
-			when (count) { 0 -> VOID; 1 -> SShort1; 2 -> SShort2; 3 -> SShort3; 4 -> SShort4; else -> invalidOp; }
+			when (count) { 0 -> TVOID; 1 -> SShort1; 2 -> SShort2; 3 -> SShort3; 4 -> SShort4; else -> invalidOp; }
 
 		fun USHORT(count: Int) =
-			when (count) { 0 -> VOID; 1 -> UShort1; 2 -> UShort2; 3 -> UShort3; 4 -> UShort4; else -> invalidOp; }
+			when (count) { 0 -> TVOID; 1 -> UShort1; 2 -> UShort2; 3 -> UShort3; 4 -> UShort4; else -> invalidOp; }
 
 		fun INT(count: Int) =
-			when (count) { 0 -> VOID; 1 -> SInt1; 2 -> SInt2; 3 -> SInt3; 4 -> SInt4; else -> invalidOp; }
+			when (count) { 0 -> TVOID; 1 -> SInt1; 2 -> SInt2; 3 -> SInt3; 4 -> SInt4; else -> invalidOp; }
 
 		fun FLOAT(count: Int) =
-			when (count) { 0 -> VOID; 1 -> Float1; 2 -> Float2; 3 -> Float3; 4 -> Float4; else -> invalidOp; }
+			when (count) { 0 -> TVOID; 1 -> Float1; 2 -> Float2; 3 -> Float3; 4 -> Float4; else -> invalidOp; }
 	}
 
 }
