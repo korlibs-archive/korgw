@@ -81,13 +81,13 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     protected val dropFileEvent = DropFileEvent()
 
     open var fps: Int = 60
-    open var title: String = ""
+    open var title: String get() = ""; set(value) = Unit
     open val width: Int = 0
     open val height: Int = 0
     open var icon: Bitmap? = null
     open var fullscreen: Boolean = false
     open var visible: Boolean = false
-    open var quality: Quality = Quality.AUTOMATIC
+    open var quality: Quality get() = Quality.AUTOMATIC; set(value) = Unit
 
     val timePerFrame: TimeSpan get() = (1000.0 / fps).milliseconds
 
@@ -112,11 +112,29 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
             entry()
         }
         while (true) {
-            coroutineDispatcher.executePending()
-            ag.onRender(ag)
-            dispatch(renderEvent)
+            frame()
             delay(16.milliseconds)
         }
+    }
+
+    open fun frame() {
+        coroutineDispatcher.executePending()
+        ag.onRender(ag)
+        dispatch(renderEvent)
+    }
+
+    fun dispatchInitEvent() {
+        dispatch(initEvent)
+    }
+
+    fun dispatchReshapeEvent(x: Int, y: Int, width: Int, height: Int) {
+        ag.setViewport(0, 0, width, height)
+        dispatch(reshapeEvent.apply {
+            this.x = x
+            this.y = y
+            this.width = width
+            this.height = height
+        })
     }
 }
 
