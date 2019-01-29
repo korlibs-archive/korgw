@@ -87,11 +87,16 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     open var icon: Bitmap? = null
     open var fullscreen: Boolean = false
     open var visible: Boolean = false
-    open var quality: Quality = Quality.AUTO
+    open var quality: Quality = Quality.AUTOMATIC
 
     val timePerFrame: TimeSpan get() = (1000.0 / fps).milliseconds
 
-    enum class Quality { PERFORMANCE, QUALITY, AUTO }
+    enum class Quality {
+        PERFORMANCE,
+        QUALITY,
+        //AUTO // @TODO: FAILS ON NATIVE! Because converted into .auto that is a C/C++/Objective-C keyword
+        AUTOMATIC
+    }
 
     open fun setSize(width: Int, height: Int) {
     }
