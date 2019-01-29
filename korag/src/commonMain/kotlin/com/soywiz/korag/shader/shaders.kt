@@ -139,8 +139,8 @@ object Output : Variable("out", VarType.Float4) {
 }
 
 class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
-	val uniforms by lazy { vertex.uniforms + fragment.uniforms }
-	val attributes by lazy { vertex.attributes + fragment.attributes }
+	val uniforms = vertex.uniforms + fragment.uniforms
+	val attributes = vertex.attributes + fragment.attributes
 
 	override fun close() {
 	}
@@ -405,21 +405,17 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 }
 
 open class Shader(val type: ShaderType, val stm: Program.Stm) {
-	val uniforms by lazy {
-		val out = LinkedHashSet<Uniform>()
-		object : Program.Visitor<Unit>(Unit) {
-			override fun visit(uniform: Uniform) = run { out += uniform }
-		}.visit(stm)
-		out.toSet()
-	}
+	val uniforms = LinkedHashSet<Uniform>().also { out ->
+        object : Program.Visitor<Unit>(Unit) {
+            override fun visit(uniform: Uniform) = run { out += uniform }
+        }.visit(stm)
+    }.toSet()
 
-	val attributes by lazy {
-		val out = LinkedHashSet<Attribute>()
-		object : Program.Visitor<Unit>(Unit) {
-			override fun visit(attribute: Attribute) = run { out += attribute }
-		}.visit(stm)
-		out.toSet()
-	}
+	val attributes = LinkedHashSet<Attribute>().also { out ->
+        object : Program.Visitor<Unit>(Unit) {
+            override fun visit(attribute: Attribute) = run { out += attribute }
+        }.visit(stm)
+    }.toSet()
 }
 
 open class VertexShader(stm: Program.Stm) : Shader(ShaderType.VERTEX, stm)
