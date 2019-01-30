@@ -119,7 +119,7 @@ class AGAwt(val config: AGConfig, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAw
 				ready()
 			}
 			onRender(awtBase)
-			checkErrors { gl.flush() }
+			gl.flush()
 
 			//gl.glClearColor(1f, 1f, 0f, 1f)
 			//gl.glClear(GL.GL_COLOR_BUFFER_BIT)

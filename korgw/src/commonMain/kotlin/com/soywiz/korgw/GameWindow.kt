@@ -120,11 +120,32 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     open fun frame() {
         coroutineDispatcher.executePending()
         ag.onRender(ag)
-        dispatch(renderEvent)
+        dispatchRenderEvent()
     }
 
     fun dispatchInitEvent() {
         dispatch(initEvent)
+    }
+
+    fun dispatchDisposeEvent() {
+        dispatch(disposeEvent)
+    }
+
+    fun dispatchRenderEvent() {
+        dispatch(renderEvent)
+    }
+
+    fun dispatchDropfileEvent(type: DropFileEvent.Type, files: List<VfsFile>?) {
+        dispatch(dropFileEvent.apply {
+            this.type = type
+            this.files = files
+        })
+    }
+
+    fun dispatchFullscreenEvent(fullscreen: Boolean) {
+        dispatch(fullScreenEvent.apply {
+            this.fullscreen = fullscreen
+        })
     }
 
     fun dispatchReshapeEvent(x: Int, y: Int, width: Int, height: Int) {
@@ -136,6 +157,50 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
             this.height = height
         })
     }
+
+    fun dispatchKeyEvent(type: KeyEvent.Type, id: Int, character: Char, key: Key, keyCode: Int) {
+        dispatch(keyEvent.apply {
+            this.id = id
+            this.character = character
+            this.key = key
+            this.keyCode = keyCode
+            this.type = type
+        })
+    }
+
+    fun dispatchMouseEvent(
+        type: MouseEvent.Type, id: Int, x: Int, y: Int, button: MouseButton, buttons: Int,
+        scrollDeltaX: Double, scrollDeltaY: Double, scrollDeltaZ: Double,
+        isShiftDown: Boolean, isCtrlDown: Boolean, isAltDown: Boolean, isMetaDown: Boolean,
+        scaleCoords: Boolean
+    ) {
+        dispatch(mouseEvent.apply {
+            this.type = type
+            this.id = id
+            this.x = x
+            this.y = y
+            this.button = button
+            this.buttons = buttons
+            this.scrollDeltaX = scrollDeltaX
+            this.scrollDeltaY = scrollDeltaY
+            this.scrollDeltaZ = scrollDeltaZ
+            this.isShiftDown = isShiftDown
+            this.isCtrlDown = isCtrlDown
+            this.isAltDown = isAltDown
+            this.isMetaDown = isMetaDown
+            this.scaleCoords = scaleCoords
+        })
+    }
+
+    //fun dispatchTouchEvent(type: TouchEvent.Type, id: Int, character: Char, key: Key, keyCode: Int) {
+    //    dispatch(touchEvent.apply {
+    //        this.id = id
+    //        this.character = character
+    //        this.key = key
+    //        this.keyCode = keyCode
+    //        this.type = type
+    //    })
+    //}
 }
 
 fun GameWindow.mainLoop(entry: suspend GameWindow.() -> Unit) = Korio { loop(entry) }

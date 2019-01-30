@@ -47,7 +47,6 @@ abstract class KorgwActivity : Activity() {
             override val gl: KmlGl = KmlGlAndroid()
             override val nativeComponent: Any get() = this@KorgwActivity
             override val gles: Boolean = true
-            override val checkErrors: Boolean = true
 
             override fun repaint() {
                 mGLView.invalidate()

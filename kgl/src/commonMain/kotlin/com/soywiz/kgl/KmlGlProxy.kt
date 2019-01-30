@@ -1449,6 +1449,15 @@ class LogKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {
 	override fun before(name: String, params: String): Unit = run { println("before: $name ($params)") }
 	override fun after(name: String, params: String, result: String): Unit = run { println("after: $name ($params) = $result") }
 }
-class CheckErrorsKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {
-	override fun after(name: String, params: String, result: String): Unit = run { val error = parent.getError(); if (error != NO_ERROR) { println("glError: $error ${getErrorString(error)} calling $name($params) = $result"); throw RuntimeException("glError: $error ${getErrorString(error)} calling $name($params) = $result") } }
+class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) : KmlGlProxy(parent) {
+	override fun after(name: String, params: String, result: String): Unit {
+        val error = parent.getError()
+        if (error != NO_ERROR) {
+            println("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
+            if (throwException) {
+                throw RuntimeException("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
+            }
+        }
+    }
+    override fun getError(): Int = parent.getError()
 }

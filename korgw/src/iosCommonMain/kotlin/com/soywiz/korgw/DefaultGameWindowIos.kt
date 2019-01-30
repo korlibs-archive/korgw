@@ -12,7 +12,9 @@ import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 
 class IosGameWindow : GameWindow() {
-    override val ag: AG = AGNative(gles = true)
+    override val ag: AG = object : AGNative(gles = true) {
+        override val gl: com.soywiz.kgl.KmlGl = com.soywiz.kgl.CheckErrorsKmlGlProxy(com.soywiz.kgl.KmlGlNative())
+    }
 
     //override var fps: Int get() = 60; set(value) = Unit
     //override var title: String get() = ""; set(value) = Unit
