@@ -31,22 +31,82 @@ data class Touch(
 	var active: Boolean = false,
 	var id: Int = -1,
 	var startTime: DateTime = DateTime.EPOCH,
-	var currentTime: DateTime = DateTime.EPOCH,
-	var start: Point = Point(),
-	var current: Point = Point()
+    var currentTime: DateTime = DateTime.EPOCH,
+	val start: Point = Point(),
+	val current: Point = Point()
 ) : Extra by Extra.Mixin() {
 	companion object {
 		val dummy = Touch(-1)
 	}
+
+    fun copyFrom(other: Touch) {
+        this.active = other.active
+        this.id = other.id
+        this.startTime = other.startTime
+        this.start.copyFrom(other.start)
+        this.current.copyFrom(other.current)
+    }
 }
 
 data class TouchEvent(
     var type: Type = Type.START,
     var screen: Int = 0,
-    var touch: Touch = Touch(),
+    var startTime: DateTime = DateTime.EPOCH,
+    var currentTime: DateTime = DateTime.EPOCH,
     var scaleCoords: Boolean = true
 ) : Event() {
-	enum class Type { START, END, MOVE }
+    companion object {
+        val MAX_TOUCHES = 10
+    }
+    private val bufferTouches = Array(MAX_TOUCHES) { Touch(it) }
+    private val _touches = LinkedHashSet<Touch>()
+    val touches: Set<Touch> get() = _touches
+
+    fun startFrame(type: Type) {
+        this.type = type
+        if (type == com.soywiz.korev.TouchEvent.Type.START) {
+            startTime = DateTime.now()
+            for (touch in bufferTouches) touch.id = -1
+        }
+        currentTime = DateTime.now()
+        if (type != Type.END) {
+            for (touch in bufferTouches) touch.active = false
+            _touches.clear()
+        }
+    }
+
+    fun getTouchById(id: Int) = bufferTouches.firstOrNull { it.id == id }
+        ?: bufferTouches.firstOrNull { it.id == -1 }
+        ?: bufferTouches.firstOrNull { !it.active }
+        ?: bufferTouches[MAX_TOUCHES - 1]
+
+    fun touch(id: Int, x: Double, y: Double) {
+        val touch = getTouchById(id)
+        touch.id = id
+        touch.active = true
+        touch.currentTime = currentTime
+        touch.current.x = x
+        touch.current.y = y
+        if (type == Type.START) {
+            touch.startTime = currentTime
+            touch.start.x = x
+            touch.start.y = y
+        }
+        _touches.add(touch)
+    }
+
+    fun copyFrom(other: TouchEvent) {
+        this.type = other.type
+        this.screen = other.screen
+        this.startTime = other.startTime
+        this.currentTime = other.currentTime
+        this.scaleCoords = other.scaleCoords
+        for (n in 0 until MAX_TOUCHES) {
+            bufferTouches[n].copyFrom(other.bufferTouches[n])
+        }
+    }
+
+    enum class Type { START, END, MOVE }
 }
 
 data class KeyEvent(

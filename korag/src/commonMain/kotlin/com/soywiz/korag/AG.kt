@@ -56,7 +56,6 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	val onReady: Deferred<AG> = _onReadyDeferred
 	val onRender = Signal<AG>()
-	val onResized = Signal<Unit>()
 
 	open fun offscreenRendering(callback: () -> Unit) {
 		callback()
@@ -70,7 +69,6 @@ abstract class AG : Extra by Extra.Mixin() {
 		//printStackTrace()
 		mainRenderBuffer.setSize(width, height)
 		setViewport(0, 0, width, height)
-		onResized(Unit)
 	}
 
 	open fun dispose() {

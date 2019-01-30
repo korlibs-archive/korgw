@@ -3,8 +3,11 @@ package com.soywiz.korgw
 import android.app.Activity
 import android.opengl.GLSurfaceView
 import android.os.Bundle
+import android.support.v4.util.Pools
 import android.util.Log
 import android.view.MotionEvent
+import com.soywiz.kds.Pool
+import com.soywiz.kgl.CheckErrorsKmlGlProxy
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.KmlGlAndroid
 import com.soywiz.klock.DateTime
@@ -26,13 +29,10 @@ abstract class KorgwActivity : Activity() {
     protected val initEvent = InitEvent()
     protected val disposeEvent = DisposeEvent()
     protected val fullScreenEvent = FullScreenEvent()
-    protected val reshapeEvent = ReshapeEvent()
     protected val keyEvent = KeyEvent()
     protected val mouseEvent = MouseEvent()
     protected val touchEvent = TouchEvent()
     protected val dropFileEvent = DropFileEvent()
-
-    val touches = Array(10) { Touch(it).apply { active = false } }
 
     //val touchEvents = Pool { TouchEvent() }
 
@@ -44,7 +44,8 @@ abstract class KorgwActivity : Activity() {
 
         //ag = AGOpenglFactory.create(this).create(this, AGConfig())
         ag = object : AGOpengl() {
-            override val gl: KmlGl = KmlGlAndroid()
+            override val gl: KmlGl = CheckErrorsKmlGlProxy(KmlGlAndroid())
+            //override val gl: KmlGl = KmlGlAndroid()
             override val nativeComponent: Any get() = this@KorgwActivity
             override val gles: Boolean = true
 
@@ -82,12 +83,7 @@ abstract class KorgwActivity : Activity() {
                         if (surfaceChanged) {
                             surfaceChanged = false
                             ag.setViewport(0, 0, width, height)
-                            gameWindow?.dispatch(reshapeEvent.apply {
-                                this.x = 0
-                                this.y = 0
-                                this.width = view.width
-                                this.height = view.height
-                            })
+                            gameWindow?.dispatchReshapeEvent(0, 0, view.width, view.height)
                         }
 
                         //GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
@@ -104,33 +100,38 @@ abstract class KorgwActivity : Activity() {
                 })
             }
 
+            private val touchesEventPool = Pool<TouchEvent> { TouchEvent() }
+            private val coords = MotionEvent.PointerCoords()
+            private var lastTouchEvent: TouchEvent = TouchEvent()
+
             override fun onTouchEvent(ev: MotionEvent): Boolean {
                 val gameWindow = gameWindow ?: return false
-                val eventActionIndex = ev.actionIndex
-                val eventAction = ev.action
-                val eventX = ev.x
-                val eventY = ev.y
-                //println("onTouchEvent: $eventX, $eventY")
-                gameWindow.coroutineDispatcher.dispatch(gameWindow.coroutineContext, Runnable {
-                    gameWindow.dispatch(touchEvent.apply {
-                        this.touch = touches[eventActionIndex]
-                        this.type = when (eventAction) {
+
+                val currentTouchEvent = synchronized(touchesEventPool) {
+                    val currentTouchEvent = touchesEventPool.alloc()
+                    currentTouchEvent.copyFrom(lastTouchEvent)
+
+                    currentTouchEvent.startFrame(
+                        when (ev.action) {
                             MotionEvent.ACTION_DOWN -> TouchEvent.Type.START
                             MotionEvent.ACTION_MOVE -> TouchEvent.Type.MOVE
                             MotionEvent.ACTION_UP -> TouchEvent.Type.END
                             else -> TouchEvent.Type.END
                         }
-                        if (type == TouchEvent.Type.START) {
-                            this.touch.active = true
-                            this.touch.startTime = DateTime.now()
-                            this.touch.start.setTo(eventX, eventY)
-                        }
-                        this.touch.currentTime = DateTime.now()
-                        this.touch.current.setTo(eventX, eventY)
-                        if (type == TouchEvent.Type.END) {
-                            this.touch.active = false
-                        }
-                    })
+                    )
+
+                    for (n in 0 until ev.pointerCount) {
+                        ev.getPointerCoords(n, coords)
+                        currentTouchEvent.touch(ev.getPointerId(n), coords.x.toDouble(), coords.y.toDouble())
+                    }
+
+                    lastTouchEvent.copyFrom(currentTouchEvent)
+                    currentTouchEvent
+                }
+
+                gameWindow.coroutineDispatcher.dispatch(gameWindow.coroutineContext, Runnable {
+                    gameWindow.dispatch(currentTouchEvent)
+                    synchronized(touchesEventPool) { touchesEventPool.free(currentTouchEvent) }
                 })
                 return true
             }

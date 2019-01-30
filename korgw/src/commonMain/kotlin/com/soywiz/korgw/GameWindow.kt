@@ -74,7 +74,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     protected val initEvent = InitEvent()
     protected val disposeEvent = DisposeEvent()
     protected val fullScreenEvent = FullScreenEvent()
-    protected val reshapeEvent = ReshapeEvent()
+    private val reshapeEvent = ReshapeEvent()
     protected val keyEvent = KeyEvent()
     protected val mouseEvent = MouseEvent()
     protected val touchEvent = TouchEvent()
@@ -149,7 +149,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     }
 
     fun dispatchReshapeEvent(x: Int, y: Int, width: Int, height: Int) {
-        ag.setViewport(0, 0, width, height)
+        ag.resized(width, height)
         dispatch(reshapeEvent.apply {
             this.x = x
             this.y = y
@@ -192,15 +192,21 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
         })
     }
 
-    //fun dispatchTouchEvent(type: TouchEvent.Type, id: Int, character: Char, key: Key, keyCode: Int) {
-    //    dispatch(touchEvent.apply {
-    //        this.id = id
-    //        this.character = character
-    //        this.key = key
-    //        this.keyCode = keyCode
-    //        this.type = type
-    //    })
-    //}
+    fun dispatchTouchEventStartStart() = dispatchTouchEventStart(TouchEvent.Type.START)
+    fun dispatchTouchEventStartMove() = dispatchTouchEventStart(TouchEvent.Type.MOVE)
+    fun dispatchTouchEventStartEnd() = dispatchTouchEventStart(TouchEvent.Type.END)
+
+    fun dispatchTouchEventStart(type: TouchEvent.Type) {
+        touchEvent.startFrame(type)
+    }
+
+    fun dispatchTouchEventAddTouch(id: Int, x: Double, y: Double) {
+        touchEvent.touch(id, x, y)
+    }
+
+    fun dispatchTouchEventEnd() {
+        dispatch(touchEvent)
+    }
 }
 
 fun GameWindow.mainLoop(entry: suspend GameWindow.() -> Unit) = Korio { loop(entry) }

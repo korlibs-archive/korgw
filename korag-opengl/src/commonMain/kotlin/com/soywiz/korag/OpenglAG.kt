@@ -25,6 +25,7 @@ abstract class AGOpengl : AG() {
 
     override fun setViewport(x: Int, y: Int, width: Int, height: Int) {
         super.setViewport(x, y, width, height)
+        //println("setViewport: $x, $y, $width, $height")
         if (isGlAvailable) {
             gl.viewport(x, y, width, height)
         }
@@ -54,6 +55,8 @@ abstract class AGOpengl : AG() {
         val framebuffer = FBuffer(4)
 
         override fun set() {
+            //val width = this.width.nextPowerOfTwo
+            //val height = this.height.nextPowerOfTwo
             gl.apply {
                 if (dirty) {
                     dirty = false

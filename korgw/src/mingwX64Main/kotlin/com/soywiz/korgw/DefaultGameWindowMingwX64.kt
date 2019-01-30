@@ -208,12 +208,7 @@ class WindowsGameWindow : GameWindow() {
     }
 
     fun resized(width: Int, height: Int) {
-        ag.resized(width, height)
-        dispatch(reshapeEvent.apply {
-            this.width = width
-            this.height = height
-        })
-
+        dispatchReshapeEvent(0, 0, width, height)
         tryRender()
     }
 

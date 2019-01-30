@@ -21,7 +21,7 @@ rootProject.name = java.util.Properties().apply { load(File(rootProject.projectD
 
 include(":kgl")
 include(":korag")
-include(":korag-format")
+//include(":korag-format")
 include(":korag-opengl")
 include(":korev")
 include(":korgw")

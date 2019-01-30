@@ -1,5 +1,6 @@
 package com.soywiz.korgw
 
+import com.soywiz.klock.DateTime
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
@@ -9,12 +10,20 @@ import com.soywiz.korio.net.*
 import com.soywiz.korio.util.*
 import kotlinx.coroutines.*
 import org.w3c.dom.events.*
+import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import kotlin.browser.*
 
 class BrowserGameWindow : GameWindow() {
     override val ag: AGWebgl = AGWebgl(AGConfig())
     val canvas get() = ag.canvas
+
+    fun is_touch_device(): Boolean = try {
+        document.createEvent("TouchEvent")
+        true
+    } catch (e: dynamic) {
+        false
+    }
 
     init {
         window.asDynamic().canvas = canvas
@@ -33,6 +42,11 @@ class BrowserGameWindow : GameWindow() {
         canvas.addEventListener("mouseup", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.UP) })
         canvas.addEventListener("mousedown", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.DOWN) })
         canvas.addEventListener("click", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.CLICK) })
+
+        canvas.addEventListener("touchstart", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.START) })
+        canvas.addEventListener("touchmove", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.MOVE) })
+        canvas.addEventListener("touchend", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.END) })
+        //canvas.addEventListener("touchcancel", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.CANCEL) })
 
         canvas.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
         canvas.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
@@ -60,11 +74,9 @@ class BrowserGameWindow : GameWindow() {
         canvas.style.right = "0"
         canvas.style.width = "${window.innerWidth}px"
         canvas.style.height = "${window.innerHeight}px"
-        ag.resized(canvas.width, canvas.height)
-        dispatch(reshapeEvent.apply {
-            this.width = window.innerWidth
-            this.height = window.innerHeight
-        })
+        //ag.resized(canvas.width, canvas.height)
+        //dispatchReshapeEvent(0, 0, window.innerWidth, window.innerHeight)
+        dispatchReshapeEvent(0, 0, canvas.width, canvas.height)
     }
 
     private fun doRender() {
@@ -129,15 +141,26 @@ class BrowserGameWindow : GameWindow() {
         })
     }
 
+    private fun touchEvent(e: dynamic, type: com.soywiz.korev.TouchEvent.Type) {
+        touchEvent.startFrame(type)
+        for (n in 0 until e.touches.length) {
+            val touch = e.touches.item(n)
+            touchEvent.touch(touch.identifier, touch.clientX, touch.clientY)
+        }
+        dispatch(touchEvent)
+    }
+
     private fun mouseEvent(e: MouseEvent, type: com.soywiz.korev.MouseEvent.Type) {
-        dispatch(mouseEvent {
-            this.type = type
-            this.id = 0
-            this.x = e.clientX
-            this.y = e.clientY
-            this.button = MouseButton[e.button.toInt()]
-            this.buttons = e.buttons.toInt()
-        })
+        if (!is_touch_device()) {
+            dispatch(mouseEvent {
+                this.type = type
+                this.id = 0
+                this.x = e.clientX
+                this.y = e.clientY
+                this.button = MouseButton[e.button.toInt()]
+                this.buttons = e.buttons.toInt()
+            })
+        }
     }
 
     override var title: String
@@ -205,3 +228,32 @@ class NodeJsGameWindow : GameWindow() {
 }
 
 actual val DefaultGameWindow: GameWindow = if (OS.isJsNodeJs) NodeJsGameWindow() else BrowserGameWindow()
+
+/*
+public external open class TouchEvent(type: String, eventInitDict: MouseEventInit = definedExternally) : UIEvent {
+    open val shiftKey: Boolean
+    open val altKey: Boolean
+    open val ctrlKey: Boolean
+    open val metaKey: Boolean
+
+    open val changedTouches: TouchList
+    open val touches: TouchList
+    open val targetTouches: TouchList
+}
+
+external class TouchList {
+    val length: Int
+    fun item(index: Int): Touch
+}
+
+external class Touch {
+    val identifier: Int
+    val screenX: Int
+    val screenY: Int
+    val clientX: Int
+    val clientY: Int
+    val pageX: Int
+    val pageY: Int
+    val target: dynamic
+}
+*/

@@ -80,11 +80,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
                     val width = bounds.size.width.toInt()
                     val height = bounds.size.height.toInt()
                     //macTrace("windowDidResize")
-                    ag.resized(width, height)
-                    dispatch(reshapeEvent.apply {
-                        this.width = width
-                        this.height = height
-                    })
+                    dispatchReshapeEvent(0, 0, width, height)
                     doRender()
 
                     Unit

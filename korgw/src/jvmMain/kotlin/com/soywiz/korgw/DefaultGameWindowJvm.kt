@@ -104,14 +104,6 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-
-        ag.onResized {
-            //println("RESIZED")
-            dispatch(reshapeEvent {
-                this.width = ag.backWidth
-                this.height = ag.backHeight
-            })
-        }
         ag.onRender {
             dispatch(renderEvent)
         }
@@ -150,7 +142,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
         frame.addComponentListener(object : ComponentAdapter() {
             override fun componentResized(e: ComponentEvent) {
-                ag.resized(e.component.width, e.component.height)
+                dispatchReshapeEvent(0, 0, e.component.width, e.component.height)
             }
         })
         launchAsap(coroutineDispatcher) {

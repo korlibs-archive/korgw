@@ -6,6 +6,7 @@ package com.soywiz.kgl
 
 import com.soywiz.kmem.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korio.lang.printStackTrace
 
 open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
 	open fun before(name: String, params: String): Unit = Unit
@@ -1451,13 +1452,17 @@ class LogKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {
 }
 class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) : KmlGlProxy(parent) {
 	override fun after(name: String, params: String, result: String): Unit {
-        val error = parent.getError()
-        if (error != NO_ERROR) {
-            println("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
-            if (throwException) {
-                throw RuntimeException("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
+        do {
+            val error = parent.getError()
+            if (error != NO_ERROR) {
+                println("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
+                if (throwException) {
+                    throw RuntimeException("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
+                } else {
+                    printStackTrace()
+                }
             }
-        }
+        } while (error != NO_ERROR)
     }
     override fun getError(): Int = parent.getError()
 }

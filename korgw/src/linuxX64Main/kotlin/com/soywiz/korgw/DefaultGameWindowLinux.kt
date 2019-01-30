@@ -139,10 +139,7 @@ class GlutGameWindow : GameWindow() {
 
     fun reshape(width: Int, height: Int) {
         ag.resized(width, height)
-        dispatch(reshapeEvent {
-            this.width = width
-            this.height = height
-        })
+        dispatchReshapeEvent(0, 0, width, height)
         glutDisplay()
     }
 
