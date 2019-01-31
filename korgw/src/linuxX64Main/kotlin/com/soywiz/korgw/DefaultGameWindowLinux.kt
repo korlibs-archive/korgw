@@ -158,7 +158,8 @@ class GlutGameWindow : GameWindow() {
     }
 
     fun glutKeyUpDown(key: UByte, pressed: Boolean) {
-        val key = KeyCodesToKeys[key.toInt()] ?: CharToKeys[key.toInt().toChar()] ?: Key.UNKNOWN
+        val char = key.toInt().toChar()
+        val key = KeyCodesToKeys[key.toInt()] ?: CharToKeys[char] ?: Key.UNKNOWN
         //println("keyDownUp: char=$char, modifiers=$modifiers, keyCode=${keyCode.toInt()}, key=$key, pressed=$pressed")
         dispatch(keyEvent.apply {
             this.type =
