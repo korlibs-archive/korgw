@@ -47,14 +47,19 @@ class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     }
 
     fun executePending() {
-        val now = DateTime.now()
-        while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
-            timedTasks.removeHead().continuation.resume(Unit)
-        }
+        try {
+            val now = DateTime.now()
+            while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
+                timedTasks.removeHead().continuation.resume(Unit)
+            }
 
-        while (tasks.isNotEmpty()) {
-            val task = tasks.dequeue()
-            task.run()
+            while (tasks.isNotEmpty()) {
+                val task = tasks.dequeue()
+                task.run()
+            }
+        } catch (e: Throwable) {
+            println("Error in GameWindowCoroutineDispatcher.executePending:")
+            e.printStackTrace()
         }
     }
 

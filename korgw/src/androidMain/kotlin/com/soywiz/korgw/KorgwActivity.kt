@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.util.Pools
 import android.util.Log
 import android.view.MotionEvent
+import android.widget.LinearLayout
 import com.soywiz.kds.Pool
 import com.soywiz.kgl.CheckErrorsKmlGlProxy
 import com.soywiz.kgl.KmlGl

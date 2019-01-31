@@ -12,13 +12,27 @@ import com.soywiz.korim.format.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.kmem.set
 import com.soywiz.kmem.get
+import com.soywiz.korio.lang.printStackTrace
+import com.soywiz.korio.util.OS
+import kotlin.browser.document
 
 // https://github.com/shrekshao/MoveWebGL1EngineToWebGL2/blob/master/Move-a-WebGL-1-Engine-To-WebGL-2-Blog-1.md
 // https://webglstats.com/
 // https://caniuse.com/#feat=webgl
 class KmlGlJsCanvas(val canvas: HTMLCanvasElement, val glOpts: dynamic) : KmlGl() {
     val gl = (canvas.getContext("webgl", glOpts) ?: canvas.getContext("experimental-webgl", glOpts)).unsafeCast<WebGLRenderingContext?>()
-        ?: error("Can't get webgl context")
+        ?: run {
+            try {
+                document.body?.prepend((document.createElement("div") as HTMLElement).apply {
+                    style.color = "red"
+                    style.font = "30px Arial"
+                    innerText = "Can't get webgl context. Running in an android emulator without cross-walk?"
+                })
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+            error("Can't get webgl context")
+        }
     private val items = arrayOfNulls<Any>(8 * 1024)
     private val freeList = (1 until items.size).reversed().toMutableList()
     private fun <T> T.alloc(): Int = run {
