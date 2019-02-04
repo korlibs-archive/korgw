@@ -48,9 +48,9 @@ class BrowserGameWindow : GameWindow() {
         canvas.addEventListener("touchend", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.END) })
         //canvas.addEventListener("touchcancel", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.CANCEL) })
 
-        canvas.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
-        canvas.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
-        canvas.addEventListener("keyup", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+        window.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+        window.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+        window.addEventListener("keyup", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
 
         window.addEventListener("resize", { onResized() })
         onResized()
