@@ -1,6 +1,5 @@
 package com.soywiz.korgw
 
-import com.soywiz.klock.DateTime
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
@@ -13,6 +12,8 @@ import org.w3c.dom.events.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import kotlin.browser.*
+
+private external val navigator: dynamic
 
 class BrowserGameWindow : GameWindow() {
     override val ag: AGWebgl = AGWebgl(AGConfig())
@@ -51,6 +52,65 @@ class BrowserGameWindow : GameWindow() {
         window.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
         window.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
         window.addEventListener("keyup", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+
+        //	val info = GamePadButtonEvent()
+
+        @Suppress("UNUSED_PARAMETER")
+        fun frame(e: Double) {
+            try {
+                window.requestAnimationFrame(::frame)
+                if (navigator.getGamepads != null) {
+                    val gamepads = navigator.getGamepads().unsafeCast<JsArray<JsGamePad?>>()
+                    for (gp in gamePadUpdateEvent.gamepads) gp.connected = false
+                    gamePadUpdateEvent.gamepadsLength = gamepads.length
+                    for (gamepadId in 0 until gamepads.length) {
+                        val controller = gamepads[gamepadId] ?: continue
+                        val gamepad = gamePadUpdateEvent.gamepads.getOrNull(gamepadId) ?: continue
+                        val mapping = knownControllers[controller.id] ?: knownControllers[controller.mapping] ?: StandardGamepadMapping
+                        gamepad.apply {
+                            this.connected = controller.connected
+                            this.index = controller.index
+                            this.name = controller.id
+                            this.mapping = mapping
+                            this.axesLength = controller.axes.length
+                            this.buttonsLength = controller.buttons.length
+                            this.rawButtonsPressed = 0
+                            for (n in 0 until controller.buttons.length) {
+                                val button = controller.buttons[n]
+                                if (button.pressed) this.rawButtonsPressed = this.rawButtonsPressed or (1 shl n)
+                                this.rawButtonsPressure[n] = button.value
+                            }
+                            for (n in 0 until controller.axes.length) {
+                                this.rawAxes[n] = controller.axes[n]
+                            }
+                        }
+                    }
+                    dispatch(gamePadUpdateEvent)
+                }
+            } catch (e: dynamic) {
+                console.error(e)
+            }
+        }
+        //frame(0.0)
+        window.requestAnimationFrame(::frame)
+
+        window.addEventListener("gamepadconnected", { e ->
+            //console.log("gamepadconnected")
+            val e = e.unsafeCast<JsGamepadEvent>()
+            dispatch(gamePadConnectionEvent.apply {
+                this.type = GamePadConnectionEvent.Type.CONNECTED
+                this.gamepad = e.gamepad.index
+            })
+        })
+        window.addEventListener("gamepaddisconnected", { e ->
+            //console.log("gamepaddisconnected")
+            val e = e.unsafeCast<JsGamepadEvent>()
+            dispatch(gamePadConnectionEvent.apply {
+                this.type = GamePadConnectionEvent.Type.DISCONNECTED
+                this.gamepad = e.gamepad.index
+            })
+        })
+
 
         window.addEventListener("resize", { onResized() })
         onResized()
@@ -224,6 +284,31 @@ class BrowserGameWindow : GameWindow() {
     }
 }
 
+private external class JsArray<T> {
+    val length: Int
+}
+
+private inline operator fun <T> JsArray<T>.get(index: Int): T = this.asDynamic()[index]
+
+private external class JsGamepadButton {
+    val value: Double
+    val pressed: Boolean
+}
+
+private external class JsGamePad {
+    val axes: JsArray<Double>
+    val buttons: JsArray<JsGamepadButton>
+    val connected: Boolean
+    val id: String
+    val index: Int
+    val mapping: String
+    val timestamp: Double
+}
+
+private external class JsGamepadEvent : Event {
+    val gamepad: JsGamePad
+}
+
 class NodeJsGameWindow : GameWindow() {
 }
 
@@ -257,3 +342,36 @@ external class Touch {
     val target: dynamic
 }
 */
+object Nimbus_111_1420_Safari_GamepadMapping : GamepadMapping() {
+    override val id = "111-1420-Nimbus"
+
+    override fun get(button: GameButton, info: GamepadInfo): Double {
+        return when (button) {
+            GameButton.BUTTON0 -> info.getRawButton(0)
+            GameButton.BUTTON1 -> info.getRawButton(1)
+            GameButton.BUTTON2 -> info.getRawButton(2)
+            GameButton.BUTTON3 -> info.getRawButton(3)
+            GameButton.L1 -> info.getRawButton(4)
+            GameButton.R1 -> info.getRawButton(5)
+            GameButton.L2 -> info.getRawButton(6)
+            GameButton.R2 -> info.getRawButton(7)
+            GameButton.LEFT -> info.getRawButton(8)
+            GameButton.DOWN -> info.getRawButton(9)
+            GameButton.RIGHT -> info.getRawButton(10)
+            GameButton.UP -> info.getRawButton(11)
+            GameButton.SELECT -> 0.0
+            GameButton.START -> 0.0
+            GameButton.SYSTEM -> 0.0
+            GameButton.LX -> info.getRawAxe(0)
+            GameButton.LY -> info.getRawAxe(1)
+            GameButton.RX -> info.getRawAxe(2)
+            GameButton.RY -> info.getRawAxe(3)
+            else -> 0.0
+        }
+    }
+}
+
+val knownControllers = listOf(
+    StandardGamepadMapping,
+    Nimbus_111_1420_Safari_GamepadMapping
+).associateBy { it.id }

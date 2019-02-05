@@ -450,7 +450,7 @@ class HtmlLightComponents : LightComponents() {
 					rnode.addCloseableEventListener("gamepaddisconnected") { process(false, it) }
 				).closeable()
 			}
-			//om.soywiz.korui.event.GamePadButtonEvent::class -> {
+			//com.soywiz.korui.event.GamePadButtonEvent::class -> {
 			//	val info = GamePadButtonEvent()
 
 			//	@Suppress("UNUSED_PARAMETER")
@@ -923,7 +923,9 @@ object Nimbus_111_1420_Safari_GamepadMapping : GamepadMapping() {
 	}
 }
 
-val knownControllers = listOf(
-	StandardGamepadMapping,
-	Nimbus_111_1420_Safari_GamepadMapping
-).associateBy { it.id }
+val knownControllers by lazy {
+    listOf(
+        StandardGamepadMapping,
+        Nimbus_111_1420_Safari_GamepadMapping
+    ).associateBy { it.id }
+}

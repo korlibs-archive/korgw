@@ -5,6 +5,7 @@ import com.soywiz.klock.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korma.geom.*
+import kotlin.jvm.*
 
 data class MouseEvent(
     var type: Type = Type.MOVE,
@@ -124,11 +125,38 @@ data class GamePadConnectionEvent(var type: Type = Type.CONNECTED, var gamepad: 
 	enum class Type { CONNECTED, DISCONNECTED }
 }
 
-data class GamePadButtonEvent(var type: Type, var gamepad: Int, var button: GameButton, var value: Double) : Event() {
+@Suppress("ArrayInDataClass")
+data class GamePadUpdateEvent @JvmOverloads constructor(
+    var gamepadsLength: Int = 0,
+    val gamepads: Array<GamepadInfo> = Array(8) { GamepadInfo() }
+) : Event() {
+    fun copyFrom(that: GamePadUpdateEvent) {
+        this.gamepadsLength = that.gamepadsLength
+        for (n in 0 until gamepads.size) {
+            this.gamepads[n].copyFrom(that.gamepads[n])
+        }
+    }
+
+    override fun toString(): String = "GamePadUpdateEvent(${gamepads.filter { it.connected }})"
+}
+
+//@Deprecated("")
+data class GamePadButtonEvent @JvmOverloads constructor(
+    var type: Type = Type.DOWN,
+    var gamepad: Int = 0,
+    var button: GameButton = GameButton.BUTTON0,
+    var value: Double = 0.0
+) : Event() {
 	enum class Type { UP, DOWN }
 }
 
-data class GamePadStickEvent(var gamepad: Int, var stick: GameStick, var x: Double, var y: Double) : Event()
+//@Deprecated("")
+data class GamePadStickEvent(
+    var gamepad: Int = 0,
+    var stick: GameStick = GameStick.LEFT,
+    var x: Double = 0.0,
+    var y: Double = 0.0
+) : Event()
 
 data class ChangeEvent(var oldValue: Any? = null, var newValue: Any? = null) : Event()
 

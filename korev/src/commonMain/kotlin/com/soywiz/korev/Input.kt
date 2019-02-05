@@ -1,6 +1,7 @@
 package com.soywiz.korev
 
 import com.soywiz.kmem.*
+import com.soywiz.korma.geom.Point
 import kotlin.math.*
 
 enum class MouseButton(val id: Int) {
@@ -96,29 +97,52 @@ class GamepadInfo(
     var connected: Boolean = false,
     var name: String = "unknown",
     var mapping: GamepadMapping = StandardGamepadMapping,
-    var buttons: Int = 0,
-    val axes: DoubleArray = DoubleArray(16)
+    var rawButtonsPressure: DoubleArray = DoubleArray(64),
+    var rawButtonsPressed: Int = 0,
+    val rawAxes: DoubleArray = DoubleArray(16),
+    var axesLength: Int = 0,
+    var buttonsLength: Int = 0
 ) {
+    private val axesData: Array<Point> = Array(2) { Point() }
+
 	fun copyFrom(that: GamepadInfo) {
 		this.index = that.index
 		this.name = that.name
 		this.mapping = that.mapping
-		this.buttons = that.buttons
+        this.rawButtonsPressed = that.rawButtonsPressed
 		this.connected = that.connected
-		arraycopy(that.axes, 0, this.axes, 0, min(this.axes.size, that.axes.size))
+        this.axesLength = that.axesLength
+        this.buttonsLength = that.buttonsLength
+        arraycopy(that.axesData, 0, this.axesData, 0, min(this.axesData.size, that.axesData.size))
+        arraycopy(that.rawButtonsPressure, 0, this.rawButtonsPressure, 0, min(this.rawButtonsPressure.size, that.rawButtonsPressure.size))
+		arraycopy(that.rawAxes, 0, this.rawAxes, 0, min(this.rawAxes.size, that.rawAxes.size))
 	}
 
-	operator fun get(button: GameButton) = mapping.get(button, buttons, axes)
-	override fun toString(): String = "Gamepad[$index][$name]" + mapping.toString(buttons, axes)
+	operator fun get(button: GameButton) = mapping.get(button, this)
+    operator fun get(stick: GameStick): Point = axesData[stick.id].apply {
+        this.x = getX(stick)
+        this.y = getY(stick)
+    }
+    fun getX(stick: GameStick) = when (stick) {
+        GameStick.LEFT -> get(GameButton.LX)
+        GameStick.RIGHT -> get(GameButton.LY)
+    }
+    fun getY(stick: GameStick) = when (stick) {
+        GameStick.LEFT -> get(GameButton.RX)
+        GameStick.RIGHT -> get(GameButton.RY)
+    }
+	override fun toString(): String = "Gamepad[$index][$name]" + mapping.toString(this)
 }
 
 abstract class GamepadMapping {
 	abstract val id: String
-	fun Int.getButton(index: Int): Double = if (extract(index)) 1.0 else 0.0
-	abstract fun get(button: GameButton, buttons: Int, axes: DoubleArray): Double
+	private fun Int.getButton(index: Int): Double = if (extract(index)) 1.0 else 0.0
+    fun GamepadInfo.getRawButton(index: Int) = this.rawButtonsPressed.getButton(index)
+    fun GamepadInfo.getRawAxe(index: Int) = this.rawAxes.getOrElse(index) { 0.0 }
+    abstract fun get(button: GameButton, info: GamepadInfo): Double
 
-	fun toString(buttons: Int, axes: DoubleArray) = "$id(" + GameButton.values().joinToString(", ") {
-		"${it.name}=${get(it, buttons, axes)}"
+	fun toString(info: GamepadInfo) = "$id(" + GameButton.values().joinToString(", ") {
+		"${it.name}=${get(it, info)}"
 	} + ")"
 }
 
@@ -126,29 +150,29 @@ abstract class GamepadMapping {
 object StandardGamepadMapping : GamepadMapping() {
 	override val id = "Standard"
 
-	override fun get(button: GameButton, buttons: Int, axes: DoubleArray): Double {
+	override fun get(button: GameButton, info: GamepadInfo): Double {
 		return when (button) {
-			GameButton.BUTTON0 -> buttons.getButton(0)
-			GameButton.BUTTON1 -> buttons.getButton(1)
-			GameButton.BUTTON2 -> buttons.getButton(2)
-			GameButton.BUTTON3 -> buttons.getButton(3)
-			GameButton.L1 -> buttons.getButton(4)
-			GameButton.R1 -> buttons.getButton(5)
-			GameButton.L2 -> buttons.getButton(6)
-			GameButton.R2 -> buttons.getButton(7)
-			GameButton.SELECT -> buttons.getButton(8)
-			GameButton.START -> buttons.getButton(9)
-			GameButton.L3 -> buttons.getButton(10)
-			GameButton.R3 -> buttons.getButton(11)
-			GameButton.UP -> buttons.getButton(12)
-			GameButton.DOWN -> buttons.getButton(13)
-			GameButton.LEFT -> buttons.getButton(14)
-			GameButton.RIGHT -> buttons.getButton(15)
-			GameButton.SYSTEM -> buttons.getButton(16)
-			GameButton.LX -> axes[0]
-			GameButton.LY -> axes[1]
-			GameButton.RX -> axes[2]
-			GameButton.RY -> axes[3]
+			GameButton.BUTTON0 -> info.getRawButton(0)
+			GameButton.BUTTON1 -> info.getRawButton(1)
+			GameButton.BUTTON2 -> info.getRawButton(2)
+			GameButton.BUTTON3 -> info.getRawButton(3)
+			GameButton.L1     -> info.getRawButton(4)
+			GameButton.R1     -> info.getRawButton(5)
+			GameButton.L2     -> info.getRawButton(6)
+			GameButton.R2     -> info.getRawButton(7)
+			GameButton.SELECT -> info.getRawButton(8)
+			GameButton.START -> info.getRawButton(9)
+			GameButton.L3 -> info.getRawButton(10)
+			GameButton.R3 -> info.getRawButton(11)
+			GameButton.UP -> info.getRawButton(12)
+			GameButton.DOWN -> info.getRawButton(13)
+			GameButton.LEFT -> info.getRawButton(14)
+			GameButton.RIGHT -> info.getRawButton(15)
+			GameButton.SYSTEM -> info.getRawButton(16)
+			GameButton.LX -> info.getRawAxe(0)
+			GameButton.LY -> info.getRawAxe(1)
+			GameButton.RX -> info.getRawAxe(2)
+			GameButton.RY -> info.getRawAxe(3)
 			else -> 0.0
 		}
 	}

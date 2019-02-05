@@ -30,6 +30,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
     init {
         frame.add(ag.glcanvas)
+        ag.glcanvas.requestFocusInWindow()
     }
 
     override var title: String
@@ -309,11 +310,12 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         ag.onRender {
             dispatch(renderEvent)
         }
-        ag.glcanvas.addMouseMotionListener(object : MouseMotionAdapter() {
+
+        val motionListener = object : MouseMotionAdapter() {
             override fun mouseMoved(e: MouseEvent) = dispatchME(e, com.soywiz.korev.MouseEvent.Type.MOVE)
             override fun mouseDragged(e: MouseEvent) = dispatchME(e, com.soywiz.korev.MouseEvent.Type.DRAG)
-        })
-        ag.glcanvas.addMouseListener(object : MouseAdapter() {
+        }
+        val mouseListener = object : MouseAdapter() {
             override fun mousePressed(e: java.awt.event.MouseEvent) =
                 dispatchME(e, com.soywiz.korev.MouseEvent.Type.DOWN)
 
@@ -340,12 +342,20 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
                     this.scrollDeltaZ = e.preciseWheelRotation
                 })
             }
-        })
-        ag.glcanvas.addKeyListener(object : KeyListener {
+        }
+
+        val keyListener = object : KeyListener {
             override fun keyTyped(e: KeyEvent) = dispatchKE(e, com.soywiz.korev.KeyEvent.Type.TYPE)
             override fun keyPressed(e: KeyEvent) = dispatchKE(e, com.soywiz.korev.KeyEvent.Type.DOWN)
             override fun keyReleased(e: KeyEvent) = dispatchKE(e, com.soywiz.korev.KeyEvent.Type.UP)
-        })
+        }
+
+        // In both components
+        frame.addKeyListener(keyListener)
+        ag.glcanvas.addKeyListener(keyListener)
+
+        ag.glcanvas.addMouseMotionListener(motionListener)
+        ag.glcanvas.addMouseListener(mouseListener)
 
         frame.addComponentListener(object : ComponentAdapter() {
             override fun componentResized(e: ComponentEvent) {

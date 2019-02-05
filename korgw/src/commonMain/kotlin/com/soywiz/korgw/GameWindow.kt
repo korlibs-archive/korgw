@@ -84,6 +84,10 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
     protected val mouseEvent = MouseEvent()
     protected val touchEvent = TouchEvent()
     protected val dropFileEvent = DropFileEvent()
+    @Deprecated("") protected val gamePadButtonEvent = GamePadButtonEvent()
+    @Deprecated("") protected val gamePadStickEvent = GamePadStickEvent()
+    protected val gamePadUpdateEvent = GamePadUpdateEvent()
+    protected val gamePadConnectionEvent = GamePadConnectionEvent()
 
     open var fps: Int = 60
     open var title: String get() = ""; set(value) = Unit
