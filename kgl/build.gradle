@@ -4,7 +4,6 @@ apply plugin: com.soywiz.korlibs.KorlibsPlugin
 
 korlibs {
     exposeVersion()
-    //dependencyMulti("com.soywiz:kmem:$kmemVersion")
     dependencyMulti("com.soywiz:korim:$korimVersion")
 
     dependencyCInterops("GL", ["linuxX64"])
