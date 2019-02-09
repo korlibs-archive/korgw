@@ -1,18 +1,28 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeCompilation
 
+apply plugin: com.soywiz.korlibs.KorlibsPlugin
+
+korlibs {
+    exposeVersion()
+    //dependencyMulti("com.soywiz:kmem:$kmemVersion")
+    dependencyMulti("com.soywiz:korim:$korimVersion")
+
+    dependencyCInterops("GL", ["linuxX64"])
+}
+
 configurations {
     maybeCreate("rtArtifacts")
 }
 
 dependencies {
-    val gluegenVersion = project.property("gluegenVersion")
-    val joglVersion = project.property("joglVersion")
+    def gluegenVersion = project.property("gluegenVersion")
+    def joglVersion = project.property("joglVersion")
 
     add("jvmMainApi", "org.jogamp.gluegen:gluegen-rt:$gluegenVersion")
     add("jvmMainApi", "org.jogamp.jogl:jogl-all:$joglVersion")
 
-    for (target in listOf("linux-amd64", "linux-armv6", "linux-armv6hf", "linux-i586", "macosx-universal", "windows-amd64", "windows-i586")) {
-        for (config in listOf("rtArtifacts", "jvmMainApi")) {
+    for (target in ["linux-amd64", "linux-armv6", "linux-armv6hf", "linux-i586", "macosx-universal", "windows-amd64", "windows-i586"]) {
+        for (config in ["rtArtifacts", "jvmMainApi"]) {
             add(config, "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-$target")
             add(config, "org.jogamp.jogl:jogl-all:$joglVersion:natives-$target")
         }
@@ -36,15 +46,5 @@ kotlin.sourceSets {
         resources.srcDir("libs")
     }
 }
-
-for (target in listOf("linuxX64")) {
-    (kotlin.targets[target].compilations["main"] as KotlinNativeCompilation).apply {
-        cinterops.apply {
-            maybeCreate("GL").apply {
-            }
-        }
-    }
-}
-
 
 tasks.getByName("jvmProcessResources").dependsOn("processrtRtArtifacts")

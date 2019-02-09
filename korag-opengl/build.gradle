@@ -1,0 +1,6 @@
+apply plugin: com.soywiz.korlibs.KorlibsPlugin
+
+korlibs {
+    dependencyProject(":kgl")
+    dependencyProject(":korag")
+}
