@@ -37,8 +37,8 @@ class BrowserGameWindow : GameWindow() {
         document.body?.style?.overflowY = "hidden"
         canvas.addEventListener("mouseenter", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.ENTER) })
         canvas.addEventListener("mouseleave", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
-        canvas.addEventListener("mouseover", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE) })
-        canvas.addEventListener("mousemove", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE) })
+        canvas.addEventListener("mouseover", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
+        canvas.addEventListener("mousemove", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
         canvas.addEventListener("mouseout", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
         canvas.addEventListener("mouseup", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.UP) })
         canvas.addEventListener("mousedown", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.DOWN) })
@@ -210,15 +210,19 @@ class BrowserGameWindow : GameWindow() {
         dispatch(touchEvent)
     }
 
-    private fun mouseEvent(e: MouseEvent, type: com.soywiz.korev.MouseEvent.Type) {
+    private fun mouseEvent(e: MouseEvent, type: com.soywiz.korev.MouseEvent.Type, pressingType: com.soywiz.korev.MouseEvent.Type = type) {
         if (!is_touch_device()) {
             dispatch(mouseEvent {
-                this.type = type
+                this.type = if (e.buttons.toInt() != 0) pressingType else type
                 this.id = 0
                 this.x = e.clientX
                 this.y = e.clientY
                 this.button = MouseButton[e.button.toInt()]
                 this.buttons = e.buttons.toInt()
+                this.isShiftDown = e.shiftKey
+                this.isCtrlDown = e.ctrlKey
+                this.isAltDown = e.altKey
+                this.isMetaDown = e.metaKey
             })
         }
     }

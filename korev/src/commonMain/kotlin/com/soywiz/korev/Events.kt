@@ -22,9 +22,25 @@ data class MouseEvent(
     var isAltDown: Boolean = false,
     var isMetaDown: Boolean = false,
     var scaleCoords: Boolean = true
-) :
-	Event() {
+) : Event() {
 	enum class Type { MOVE, DRAG, UP, DOWN, CLICK, ENTER, EXIT, SCROLL }
+
+    fun copyFrom(other: MouseEvent) {
+        this.type = other.type
+        this.id = other.id
+        this.x = other.x
+        this.y = other.y
+        this.button = other.button
+        this.buttons = other.buttons
+        this.scrollDeltaX = other.scrollDeltaX
+        this.scrollDeltaY = other.scrollDeltaY
+        this.scrollDeltaZ = other.scrollDeltaZ
+        this.isShiftDown = other.isShiftDown
+        this.isCtrlDown = other.isCtrlDown
+        this.isAltDown = other.isAltDown
+        this.isMetaDown = other.isMetaDown
+        this.scaleCoords = other.scaleCoords
+    }
 }
 
 data class Touch(
@@ -119,10 +135,23 @@ data class KeyEvent(
     var character: Char = '\u0000'
 ) : Event() {
 	enum class Type { UP, DOWN, TYPE }
+
+    fun copyFrom(other: KeyEvent) {
+        this.type = other.type
+        this.id = other.id
+        this.key = other.key
+        this.keyCode = other.keyCode
+        this.character = other.character
+    }
 }
 
 data class GamePadConnectionEvent(var type: Type = Type.CONNECTED, var gamepad: Int = 0) : Event() {
 	enum class Type { CONNECTED, DISCONNECTED }
+
+    fun copyFrom(other: GamePadConnectionEvent) {
+        this.type = other.type
+        this.gamepad = other.gamepad
+    }
 }
 
 @Suppress("ArrayInDataClass")
@@ -148,6 +177,13 @@ data class GamePadButtonEvent @JvmOverloads constructor(
     var value: Double = 0.0
 ) : Event() {
 	enum class Type { UP, DOWN }
+
+    fun copyFrom(other: GamePadButtonEvent) {
+        this.type = other.type
+        this.gamepad = other.gamepad
+        this.button = other.button
+        this.value = other.value
+    }
 }
 
 //@Deprecated("")
@@ -156,22 +192,59 @@ data class GamePadStickEvent(
     var stick: GameStick = GameStick.LEFT,
     var x: Double = 0.0,
     var y: Double = 0.0
-) : Event()
+) : Event() {
+    fun copyFrom(other: GamePadStickEvent) {
+        this.gamepad = other.gamepad
+        this.stick = other.stick
+        this.x = other.x
+        this.y = other.y
+    }
+}
 
-data class ChangeEvent(var oldValue: Any? = null, var newValue: Any? = null) : Event()
+data class ChangeEvent(var oldValue: Any? = null, var newValue: Any? = null) : Event() {
+    fun copyFrom(other: ChangeEvent) {
+        this.oldValue = other.oldValue
+        this.newValue = other.newValue
+    }
+}
 
-data class ReshapeEvent(var x: Int = 0, var y: Int = 0, var width: Int = 0, var height: Int = 0) : Event()
+data class ReshapeEvent(var x: Int = 0, var y: Int = 0, var width: Int = 0, var height: Int = 0) : Event() {
+    fun copyFrom(other: ReshapeEvent) {
+        this.x = other.x
+        this.y = other.y
+        this.width = other.width
+        this.height = other.height
+    }
+}
 
-data class FullScreenEvent(var fullscreen: Boolean = false) : Event()
+data class FullScreenEvent(var fullscreen: Boolean = false) : Event() {
+    fun copyFrom(other: FullScreenEvent) {
+        this.fullscreen = other.fullscreen
+    }
+}
 
-class RenderEvent() : Event()
+class RenderEvent() : Event() {
+    fun copyFrom(other: RenderEvent) {
+    }
+}
 
-class InitEvent() : Event()
+class InitEvent() : Event() {
+    fun copyFrom(other: InitEvent) {
+    }
+}
 
-class DisposeEvent() : Event()
+class DisposeEvent() : Event() {
+    fun copyFrom(other: DisposeEvent) {
+    }
+}
 
 data class DropFileEvent(var type: Type = Type.ENTER, var files: List<VfsFile>? = null) : Event() {
 	enum class Type { ENTER, EXIT, DROP }
+
+    fun copyFrom(other: DropFileEvent) {
+        this.type = other.type
+        this.files = other.files?.toList()
+    }
 }
 
 class MouseEvents(val ed: EventDispatcher) : Closeable {
