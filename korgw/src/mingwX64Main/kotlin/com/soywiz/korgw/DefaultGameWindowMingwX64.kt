@@ -235,15 +235,31 @@ class WindowsGameWindow : GameWindow() {
         })
     }
 
-    fun mouseEvent(etype: com.soywiz.korev.MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
+    fun mouseEvent(etype: com.soywiz.korev.MouseEvent.Type, ex: Int, ey: Int, ebutton: Int, wParam: Int) {
+        val lbutton = (wParam and MK_LBUTTON) != 0
+        val rbutton = (wParam and MK_RBUTTON) != 0
+        val shift = (wParam and MK_SHIFT) != 0
+        val control = (wParam and MK_CONTROL) != 0
+        val mbutton = (wParam and MK_MBUTTON) != 0
+        val xbutton1 = (wParam and MK_XBUTTON1) != 0
+        val xbutton2 = (wParam and MK_XBUTTON2) != 0
+        val anyButton = lbutton || rbutton || mbutton || xbutton1 || xbutton2
+        var buttons = 0
+        if (lbutton) buttons = buttons or 1
+        if (rbutton) buttons = buttons or 2
+        if (mbutton) buttons = buttons or 4
+        if (xbutton1) buttons = buttons or 8
+        if (xbutton2) buttons = buttons or 16
+
         dispatch(mouseEvent.apply {
             this.type = etype
             this.x = ex
             this.y = ey
-            this.buttons = 1 shl ebutton
+            this.button = MouseButton[ebutton]
+            this.buttons = buttons
             this.isAltDown = false
-            this.isCtrlDown = false
-            this.isShiftDown = false
+            this.isCtrlDown = control
+            this.isShiftDown = shift
             this.isMetaDown = false
             //this.scaleCoords = false
         })
@@ -255,6 +271,7 @@ val _WM_CREATE: UINT = WM_CREATE.convert()
 val _WM_SIZE: UINT = WM_SIZE.convert()
 val _WM_QUIT: UINT = WM_QUIT.convert()
 val _WM_MOUSEMOVE: UINT = WM_MOUSEMOVE.convert()
+val _WM_MOUSELEAVE: UINT = WM_MOUSELEAVE.convert()
 val _WM_LBUTTONDOWN: UINT = WM_LBUTTONDOWN.convert()
 val _WM_MBUTTONDOWN: UINT = WM_MBUTTONDOWN.convert()
 val _WM_RBUTTONDOWN: UINT = WM_RBUTTONDOWN.convert()
@@ -317,14 +334,14 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
         _WM_MOUSEMOVE -> {
             val x = (lParam.toInt() ushr 0) and 0xFFFF
             val y = (lParam.toInt() ushr 16) and 0xFFFF
-            mouseMove(x, y)
+            mouseMove(x, y, wParam.toInt())
         }
-        _WM_LBUTTONDOWN -> mouseButton(0, true)
-        _WM_MBUTTONDOWN -> mouseButton(1, true)
-        _WM_RBUTTONDOWN -> mouseButton(2, true)
-        _WM_LBUTTONUP -> mouseButton(0, false)
-        _WM_MBUTTONUP -> mouseButton(1, false)
-        _WM_RBUTTONUP -> mouseButton(2, false)
+        _WM_LBUTTONDOWN -> mouseButton(0, true, wParam.toInt())
+        _WM_MBUTTONDOWN -> mouseButton(1, true, wParam.toInt())
+        _WM_RBUTTONDOWN -> mouseButton(2, true, wParam.toInt())
+        _WM_LBUTTONUP -> mouseButton(0, false, wParam.toInt())
+        _WM_MBUTTONUP -> mouseButton(1, false, wParam.toInt())
+        _WM_RBUTTONUP -> mouseButton(2, false, wParam.toInt())
         _WM_KEYDOWN -> windowsGameWindow.keyUpdate(wParam.toInt(), true)
         _WM_KEYUP -> windowsGameWindow.keyUpdate(wParam.toInt(), false)
         _WM_CLOSE -> {
@@ -376,24 +393,39 @@ private var mouseY: Int = 0
 //@ThreadLocal
 //private val buttons = BooleanArray(16)
 
-fun mouseMove(x: Int, y: Int) {
+val MK_LBUTTON = 0x0001
+val MK_RBUTTON = 0x0002
+val MK_SHIFT = 0x0004
+val MK_CONTROL = 0x0008
+val MK_MBUTTON = 0x0010
+val MK_XBUTTON1 = 0x0020
+val MK_XBUTTON2 = 0x0040
+
+fun mouseMove(x: Int, y: Int, wParam: Int) {
     mouseX = x
     mouseY = y
     SetCursor(ARROW_CURSOR)
-    windowsGameWindow.mouseEvent(com.soywiz.korev.MouseEvent.Type.MOVE, mouseX, mouseY, 0)
+
+    val anyButton = (wParam and (MK_LBUTTON or MK_RBUTTON or MK_MBUTTON or MK_XBUTTON1 or MK_XBUTTON2)) != 0
+
+    windowsGameWindow.mouseEvent(
+        if (anyButton) com.soywiz.korev.MouseEvent.Type.DRAG else com.soywiz.korev.MouseEvent.Type.MOVE,
+        mouseX, mouseY, 0, wParam
+    )
 }
 
-fun mouseButton(button: Int, down: Boolean) {
+fun mouseButton(button: Int, down: Boolean, wParam: Int) {
     //buttons[button] = down
     if (down) {
-        windowsGameWindow.mouseEvent(com.soywiz.korev.MouseEvent.Type.DOWN, mouseX, mouseY, button)
+        windowsGameWindow.mouseEvent(com.soywiz.korev.MouseEvent.Type.DOWN, mouseX, mouseY, button, wParam)
     } else {
-        windowsGameWindow.mouseEvent(com.soywiz.korev.MouseEvent.Type.UP, mouseX, mouseY, button)
+        windowsGameWindow.mouseEvent(com.soywiz.korev.MouseEvent.Type.UP, mouseX, mouseY, button, wParam)
         windowsGameWindow.mouseEvent(
             com.soywiz.korev.MouseEvent.Type.CLICK,
             mouseX,
             mouseY,
-            button
+            button,
+            wParam
         ) // @TODO: Conditionally depending on the down x,y & time
     }
 }
