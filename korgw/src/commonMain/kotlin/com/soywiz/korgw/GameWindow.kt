@@ -29,7 +29,9 @@ interface DialogInterface {
 class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>)
+    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
+        var exception: Throwable? = null
+    }
 
     val tasks = Queue<Runnable>()
     val timedTasks = PriorityQueue<TimedTask> { a, b -> a.ms.compareTo(b.ms) }
@@ -39,18 +41,37 @@ class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     }
 
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation)
+        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation, null)
         continuation.invokeOnCancellation {
-            timedTasks.remove(task)
+            task.exception = it
         }
         timedTasks.add(task)
+    }
+
+    override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
+        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, null, block)
+        timedTasks.add(task)
+        return object : DisposableHandle {
+            override fun dispose() {
+                timedTasks.remove(task)
+            }
+        }
     }
 
     fun executePending() {
         try {
             val now = DateTime.now()
             while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
-                timedTasks.removeHead().continuation.resume(Unit)
+                val item = timedTasks.removeHead()
+                if (item.exception != null) {
+                    item.continuation?.resumeWithException(item.exception!!)
+                    if (item.callback != null) {
+                        item.exception?.printStackTrace()
+                    }
+                } else {
+                    item.continuation?.resume(Unit)
+                    item.callback?.run()
+                }
             }
 
             while (tasks.isNotEmpty()) {
@@ -121,8 +142,10 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
             entry()
         }
         while (true) {
-            frame()
-            delay(16.milliseconds)
+            val time = measureTime {
+                frame()
+            }
+            delay((16.milliseconds - time).clamp(0.milliseconds, 16.milliseconds))
         }
     }
 
@@ -215,6 +238,27 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
 
     fun dispatchTouchEventEnd() {
         dispatch(touchEvent)
+    }
+
+    fun entry(callback: suspend () -> Unit) {
+        launch(coroutineDispatcher) {
+            try {
+                callback()
+            } catch (e: Throwable) {
+                println("ERROR GameWindow.entry:")
+                e.printStackTrace()
+            }
+        }
+        /*
+        callback.startCoroutine(object : Continuation<Unit> {
+            override val context: CoroutineContext get() = coroutineDispatcher
+            override fun resumeWith(result: Result<Unit>) {
+                if (result.isFailure) {
+                    result.exceptionOrNull()?.printStackTrace()
+                }
+            }
+        })
+        */
     }
 }
 

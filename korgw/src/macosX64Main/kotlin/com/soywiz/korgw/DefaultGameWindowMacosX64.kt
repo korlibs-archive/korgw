@@ -41,10 +41,11 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     val windowConfigHeight = 480
     val windowConfigTitle = ""
 
-    val windowRect = NSScreen.mainScreen()!!.frame.useContents<CGRect, CValue<CGRect>> {
+    val windowRect: CValue<NSRect> = run {
+        val frame = NSScreen.mainScreen()!!.frame
         NSMakeRect(
-            (size.width * 0.5 - windowConfigWidth * 0.5),
-            (size.height * 0.5 - windowConfigHeight * 0.5),
+            (frame.width * 0.5 - windowConfigWidth * 0.5),
+            (frame.height * 0.5 - windowConfigHeight * 0.5),
             windowConfigWidth.toDouble(),
             windowConfigHeight.toDouble()
         )
@@ -75,16 +76,11 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
             override fun windowDidResize(notification: NSNotification) {
                 println("windowDidResize")
-                openglView.bounds.useContents<CGRect, Unit> {
-                    val bounds = this
-                    val width = bounds.size.width.toInt()
-                    val height = bounds.size.height.toInt()
-                    //macTrace("windowDidResize")
-                    dispatchReshapeEvent(0, 0, width, height)
-                    doRender()
-
-                    Unit
-                }
+                val width = openglView.bounds.width.toInt()
+                val height = openglView.bounds.height.toInt()
+                //macTrace("windowDidResize")
+                dispatchReshapeEvent(0, 0, width, height)
+                doRender()
             }
         }
 
@@ -94,47 +90,40 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         val responder = object : NSResponder() {
             override fun acceptsFirstResponder(): Boolean = true
 
-            fun getHeight(): Int = openglView.bounds.useContents<CGRect, Int> { size.height.toInt() }
+            fun getHeight() = openglView.bounds.height
 
             override fun mouseUp(event: NSEvent) {
-                super.mouseUp(event)
-                event.locationInWindow.useContents<CGPoint, Unit> {
-                    val rx = x.toInt()
-                    val ry = getHeight() - y.toInt()
-                    //println("mouseUp($rx,$ry)")
-                    val x = rx
-                    val y = ry
-                    val button = event.buttonNumber.toInt()
+                //super.mouseUp(event)
+                val rx = event.locationInWindow.x.toInt()
+                val ry = (getHeight() - event.locationInWindow.y).toInt()
+                //println("mouseUp($rx,$ry)")
+                val x = rx
+                val y = ry
+                val button = event.buttonNumber.toInt()
 
-                    mouseEvent(MouseEvent.Type.UP, x, y, button)
-                    mouseEvent(
-                        MouseEvent.Type.CLICK,
-                        x,
-                        y,
-                        button
-                    ) // @TODO: Conditionally depending on the down x,y & time
-
-                }
+                mouseEvent(MouseEvent.Type.UP, x, y, button)
+                mouseEvent(
+                    MouseEvent.Type.CLICK,
+                    x,
+                    y,
+                    button
+                ) // @TODO: Conditionally depending on the down x,y & time
             }
 
             override fun mouseDown(event: NSEvent) {
-                super.mouseDown(event)
-                event.locationInWindow.useContents<CGPoint, Unit> {
-                    val rx = x.toInt()
-                    val ry = getHeight() - y.toInt()
-                    //println("mouseDown($rx,$ry)")
-                    mouseDown(rx, ry, event.buttonNumber.toInt())
-                }
+                //super.mouseDown(event)
+                val rx = event.locationInWindow.x.toInt()
+                val ry = (getHeight() - event.locationInWindow.y).toInt()
+                //println("mouseDown($rx,$ry)")
+                mouseDown(rx, ry, event.buttonNumber.toInt())
             }
 
             override fun mouseMoved(event: NSEvent) {
-                super.mouseMoved(event)
-                event.locationInWindow.useContents<CGPoint, Unit> {
-                    val rx = x.toInt()
-                    val ry = getHeight() - y.toInt()
-                    //println("mouseMoved($rx,$ry)")
-                    mouseMoved(rx, ry)
-                }
+                //super.mouseMoved(event)
+                val rx = event.locationInWindow.x.toInt()
+                val ry = (getHeight() - event.locationInWindow.y).toInt()
+                //println("mouseMoved($rx,$ry)")
+                mouseMoved(rx, ry)
             }
 
 
@@ -156,15 +145,14 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
                 mouseEvent(MouseEvent.Type.DOWN, x, y, button)
 
             fun mouseMoved(x: Int, y: Int) = mouseEvent(MouseEvent.Type.MOVE, x, y, 0)
+            fun mouseDragged(x: Int, y: Int) = mouseEvent(MouseEvent.Type.DRAG, x, y, 0)
 
             override fun mouseDragged(event: NSEvent) {
                 super.mouseDragged(event)
-                event.locationInWindow.useContents<CGPoint, Unit> {
-                    val rx = x.toInt()
-                    val ry = getHeight() - y.toInt()
-                    //println("mouseDragged($rx,$ry)")
-                    mouseMoved(rx, ry)
-                }
+                val rx = event.locationInWindow.x.toInt()
+                val ry = (getHeight() - event.locationInWindow.y).toInt()
+                //println("mouseDragged($rx,$ry)")
+                mouseDragged(rx, ry)
             }
 
             fun keyDownUp(event: NSEvent, pressed: Boolean) {
@@ -189,14 +177,18 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
             }
 
             override fun keyDown(event: NSEvent) {
-                super.keyDown(event)
+                //super.keyDown(event)
                 keyDownUp(event, true)
             }
 
             override fun keyUp(event: NSEvent) {
-                super.keyUp(event)
+                //super.keyUp(event)
                 keyDownUp(event, false)
             }
+
+            //external override fun performKeyEquivalent(event: NSEvent): Boolean {
+            //    return true
+            //}
         }
         openglView.setNextResponder(responder)
         setNextResponder(responder)
@@ -220,8 +212,8 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     override val ag: AG = AGNative()
 
     override var fps: Int = 60
-    override val width: Int get() = window.frame.useContents { this.size.width }.toInt()
-    override val height: Int get() = window.frame.useContents { this.size.height }.toInt()
+    override val width: Int get() = window.frame.width.toInt()
+    override val height: Int get() = window.frame.height.toInt()
     override var title: String = ""
         set(value) {
             field = value
@@ -254,12 +246,12 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         }
 
     override fun setSize(width: Int, height: Int) {
-        val rect = NSScreen.mainScreen()!!.frame.useContents {
-            NSMakeRect(
-                ((size.width - width) * 0.5), ((size.height - height) * 0.5),
-                width.toDouble(), height.toDouble()
-            )
-        }
+        val frame = NSScreen.mainScreen()!!.frame
+        val rect = NSMakeRect(
+            ((frame.width - width) * 0.5), ((frame.height - height) * 0.5),
+            width.toDouble(), height.toDouble()
+        )
+
         window.setFrame(rect, true, false)
     }
 
@@ -384,3 +376,11 @@ class WinController : NSObject() {
 fun macTrace(str: String) {
     println(str)
 }
+
+val CValue<NSPoint>.x get() = this.useContents { x }
+val CValue<NSPoint>.y get() = this.useContents { y }
+
+val CValue<NSRect>.left get() = this.useContents { origin.x }
+val CValue<NSRect>.top get() = this.useContents { origin.y }
+val CValue<NSRect>.width get() = this.useContents { size.width }
+val CValue<NSRect>.height get() = this.useContents { size.height }

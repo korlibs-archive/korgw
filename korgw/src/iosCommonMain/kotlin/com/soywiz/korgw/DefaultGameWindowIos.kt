@@ -26,13 +26,29 @@ class IosGameWindow : GameWindow() {
     //override var quality: Quality get() = Quality.AUTOMATIC; set(value) = Unit
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        entry(this)
+        //println("loop[0]")
+        try {
+            entry(this)
+            //println("loop[1]")
+        } catch (e: Throwable) {
+            println("ERROR IosGameWindow.loop:")
+            println(e)
+        }
     }
 
     override fun frame() {
-        coroutineDispatcher.executePending()
-        ag.onRender(ag)
-        dispatch(renderEvent)
+        try {
+            //println("frame[0]")
+            coroutineDispatcher.executePending()
+            //println("frame[1]")
+            ag.onRender(ag)
+            //println("frame[2]")
+            dispatch(renderEvent)
+            //println("frame[3]")
+        } catch (e: Throwable) {
+            println("ERROR IosGameWindow.frame:")
+            println(e)
+        }
     }
 
     companion object {
