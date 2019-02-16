@@ -26,22 +26,26 @@ interface DialogInterface {
 }
 
 @UseExperimental(InternalCoroutinesApi::class)
-class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
+open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-    class TimedTask(val ms: DateTime, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
+    class TimedTask(val time: DateTime, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
+        @Deprecated("", ReplaceWith("time"))
+        val ms: DateTime get() = time
         var exception: Throwable? = null
     }
 
     val tasks = Queue<Runnable>()
-    val timedTasks = PriorityQueue<TimedTask> { a, b -> a.ms.compareTo(b.ms) }
+    val timedTasks = PriorityQueue<TimedTask> { a, b -> a.time.compareTo(b.time) }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         tasks.enqueue(block)
     }
 
+    open fun now() = DateTime.now()
+
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, continuation, null)
+        val task = TimedTask(now() + timeMillis.milliseconds, continuation, null)
         continuation.invokeOnCancellation {
             task.exception = it
         }
@@ -49,7 +53,7 @@ class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     }
 
     override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
-        val task = TimedTask(DateTime.now() + timeMillis.milliseconds, null, block)
+        val task = TimedTask(now() + timeMillis.milliseconds, null, block)
         timedTasks.add(task)
         return object : DisposableHandle {
             override fun dispose() {
@@ -58,10 +62,10 @@ class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
         }
     }
 
-    fun executePending() {
+    open fun executePending() {
         try {
-            val now = DateTime.now()
-            while (timedTasks.isNotEmpty() && now >= timedTasks.head.ms) {
+            val now = now()
+            while (timedTasks.isNotEmpty() && now >= timedTasks.head.time) {
                 val item = timedTasks.removeHead()
                 if (item.exception != null) {
                     item.continuation?.resumeWithException(item.exception!!)
