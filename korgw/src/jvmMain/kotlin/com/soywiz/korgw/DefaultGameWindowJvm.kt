@@ -29,7 +29,10 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     override val ag: AGAwt = AGAwt(AGConfig())
 
     init {
-        frame.add(ag.glcanvas)
+        //frame.contentPane.layout = BorderLayout()
+        //frame.contentPane.add(JPanel(), BorderLayout.PAGE_START)
+        //frame.contentPane.add(ag.glcanvas, BorderLayout.CENTER)
+        frame.contentPane.add(ag.glcanvas)
         ag.glcanvas.requestFocusInWindow()
     }
 
@@ -45,8 +48,12 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     override fun setSize(width: Int, height: Int) {
         this.width = width
         this.height = height
-        frame.setSize(width, height)
+        frame.contentPane.preferredSize = Dimension(width, height)
+        //frame.setSize(width, height)
+        frame.pack()
         frame.setLocationRelativeTo(null)
+
+        //println(ag.glcanvas.size)
 
         //val screenSize = Toolkit.getDefaultToolkit().screenSize
         //frame.setPosition(
@@ -359,7 +366,7 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
 
         frame.addComponentListener(object : ComponentAdapter() {
             override fun componentResized(e: ComponentEvent) {
-                dispatchReshapeEvent(0, 0, e.component.width, e.component.height)
+                dispatchReshapeEvent(0, 0, ag.glcanvas.width, ag.glcanvas.height)
             }
         })
         launchAsap(coroutineDispatcher) {
