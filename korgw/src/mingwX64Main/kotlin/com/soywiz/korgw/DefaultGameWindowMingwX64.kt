@@ -124,7 +124,7 @@ class WindowsGameWindow : GameWindow() {
 
             val hInstance = GetModuleHandleA(null)
             //FindResourceA(null, null, 124)
-            //wc.hIcon = LoadIconAFunc(hInstance, 1033)
+            wc.hIcon = LoadIconAFunc(hInstance, 1000)
             //wc.hIcon = LoadIconAFunc(hInstance, 1)
             //wc.hIcon = LoadIconAFunc(hInstance, 32512)
             //wc.hIcon = LoadIconAFunc(null, 32512) // IDI_APPLICATION - MAKEINTRESOURCE(32512)
