@@ -19,11 +19,53 @@ class BrowserGameWindow : GameWindow() {
     override val ag: AGWebgl = AGWebgl(AGConfig())
     val canvas get() = ag.canvas
 
-    fun is_touch_device(): Boolean = try {
-        document.createEvent("TouchEvent")
-        true
-    } catch (e: dynamic) {
-        false
+    private var isTouchDeviceCache: Boolean? = null
+    fun is_touch_device(): Boolean {
+        if (isTouchDeviceCache == null) {
+            isTouchDeviceCache = try {
+                document.createEvent("TouchEvent")
+                true
+            } catch (e: dynamic) {
+                false
+            }
+        }
+        return isTouchDeviceCache!!
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun updateGamepad() {
+        try {
+            if (navigator.getGamepads != null) {
+                val gamepads = navigator.getGamepads().unsafeCast<JsArray<JsGamePad?>>()
+                for (gp in gamePadUpdateEvent.gamepads) gp.connected = false
+                gamePadUpdateEvent.gamepadsLength = gamepads.length
+                for (gamepadId in 0 until gamepads.length) {
+                    val controller = gamepads[gamepadId] ?: continue
+                    val gamepad = gamePadUpdateEvent.gamepads.getOrNull(gamepadId) ?: continue
+                    val mapping = knownControllers[controller.id] ?: knownControllers[controller.mapping] ?: StandardGamepadMapping
+                    gamepad.apply {
+                        this.connected = controller.connected
+                        this.index = controller.index
+                        this.name = controller.id
+                        this.mapping = mapping
+                        this.axesLength = controller.axes.length
+                        this.buttonsLength = controller.buttons.length
+                        this.rawButtonsPressed = 0
+                        for (n in 0 until controller.buttons.length) {
+                            val button = controller.buttons[n]
+                            if (button.pressed) this.rawButtonsPressed = this.rawButtonsPressed or (1 shl n)
+                            this.rawButtonsPressure[n] = button.value
+                        }
+                        for (n in 0 until controller.axes.length) {
+                            this.rawAxes[n] = controller.axes[n]
+                        }
+                    }
+                }
+                dispatch(gamePadUpdateEvent)
+            }
+        } catch (e: dynamic) {
+            console.error(e)
+        }
     }
 
     init {
@@ -52,47 +94,6 @@ class BrowserGameWindow : GameWindow() {
         window.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
         window.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
         window.addEventListener("keyup", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
-
-        //	val info = GamePadButtonEvent()
-
-        @Suppress("UNUSED_PARAMETER")
-        fun frame(e: Double) {
-            try {
-                window.requestAnimationFrame(::frame)
-                if (navigator.getGamepads != null) {
-                    val gamepads = navigator.getGamepads().unsafeCast<JsArray<JsGamePad?>>()
-                    for (gp in gamePadUpdateEvent.gamepads) gp.connected = false
-                    gamePadUpdateEvent.gamepadsLength = gamepads.length
-                    for (gamepadId in 0 until gamepads.length) {
-                        val controller = gamepads[gamepadId] ?: continue
-                        val gamepad = gamePadUpdateEvent.gamepads.getOrNull(gamepadId) ?: continue
-                        val mapping = knownControllers[controller.id] ?: knownControllers[controller.mapping] ?: StandardGamepadMapping
-                        gamepad.apply {
-                            this.connected = controller.connected
-                            this.index = controller.index
-                            this.name = controller.id
-                            this.mapping = mapping
-                            this.axesLength = controller.axes.length
-                            this.buttonsLength = controller.buttons.length
-                            this.rawButtonsPressed = 0
-                            for (n in 0 until controller.buttons.length) {
-                                val button = controller.buttons[n]
-                                if (button.pressed) this.rawButtonsPressed = this.rawButtonsPressed or (1 shl n)
-                                this.rawButtonsPressure[n] = button.value
-                            }
-                            for (n in 0 until controller.axes.length) {
-                                this.rawAxes[n] = controller.axes[n]
-                            }
-                        }
-                    }
-                    dispatch(gamePadUpdateEvent)
-                }
-            } catch (e: dynamic) {
-                console.error(e)
-            }
-        }
-        //frame(0.0)
-        window.requestAnimationFrame(::frame)
 
         window.addEventListener("gamepadconnected", { e ->
             //console.log("gamepadconnected")
@@ -127,6 +128,7 @@ class BrowserGameWindow : GameWindow() {
     private fun onResized() {
         val doQuality = quality == GameWindow.Quality.QUALITY
         val scale = if (doQuality) ag.devicePixelRatio.toInt() else 1
+        isTouchDeviceCache = null
         canvas.width = window.innerWidth * scale
         canvas.height = window.innerHeight * scale
         canvas.style.position = "absolute"
@@ -278,13 +280,17 @@ class BrowserGameWindow : GameWindow() {
         launchImmediately(coroutineDispatcher) {
             entry()
         }
-        frame(0.0)
+        jsFrame(0.0)
     }
 
-    private fun frame(step: Double) {
-        coroutineDispatcher.executePending()
-        doRender()
-        window.requestAnimationFrame(::frame)
+    lateinit private var jsFrame: (Double) -> Unit
+    init {
+        jsFrame = { step: Double ->
+            updateGamepad()
+            coroutineDispatcher.executePending()
+            doRender()
+            window.requestAnimationFrame(jsFrame)
+        }
     }
 }
 
