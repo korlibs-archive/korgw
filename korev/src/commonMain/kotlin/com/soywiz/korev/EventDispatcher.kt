@@ -1,6 +1,7 @@
 package com.soywiz.korev
 
 import com.soywiz.kds.*
+import com.soywiz.korev.internal.fastForEach
 import com.soywiz.korio.lang.*
 import kotlin.reflect.*
 
@@ -42,9 +43,9 @@ interface EventDispatcher {
 					@Suppress("UNCHECKED_CAST")
 					val rtemp = temp as ArrayList<(T) -> Unit>
 					rtemp += getHandlersFor(clazz)
-					for (handler in rtemp) {
-						handler(event)
-					}
+                    rtemp.fastForEach { handler ->
+                        handler(event)
+                    }
 				//} catch (e: PreventDefaultException) {
 				//	// Do nothing
 				//}
