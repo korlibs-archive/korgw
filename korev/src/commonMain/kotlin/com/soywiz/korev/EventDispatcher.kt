@@ -1,6 +1,5 @@
 package com.soywiz.korev
 
-import com.soywiz.kds.*
 import com.soywiz.korev.internal.fastForEach
 import com.soywiz.korio.lang.*
 import kotlin.reflect.*
@@ -11,45 +10,45 @@ interface EventDispatcher {
 	fun copyFrom(other: EventDispatcher) = Unit
 
 	open class Mixin : EventDispatcher {
-		private val handlers = LinkedHashMap<KClass<out Event>, ArrayList<(Event) -> Unit>>()
+		private var handlers: LinkedHashMap<KClass<out Event>, ArrayList<(Event) -> Unit>>? = null
 
-		private fun <T : Event> getHandlersFor(clazz: KClass<T>): ArrayList<(T) -> Unit> {
+		private fun <T : Event> getHandlersFor(clazz: KClass<T>): ArrayList<(T) -> Unit>? {
+            if (handlers == null) return null
 			@Suppress("UNCHECKED_CAST")
-			return handlers.getOrPut(clazz) { arrayListOf() } as ArrayList<(T) -> Unit>
+			return handlers?.get(clazz) as? ArrayList<(T) -> Unit>?
 		}
 
-		override fun <T : Event> addEventListener(clazz: KClass<T>, handler: (T) -> Unit): Closeable {
-			getHandlersFor(clazz) += handler
-			return Closeable { getHandlersFor(clazz) -= handler }
+        private fun <T : Event> getHandlersForCreate(clazz: KClass<T>): ArrayList<(T) -> Unit> {
+            if (handlers == null) handlers = LinkedHashMap()
+            @Suppress("UNCHECKED_CAST")
+            return handlers!!.getOrPut(clazz) { arrayListOf() } as ArrayList<(T) -> Unit>
+        }
+
+        override fun <T : Event> addEventListener(clazz: KClass<T>, handler: (T) -> Unit): Closeable {
+            val handlers = getHandlersForCreate(clazz)
+			handlers += handler
+			return Closeable { handlers -= handler }
 		}
 
 		final override fun copyFrom(other: EventDispatcher) {
-			handlers.clear()
+			handlers?.clear()
 			if (other is Mixin) {
-				for ((clazz, events) in other.handlers) {
-					//println("EventDispatcher.copyFrom($clazz, $events)")
-					for (event in events) {
-						addEventListener(clazz, event)
-					}
-				}
+                val otherHandlers = other.handlers
+                if (otherHandlers != null) {
+                    for ((clazz, events) in otherHandlers) {
+                        for (event in events) {
+                            addEventListener(clazz, event)
+                        }
+                    }
+                }
 			}
 		}
 
-		private val tempHandlers = Pool<ArrayList<(Event) -> Unit>>(reset = { it.clear() }) { arrayListOf() }
-
         override fun <T : Event> dispatch(clazz: KClass<T>, event: T) {
-			tempHandlers.alloc { temp ->
-				//try {
-					@Suppress("UNCHECKED_CAST")
-					val rtemp = temp as ArrayList<(T) -> Unit>
-					rtemp += getHandlersFor(clazz)
-                    rtemp.fastForEach { handler ->
-                        handler(event)
-                    }
-				//} catch (e: PreventDefaultException) {
-				//	// Do nothing
-				//}
-			}
+            if (handlers == null) return
+            getHandlersFor(clazz)?.fastForEach { handler ->
+                handler(event)
+            }
 		}
 	}
 
