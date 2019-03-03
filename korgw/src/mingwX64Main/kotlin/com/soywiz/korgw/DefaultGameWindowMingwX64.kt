@@ -7,6 +7,7 @@ import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.net.*
 import kotlinx.cinterop.*
+import kotlinx.cinterop.nativeHeap.alloc
 import kotlinx.coroutines.*
 import platform.windows.*
 import kotlin.math.*
@@ -74,11 +75,29 @@ class WindowsGameWindow : GameWindow() {
         get() = super.quality
         set(value) {}
 
-    override fun setSize(width: Int, height: Int) {
-        val screenWidth = GetSystemMetrics(SM_CXSCREEN)
-        val screenHeight = GetSystemMetrics(SM_CYSCREEN)
-        println("SetWindowPos: $width, $height")
-        SetWindowPos(hwnd, HWND_TOP, (screenWidth - width) / 2, (screenHeight - height) / 2, width, height, 0)
+    val RECT.width get() = right - left
+    val RECT.height get() = bottom - top
+
+    override fun setSize(width: Int, height: Int): Unit = memScoped {
+        alloc<RECT> {
+            val rect: RECT = this
+
+            val screenWidth = GetSystemMetrics(SM_CXSCREEN)
+            val screenHeight = GetSystemMetrics(SM_CYSCREEN)
+            val x = (screenWidth - width) / 2
+            val y = (screenHeight - height) / 2
+            rect.left = x
+            rect.top = y
+            rect.right = x + width
+            rect.bottom = y + height
+            val style = GetWindowLongA(hwnd, GWL_STYLE)
+            val exstyle = GetWindowLongA(hwnd, GWL_EXSTYLE)
+            val menu = false
+            AdjustWindowRectEx(rect.ptr, (style and WS_OVERLAPPED.inv()).convert(), if (menu) 1 else 0, exstyle.convert())
+            println("SetWindowPos: ($width, $height) -> (${rect.width}, ${rect.height})")
+            SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.width, rect.height, 0)
+        }
+        Unit
     }
 
     override suspend fun browse(url: URL) {
