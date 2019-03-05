@@ -126,11 +126,9 @@ class BrowserGameWindow : GameWindow() {
         }
 
     private fun onResized() {
-        val doQuality = quality == GameWindow.Quality.QUALITY
-        val scale = if (doQuality) ag.devicePixelRatio.toInt() else 1
         isTouchDeviceCache = null
-        canvas.width = window.innerWidth * scale
-        canvas.height = window.innerHeight * scale
+        canvas.width = (window.innerWidth * scaledViewport).toInt()
+        canvas.height = (window.innerHeight * scaledViewport).toInt()
         canvas.style.position = "absolute"
         canvas.style.left = "0"
         canvas.style.right = "0"
@@ -145,6 +143,12 @@ class BrowserGameWindow : GameWindow() {
         ag.onRender(ag)
         dispatch(renderEvent)
     }
+
+    val doQuality get() = quality == GameWindow.Quality.QUALITY
+    val scaledViewport get() = if (doQuality) ag.devicePixelRatio else 1.0
+
+    inline fun transformEventX(x: Number): Double = x.toDouble() * scaledViewport
+    inline fun transformEventY(y: Number): Double = y.toDouble() * scaledViewport
 
     private fun keyEvent(me: KeyboardEvent) {
         dispatch(keyEvent {
@@ -204,21 +208,30 @@ class BrowserGameWindow : GameWindow() {
     }
 
     private fun touchEvent(e: dynamic, type: com.soywiz.korev.TouchEvent.Type) {
+        touchEvent.scaleCoords = false
         touchEvent.startFrame(type)
         for (n in 0 until e.touches.length) {
             val touch = e.touches.item(n)
-            touchEvent.touch(touch.identifier, touch.clientX, touch.clientY)
+            touchEvent.touch(
+                touch.identifier,
+                transformEventX(touch.clientX),
+                transformEventY(touch.clientY)
+            )
         }
         dispatch(touchEvent)
     }
 
     private fun mouseEvent(e: MouseEvent, type: com.soywiz.korev.MouseEvent.Type, pressingType: com.soywiz.korev.MouseEvent.Type = type) {
         if (!is_touch_device()) {
+            val tx = transformEventX(e.clientX).toInt()
+            val ty = transformEventY(e.clientY).toInt()
+            //console.log("mouseEvent", type.toString(), e.clientX, e.clientY, tx, ty)
             dispatch(mouseEvent {
                 this.type = if (e.buttons.toInt() != 0) pressingType else type
+                this.scaleCoords = false
                 this.id = 0
-                this.x = e.clientX
-                this.y = e.clientY
+                this.x = tx
+                this.y = ty
                 this.button = MouseButton[e.button.toInt()]
                 this.buttons = e.buttons.toInt()
                 this.isShiftDown = e.shiftKey
