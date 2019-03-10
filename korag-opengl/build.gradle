@@ -3,4 +3,6 @@ apply plugin: com.soywiz.korlibs.KorlibsPlugin
 korlibs {
     dependencyProject(":kgl")
     dependencyProject(":korag")
+
+    dependencyMulti("com.soywiz:korma:$kormaVersion")
 }

@@ -99,8 +99,9 @@ enum class ShaderType {
 open class Operand(val type: VarType) {
 }
 
-open class Variable(val name: String, type: VarType) : Operand(type) {
-	var id: Int = 0
+open class Variable(val name: String, type: VarType, val arrayCount: Int) : Operand(type) {
+    constructor(name: String, type: VarType) : this(name, type, 1)
+    var id: Int = 0
 	var data: Any? = null
 }
 
@@ -117,11 +118,13 @@ open class Attribute(
 	override fun toString(): String = "Attribute($name)"
 }
 
-open class Varying(name: String, type: VarType) : Variable(name, type) {
+open class Varying(name: String, type: VarType, arrayCount: Int) : Variable(name, type, arrayCount) {
+    constructor(name: String, type: VarType) : this(name, type, 1)
 	override fun toString(): String = "Varying($name)"
 }
 
-open class Uniform(name: String, type: VarType) : Variable(name, type) {
+open class Uniform(name: String, type: VarType, arrayCount: Int) : Variable(name, type, arrayCount) {
+    constructor(name: String, type: VarType) : this(name, type, 1)
 	//companion object {
 	//	var lastUid = 0
 	//}
@@ -130,7 +133,8 @@ open class Uniform(name: String, type: VarType) : Variable(name, type) {
 	override fun toString(): String = "Uniform($name)"
 }
 
-open class Temp(id: Int, type: VarType) : Variable("temp$id", type) {
+open class Temp(id: Int, type: VarType, arrayCount: Int) : Variable("temp$id", type, arrayCount) {
+    constructor(id: Int, type: VarType) : this(id, type, 1)
 	override fun toString(): String = "Temp($name)"
 }
 
@@ -210,7 +214,8 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 		}
 
 		private var tempLastId = 3
-		fun createTemp(type: VarType) = Temp(tempLastId++, type)
+        fun createTemp(type: VarType, arrayCount: Int) = Temp(tempLastId++, type, arrayCount)
+		fun createTemp(type: VarType) = Temp(tempLastId++, type, 1)
 
 		infix fun Operand.set(from: Operand) = run { outputStms += Stm.Set(this, from) }
 		infix fun Operand.setTo(from: Operand) = run { outputStms += Stm.Set(this, from) }

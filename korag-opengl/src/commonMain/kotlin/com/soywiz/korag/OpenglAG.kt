@@ -147,9 +147,11 @@ abstract class AGOpengl : AG() {
     }
 
     val tempBuffer1 = FBuffer(4)
-    val tempBuffer16 = FBuffer(4 * 16)
+    val tempBuffer = FBuffer(4 * 16 * 1024)
+    val tempF32 = tempBuffer.f32
 
     private val tempFloats = FloatArray(16)
+    private val mat3dArray = arrayOf(Matrix3D())
 
     override fun draw(
         vertices: Buffer,
@@ -201,9 +203,15 @@ abstract class AGOpengl : AG() {
         //for ((uniform, value) in uniforms) {
         for (n in 0 until uniforms.uniforms.size) {
             val uniform = uniforms.uniforms[n]
+            val uniformType = uniform.type
             val value = uniforms.values[n]
             val location = gl.getUniformLocation(glProgram.id, uniform.name)
-            when (uniform.type) {
+            val arrayCount = uniform.arrayCount
+            val stride = uniform.type.elementCount
+
+            //println("uniform: $uniform, arrayCount=$arrayCount, stride=$stride")
+
+            when (uniformType) {
                 VarType.TextureUnit -> {
                     val unit = value as TextureUnit
                     gl.activeTexture(gl.TEXTURE0 + textureUnit)
@@ -213,59 +221,49 @@ abstract class AGOpengl : AG() {
                     gl.uniform1i(location, textureUnit)
                     textureUnit++
                 }
-                VarType.Mat2 -> {
-                    (value as Matrix3D).copyToFloat2x2(tempFloats, MajorOrder.COLUMN)
-                    gl.uniformMatrix2fv(
-                        location,
-                        1,
-                        false,
-                        tempBuffer16.setFloats(0, tempFloats, 0, 4)
-                        //tempBuffer16.setFloats(0, (value as Matrix2).data, 0, 4)
-                    )
-                }
-                VarType.Mat3 -> {
-                    (value as Matrix3D).copyToFloat3x3(tempFloats, MajorOrder.COLUMN)
-                    gl.uniformMatrix3fv(
-                        location,
-                        1,
-                        false,
-                        tempBuffer16.setFloats(0, tempFloats, 0, 9)
-                        //tempBuffer16.setFloats(0, (value as Matrix3).data, 0, 9)
-                    )
-                }
-                VarType.Mat4 -> {
-                    (value as Matrix3D).copyToFloat4x4(tempFloats, MajorOrder.COLUMN)
-                    gl.uniformMatrix4fv(
-                        location,
-                        1,
-                        false,
-                        tempBuffer16.setFloats(0, tempFloats, 0, 16)
-                        //tempBuffer16.setFloats(0, (value as Matrix4).data, 0, 16)
-                    )
-                }
-                VarType.Float1 -> {
-                    when (value) {
-                        is Number -> gl.uniform1f(location, value.toFloat())
-                        is Vector3D -> gl.uniform1f(location, value.x)
-                        is FloatArray -> gl.uniform1f(location, value[0])
-                        else -> error("Unknown type '$value'")
+                VarType.Mat2, VarType.Mat3, VarType.Mat4 -> {
+                    val matArray = when (value) {
+                        is Array<*> -> value
+                        is Matrix3D -> mat3dArray.also { it[0].copyFrom(value) }
+                        else -> error("Not an array or a matrix3d")
+                    } as Array<Matrix3D>
+
+                    val matSize = when (uniformType) {
+                        VarType.Mat2 -> 2; VarType.Mat3 -> 3; VarType.Mat4 -> 4; else -> -1
+                    }
+
+                    for (n in 0 until arrayCount) {
+                        matArray[n].copyToFloatWxH(tempFloats, matSize, matSize, MajorOrder.COLUMN, n * stride)
+                    }
+                    tempBuffer.setFloats(0, tempFloats, 0, stride * arrayCount)
+
+                    when (uniform.type) {
+                        VarType.Mat2 -> gl.uniformMatrix2fv(location, arrayCount, false, tempBuffer)
+                        VarType.Mat3 -> gl.uniformMatrix3fv(location, arrayCount, false, tempBuffer)
+                        VarType.Mat4 -> gl.uniformMatrix4fv(location, arrayCount, false, tempBuffer)
+                        else -> invalidOp("Don't know how to set uniform matrix ${uniform.type}")
                     }
                 }
-                VarType.Float2 -> {
+                VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> {
                     when (value) {
-                        is Vector3D -> gl.uniform2f(location, value.x, value.y)
-                        is Point -> gl.uniform2f(location, value.x.toFloat(), value.y.toFloat())
-                        is FloatArray -> gl.uniform2f(location, value[0], value[1])
+                        is Number -> tempBuffer.setAlignedFloat32(0, value.toFloat())
+                        is Vector3D -> tempBuffer.setFloats(0, value.data, 0, stride)
+                        is FloatArray -> tempBuffer.setFloats(0, value, 0, stride * arrayCount)
+                        is Array<*> -> {
+                            for (n in 0 until value.size) {
+                                val vector = value[n] as Vector3D
+                                tempBuffer.setFloats(n * stride, vector.data, 0, stride)
+                            }
+                        }
                         else -> error("Unknown type '$value'")
                     }
-                }
-                VarType.Float3 -> {
-                    val fa = value as FloatArray
-                    gl.uniform3f(location, fa[0], fa[1], fa[2])
-                }
-                VarType.Float4 -> {
-                    val fa = value as FloatArray
-                    gl.uniform4f(location, fa[0], fa[1], fa[2], fa[3])
+                    when (uniform.type) {
+                        VarType.Float1 -> gl.uniform1fv(location, arrayCount, tempBuffer)
+                        VarType.Float2 -> gl.uniform2fv(location, arrayCount, tempBuffer)
+                        VarType.Float3 -> gl.uniform3fv(location, arrayCount, tempBuffer)
+                        VarType.Float4 -> gl.uniform4fv(location, arrayCount, tempBuffer)
+                        else -> Unit
+                    }
                 }
                 else -> invalidOp("Don't know how to set uniform ${uniform.type}")
             }
