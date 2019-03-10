@@ -26,7 +26,9 @@ fun jsObject(vararg pairs: Pair<String, Any?>): dynamic {
 }
 
 class AGWebgl(val config: AGConfig, val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl(), AGContainer {
-	companion object {
+    override val webgl: Boolean = true
+
+    companion object {
 		//var UNPACK_PREMULTIPLY_ALPHA_WEBGL = document.createElement('canvas').getContext('webgl').UNPACK_PREMULTIPLY_ALPHA_WEBGL
 		const val UNPACK_PREMULTIPLY_ALPHA_WEBGL = 37441
 	}

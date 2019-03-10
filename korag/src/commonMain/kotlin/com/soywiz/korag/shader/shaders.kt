@@ -101,6 +101,7 @@ open class Operand(val type: VarType) {
 
 open class Variable(val name: String, type: VarType, val arrayCount: Int) : Operand(type) {
     constructor(name: String, type: VarType) : this(name, type, 1)
+    val indexNames = Array(arrayCount) { "$name[$it]" }
     var id: Int = 0
 	var data: Any? = null
 }

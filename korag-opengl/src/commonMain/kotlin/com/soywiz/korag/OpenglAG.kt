@@ -17,6 +17,7 @@ abstract class AGOpengl : AG() {
     abstract val gl: KmlGl
 
     open val gles: Boolean = false
+    open val webgl: Boolean = false
 
     override var devicePixelRatio: Double = 1.0
 
@@ -147,12 +148,13 @@ abstract class AGOpengl : AG() {
         StencilOp.ZERO -> gl.ZERO
     }
 
-    val tempMaxMatrices = 1024
+    private val TEMP_MAX_MATRICES = 1024
     val tempBuffer1 = FBuffer(4)
-    val tempBuffer = FBuffer(4 * 16 * tempMaxMatrices)
+    val tempBuffer = FBuffer(4 * 16 * TEMP_MAX_MATRICES)
+    val tempBuffers = Array(TEMP_MAX_MATRICES) { FBuffer(4 * 16) }
     val tempF32 = tempBuffer.f32
 
-    private val tempFloats = FloatArray(16 * tempMaxMatrices)
+    private val tempFloats = FloatArray(16 * TEMP_MAX_MATRICES)
     private val mat3dArray = arrayOf(Matrix3D())
 
     override fun draw(
@@ -205,9 +207,10 @@ abstract class AGOpengl : AG() {
         //for ((uniform, value) in uniforms) {
         for (n in 0 until uniforms.uniforms.size) {
             val uniform = uniforms.uniforms[n]
+            val uniformName = uniform.name
             val uniformType = uniform.type
             val value = uniforms.values[n]
-            val location = gl.getUniformLocation(glProgram.id, uniform.name)
+            val location = gl.getUniformLocation(glProgram.id, uniformName)
             val declArrayCount = uniform.arrayCount
             val stride = uniform.type.elementCount
 
@@ -240,11 +243,26 @@ abstract class AGOpengl : AG() {
                     }
                     tempBuffer.setFloats(0, tempFloats, 0, stride * arrayCount)
 
-                    when (uniform.type) {
-                        VarType.Mat2 -> gl.uniformMatrix2fv(location, arrayCount, false, tempBuffer)
-                        VarType.Mat3 -> gl.uniformMatrix3fv(location, arrayCount, false, tempBuffer)
-                        VarType.Mat4 -> gl.uniformMatrix4fv(location, arrayCount, false, tempBuffer)
-                        else -> invalidOp("Don't know how to set uniform matrix ${uniform.type}")
+                    if (webgl) {
+                    //if (true) {
+                        for (n in 0 until arrayCount) {
+                            val itLocation = if (arrayCount == 1) location else gl.getUniformLocation(glProgram.id, uniform.indexNames[n])
+                            val tb = tempBuffers[n]
+                            arraycopy(tempBuffer.f32, n * stride, tb.f32, 0, stride)
+                            when (uniform.type) {
+                                VarType.Mat2 -> gl.uniformMatrix2fv(itLocation, 1, false, tb)
+                                VarType.Mat3 -> gl.uniformMatrix3fv(itLocation, 1, false, tb)
+                                VarType.Mat4 -> gl.uniformMatrix4fv(itLocation, 1, false, tb)
+                                else -> invalidOp("Don't know how to set uniform matrix ${uniform.type}")
+                            }
+                        }
+                    } else {
+                        when (uniform.type) {
+                            VarType.Mat2 -> gl.uniformMatrix2fv(location, arrayCount, false, tempBuffer)
+                            VarType.Mat3 -> gl.uniformMatrix3fv(location, arrayCount, false, tempBuffer)
+                            VarType.Mat4 -> gl.uniformMatrix4fv(location, arrayCount, false, tempBuffer)
+                            else -> invalidOp("Don't know how to set uniform matrix ${uniform.type}")
+                        }
                     }
                 }
                 VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> {
@@ -265,12 +283,30 @@ abstract class AGOpengl : AG() {
                         }
                         else -> error("Unknown type '$value'")
                     }
-                    when (uniform.type) {
-                        VarType.Float1 -> gl.uniform1fv(location, arrayCount, tempBuffer)
-                        VarType.Float2 -> gl.uniform2fv(location, arrayCount, tempBuffer)
-                        VarType.Float3 -> gl.uniform3fv(location, arrayCount, tempBuffer)
-                        VarType.Float4 -> gl.uniform4fv(location, arrayCount, tempBuffer)
-                        else -> Unit
+                    //if (true) {
+                    if (webgl) {
+                        for (n in 0 until arrayCount) {
+                            val itLocation = if (arrayCount == 1) location else gl.getUniformLocation(glProgram.id, uniform.indexNames[n])
+                            val tb = tempBuffers[n]
+                            //println("uniformName[$uniformName] = $itLocation")
+                            arraycopy(tempBuffer.f32, 0, tb.f32, 0, stride)
+
+                            when (uniform.type) {
+                                VarType.Float1 -> gl.uniform1fv(itLocation, 1, tb)
+                                VarType.Float2 -> gl.uniform2fv(itLocation, 1, tb)
+                                VarType.Float3 -> gl.uniform3fv(itLocation, 1, tb)
+                                VarType.Float4 -> gl.uniform4fv(itLocation, 1, tb)
+                                else -> Unit
+                            }
+                        }
+                    } else {
+                        when (uniform.type) {
+                            VarType.Float1 -> gl.uniform1fv(location, arrayCount, tempBuffer)
+                            VarType.Float2 -> gl.uniform2fv(location, arrayCount, tempBuffer)
+                            VarType.Float3 -> gl.uniform3fv(location, arrayCount, tempBuffer)
+                            VarType.Float4 -> gl.uniform4fv(location, arrayCount, tempBuffer)
+                            else -> Unit
+                        }
                     }
                 }
                 else -> invalidOp("Don't know how to set uniform ${uniform.type}")
