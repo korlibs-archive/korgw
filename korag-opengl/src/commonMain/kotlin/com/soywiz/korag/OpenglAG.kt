@@ -10,6 +10,7 @@ import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korma.geom.*
+import kotlin.math.min
 
 abstract class AGOpengl : AG() {
     open val isGlAvailable = true
@@ -146,11 +147,12 @@ abstract class AGOpengl : AG() {
         StencilOp.ZERO -> gl.ZERO
     }
 
+    val tempMaxMatrices = 1024
     val tempBuffer1 = FBuffer(4)
-    val tempBuffer = FBuffer(4 * 16 * 1024)
+    val tempBuffer = FBuffer(4 * 16 * tempMaxMatrices)
     val tempF32 = tempBuffer.f32
 
-    private val tempFloats = FloatArray(16)
+    private val tempFloats = FloatArray(16 * tempMaxMatrices)
     private val mat3dArray = arrayOf(Matrix3D())
 
     override fun draw(
@@ -206,7 +208,7 @@ abstract class AGOpengl : AG() {
             val uniformType = uniform.type
             val value = uniforms.values[n]
             val location = gl.getUniformLocation(glProgram.id, uniform.name)
-            val arrayCount = uniform.arrayCount
+            val declArrayCount = uniform.arrayCount
             val stride = uniform.type.elementCount
 
             //println("uniform: $uniform, arrayCount=$arrayCount, stride=$stride")
@@ -227,6 +229,7 @@ abstract class AGOpengl : AG() {
                         is Matrix3D -> mat3dArray.also { it[0].copyFrom(value) }
                         else -> error("Not an array or a matrix3d")
                     } as Array<Matrix3D>
+                    val arrayCount = min(declArrayCount, matArray.size)
 
                     val matSize = when (uniformType) {
                         VarType.Mat2 -> 2; VarType.Mat3 -> 3; VarType.Mat4 -> 4; else -> -1
@@ -245,11 +248,16 @@ abstract class AGOpengl : AG() {
                     }
                 }
                 VarType.Float1, VarType.Float2, VarType.Float3, VarType.Float4 -> {
+                    var arrayCount = declArrayCount
                     when (value) {
                         is Number -> tempBuffer.setAlignedFloat32(0, value.toFloat())
                         is Vector3D -> tempBuffer.setFloats(0, value.data, 0, stride)
-                        is FloatArray -> tempBuffer.setFloats(0, value, 0, stride * arrayCount)
+                        is FloatArray -> {
+                            arrayCount = min(declArrayCount, value.size / stride)
+                            tempBuffer.setFloats(0, value, 0, stride * arrayCount)
+                        }
                         is Array<*> -> {
+                            arrayCount = min(declArrayCount, value.size)
                             for (n in 0 until value.size) {
                                 val vector = value[n] as Vector3D
                                 tempBuffer.setFloats(n * stride, vector.data, 0, stride)

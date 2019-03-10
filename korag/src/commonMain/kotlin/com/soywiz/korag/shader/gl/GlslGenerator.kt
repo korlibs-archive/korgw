@@ -44,6 +44,8 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		}
 	}
 
+    val Variable.arrayDecl get() = if (arrayCount != 1) "[$arrayCount]" else ""
+
 	fun generate(root: Program.Stm): String {
 		temps.clear()
 		attributes.clear()
@@ -69,9 +71,9 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 				line("#endif")
 			}
 
-			for (it in attributes) line("attribute ${typeToString(it.type)} ${it.name};")
-			for (it in uniforms) line("uniform ${typeToString(it.type)} ${it.name};")
-			for (it in varyings) line("varying ${typeToString(it.type)} ${it.name};")
+			for (it in attributes) line("attribute ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+			for (it in uniforms) line("uniform ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+			for (it in varyings) line("varying ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
 
 			line("void main()") {
 				for (temp in temps) {
