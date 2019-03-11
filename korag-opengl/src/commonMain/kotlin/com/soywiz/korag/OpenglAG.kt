@@ -151,7 +151,9 @@ abstract class AGOpengl : AG() {
     private val TEMP_MAX_MATRICES = 1024
     val tempBuffer1 = FBuffer(4)
     val tempBuffer = FBuffer(4 * 16 * TEMP_MAX_MATRICES)
-    val tempBuffers = Array(TEMP_MAX_MATRICES) { FBuffer(4 * 16) }
+    val tempBufferM2 = FBuffer(4 * 2 * 2)
+    val tempBufferM3 = FBuffer(4 * 3 * 3)
+    val tempBufferM4 = FBuffer(4 * 4 * 4)
     val tempF32 = tempBuffer.f32
 
     private val tempFloats = FloatArray(16 * TEMP_MAX_MATRICES)
@@ -245,9 +247,15 @@ abstract class AGOpengl : AG() {
 
                     if (webgl) {
                     //if (true) {
+                        val tb = when (uniformType) {
+                            VarType.Mat2 -> tempBufferM2
+                            VarType.Mat3 -> tempBufferM3
+                            VarType.Mat4 -> tempBufferM4
+                            else -> tempBuffer
+                        }
+
                         for (n in 0 until arrayCount) {
                             val itLocation = if (arrayCount == 1) location else gl.getUniformLocation(glProgram.id, uniform.indexNames[n])
-                            val tb = tempBuffers[n]
                             arraycopy(tempBuffer.f32, n * stride, tb.f32, 0, stride)
                             when (uniform.type) {
                                 VarType.Mat2 -> gl.uniformMatrix2fv(itLocation, 1, false, tb)
@@ -285,17 +293,18 @@ abstract class AGOpengl : AG() {
                     }
                     //if (true) {
                     if (webgl) {
+                        val tb = tempBufferM2
                         for (n in 0 until arrayCount) {
                             val itLocation = if (arrayCount == 1) location else gl.getUniformLocation(glProgram.id, uniform.indexNames[n])
-                            val tb = tempBuffers[n]
+                            val f32 = tb.f32
                             //println("uniformName[$uniformName] = $itLocation")
                             arraycopy(tempBuffer.f32, 0, tb.f32, 0, stride)
 
                             when (uniform.type) {
-                                VarType.Float1 -> gl.uniform1fv(itLocation, 1, tb)
-                                VarType.Float2 -> gl.uniform2fv(itLocation, 1, tb)
-                                VarType.Float3 -> gl.uniform3fv(itLocation, 1, tb)
-                                VarType.Float4 -> gl.uniform4fv(itLocation, 1, tb)
+                                VarType.Float1 -> gl.uniform1f(itLocation, f32[0])
+                                VarType.Float2 -> gl.uniform2f(itLocation, f32[0], f32[1])
+                                VarType.Float3 -> gl.uniform3f(itLocation, f32[0], f32[1], f32[2])
+                                VarType.Float4 -> gl.uniform4f(itLocation, f32[0], f32[1], f32[2], f32[3])
                                 else -> Unit
                             }
                         }
