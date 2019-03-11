@@ -251,12 +251,13 @@ abstract class AGOpengl : AG() {
                             VarType.Mat2 -> tempBufferM2
                             VarType.Mat3 -> tempBufferM3
                             VarType.Mat4 -> tempBufferM4
-                            else -> tempBuffer
+                            else -> tempBufferM4
                         }
 
                         for (n in 0 until arrayCount) {
                             val itLocation = if (arrayCount == 1) location else gl.getUniformLocation(glProgram.id, uniform.indexNames[n])
                             arraycopy(tempBuffer.f32, n * stride, tb.f32, 0, stride)
+                            //println("[WEBGL] uniformName[$uniformName]=$itLocation, tb: ${tb.f32.size}")
                             when (uniform.type) {
                                 VarType.Mat2 -> gl.uniformMatrix2fv(itLocation, 1, false, tb)
                                 VarType.Mat3 -> gl.uniformMatrix3fv(itLocation, 1, false, tb)
@@ -265,6 +266,7 @@ abstract class AGOpengl : AG() {
                             }
                         }
                     } else {
+                        //println("[NO-WEBGL] uniformName[$uniformName]=$location ")
                         when (uniform.type) {
                             VarType.Mat2 -> gl.uniformMatrix2fv(location, arrayCount, false, tempBuffer)
                             VarType.Mat3 -> gl.uniformMatrix3fv(location, arrayCount, false, tempBuffer)

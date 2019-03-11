@@ -73,7 +73,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 
 			for (it in attributes) line("attribute ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
 			for (it in uniforms) line("uniform ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-			for (it in varyings) line("varying ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+			for (it in varyings) line("varying ${typeToString(it.type)} ${it.name};")
 
 			line("void main()") {
 				for (temp in temps) {
