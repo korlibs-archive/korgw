@@ -35,6 +35,8 @@ abstract class AGAwtBase(val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl(
 	var glprofile = GLProfile.getDefault()
     //val glprofile = GLProfile.get( GLProfile.GL2 )
 	var glcapabilities = GLCapabilities(glprofile).apply {
+        sampleBuffers = true
+        numSamples = 4
 		stencilBits = 8
 		depthBits = 24
 	}
