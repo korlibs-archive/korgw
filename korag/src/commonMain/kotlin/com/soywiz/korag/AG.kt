@@ -16,6 +16,7 @@ interface AGFactory {
 	val supportsNativeFrame: Boolean
 	fun create(nativeControl: Any?, config: AGConfig): AG
 	fun createFastWindow(title: String, width: Int, height: Int): AGWindow
+    //fun createFastWindow(title: String, width: Int, height: Int, config: AGConfig): AGWindow
 }
 
 data class AGConfig(val antialiasHint: Boolean = true)

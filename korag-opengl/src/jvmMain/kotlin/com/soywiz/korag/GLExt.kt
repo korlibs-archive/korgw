@@ -31,12 +31,14 @@ object AGFactoryAwt : AGFactory {
 	}
 }
 
-abstract class AGAwtBase(val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl() {
+abstract class AGAwtBase(val config: AGConfig = AGConfig(), val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl() {
 	var glprofile = GLProfile.getDefault()
     //val glprofile = GLProfile.get( GLProfile.GL2 )
 	var glcapabilities = GLCapabilities(glprofile).apply {
-        sampleBuffers = true
-        numSamples = 4
+        if (config.antialiasHint) {
+            sampleBuffers = true
+            numSamples = 4
+        }
 		stencilBits = 8
 		depthBits = 24
 	}
@@ -61,7 +63,7 @@ abstract class AGAwtBase(val glDecorator: (KmlGl) -> KmlGl = { it }) : AGOpengl(
 	//val queue = Deque<(gl: GL) -> Unit>()
 }
 
-class AGAwt(val config: AGConfig, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(glDecorator), AGContainer {
+class AGAwt(config: AGConfig, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(config, glDecorator), AGContainer {
 	val glcanvas = GLCanvas(glcapabilities)
 	override val nativeComponent = glcanvas
 
@@ -164,6 +166,6 @@ class AGAwt(val config: AGConfig, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAw
 	//}
 }
 
-class AGAwtNative(override val nativeComponent: Any, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(glDecorator) {
+class AGAwtNative(override val nativeComponent: Any, config: AGConfig = AGConfig(), glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(config, glDecorator) {
 
 }

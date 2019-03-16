@@ -22,19 +22,30 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
     val windowStyle = NSWindowStyleMaskTitled or NSWindowStyleMaskMiniaturizable or
         NSWindowStyleMaskClosable or NSWindowStyleMaskResizable
 
-    val attrs = uintArrayOf(
-        //NSOpenGLPFAOpenGLProfile,
-        //NSOpenGLProfileVersion4_1Core,
-        NSOpenGLPFAColorSize.convert(), 24.convert(),
-        NSOpenGLPFAAlphaSize.convert(), 8.convert(),
-        NSOpenGLPFADoubleBuffer.convert(),
-        NSOpenGLPFADepthSize.convert(), 32.convert(),
-        0.convert()
-    )
+    val attrs: UIntArray by lazy {
+        val antialias = (this.quality != GameWindow.Quality.PERFORMANCE)
+        val antialiasArray = if (antialias) intArrayOf(
+            NSOpenGLPFAMultisample.convert(),
+            NSOpenGLPFASampleBuffers.convert(), 1.convert(),
+            NSOpenGLPFASamples.convert(), 4.convert()
+        ) else intArrayOf()
+        intArrayOf(
+            *antialiasArray,
+            //NSOpenGLPFAOpenGLProfile,
+            //NSOpenGLProfileVersion4_1Core,
+            NSOpenGLPFAColorSize.convert(), 24.convert(),
+            NSOpenGLPFAAlphaSize.convert(), 8.convert(),
+            NSOpenGLPFADoubleBuffer.convert(),
+            NSOpenGLPFADepthSize.convert(), 32.convert(),
+            0.convert()
+        ).toUIntArray()
+    }
 
-    val pixelFormat = attrs.usePinned {
-        NSOpenGLPixelFormat(it.addressOf(0).reinterpret<NSOpenGLPixelFormatAttributeVar>())
-        //NSOpenGLPixelFormat.alloc()!!.initWithAttributes(it.addressOf(0).reinterpret())!!
+    val pixelFormat by lazy {
+        attrs.usePinned {
+            NSOpenGLPixelFormat(it.addressOf(0).reinterpret<NSOpenGLPixelFormatAttributeVar>())
+            //NSOpenGLPixelFormat.alloc()!!.initWithAttributes(it.addressOf(0).reinterpret())!!
+        }
     }
 
     val windowConfigWidth = 640

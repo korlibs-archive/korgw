@@ -26,7 +26,9 @@ actual val DefaultGameWindow: GameWindow = object : GameWindow() {
         }
     }
 
-    override val ag: AGAwt = AGAwt(AGConfig())
+    override val ag: AGAwt by lazy {
+        AGAwt(AGConfig(antialiasHint = (quality != GameWindow.Quality.PERFORMANCE)))
+    }
 
     init {
         //frame.contentPane.layout = BorderLayout()
