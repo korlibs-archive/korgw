@@ -43,7 +43,8 @@ abstract class AGAwtBase(val config: AGConfig = AGConfig(), val glDecorator: (Km
 		depthBits = 24
 	}
 	lateinit var ad: GLAutoDrawable
-	override lateinit var gl: KmlGl
+    private var _gl: KmlGl = KmlGlDummy
+	override val gl: KmlGl get() = _gl
 	lateinit var glThread: Thread
 	override var isGlAvailable: Boolean = false
 	override var devicePixelRatio: Double = 1.0
@@ -51,9 +52,9 @@ abstract class AGAwtBase(val config: AGConfig = AGConfig(), val glDecorator: (Km
 	fun setAutoDrawable(d: GLAutoDrawable) {
 		glThread = Thread.currentThread()
 		ad = d
-        if (!::gl.isInitialized) {
+        if (_gl === KmlGlDummy) {
             //gl = KmlGlCached(JvmKmlGl(d.gl as GL2))
-            gl = glDecorator(JvmKmlGl(d.gl as GL2))
+            _gl = glDecorator(JvmKmlGl(d.gl as GL2))
         }
 		isGlAvailable = true
 	}
