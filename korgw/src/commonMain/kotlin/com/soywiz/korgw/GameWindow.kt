@@ -134,7 +134,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable {
     open var visible: Boolean = false
     open var quality: Quality get() = Quality.AUTOMATIC; set(value) = Unit
 
-    val timePerFrame: TimeSpan get() = (1000.0 / fps).milliseconds
+    val timePerFrame: TimeSpan get() = (1000.0 / (if (fps > 0) fps else 60)).milliseconds
 
     enum class Quality {
         PERFORMANCE,
@@ -166,7 +166,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable {
             val time = measureTime {
                 frame()
             }
-            delay((16.milliseconds - time).clamp(0.milliseconds, 16.milliseconds))
+            delay((timePerFrame - time).clamp(0.milliseconds, timePerFrame))
         }
     }
 

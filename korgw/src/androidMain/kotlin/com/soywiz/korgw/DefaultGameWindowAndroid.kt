@@ -17,7 +17,7 @@ actual val DefaultGameWindow: GameWindow = AndroidGameWindow()
 class AndroidGameWindow() : GameWindow() {
     lateinit var activity: KorgwActivity
 
-    override val ag: AG by lazy { activity.ag }
+    override val ag: AG get() = activity.ag
     override var fps: Int by { activity::fps }.redirected()
     override var title: String; get() = activity.title.toString(); set(value) = run { activity.title = value }
     override val width: Int get() = activity.window.decorView.width

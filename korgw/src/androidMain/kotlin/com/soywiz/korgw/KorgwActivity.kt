@@ -40,6 +40,21 @@ abstract class KorgwActivity : Activity() {
 
     //val touchEvents = Pool { TouchEvent() }
 
+    inner class KorgwActivityAGOpengl : AGOpengl() {
+        //override val gl: KmlGl = CheckErrorsKmlGlProxy(KmlGlAndroid())
+        override val gl: KmlGl = KmlGlAndroid()
+        override val nativeComponent: Any get() = this@KorgwActivity
+        override val gles: Boolean = true
+
+        override fun repaint() {
+            mGLView.invalidate()
+        }
+
+        init {
+            println("KorgwActivityAGOpengl: Created ag $this for ${this@KorgwActivity} with gl=$gl")
+        }
+    }
+
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,21 +63,14 @@ abstract class KorgwActivity : Activity() {
         //println("KorgwActivity.onCreate")
 
         //ag = AGOpenglFactory.create(this).create(this, AGConfig())
-        ag = object : AGOpengl() {
-            //override val gl: KmlGl = CheckErrorsKmlGlProxy(KmlGlAndroid())
-            override val gl: KmlGl = KmlGlAndroid()
-            override val nativeComponent: Any get() = this@KorgwActivity
-            override val gles: Boolean = true
-
-            override fun repaint() {
-                mGLView.invalidate()
-            }
-        }
+        ag = KorgwActivityAGOpengl()
 
         mGLView = object : GLSurfaceView(this) {
             val view = this
 
             init {
+                println("KorgwActivity: Created GLSurfaceView $this for ${this@KorgwActivity}")
+
                 var contextLost = false
                 var surfaceChanged = false
                 var initialized = false
@@ -189,8 +197,11 @@ abstract class KorgwActivity : Activity() {
     override fun onDestroy() {
         println("---------------- KorgwActivity.onDestroy --------------")
         super.onDestroy()
+        mGLView?.onPause()
+        //mGLView?.requestExitAndWait()
         //mGLView?.
         //mGLView = null
+        setContentView(android.view.View(this))
         gameWindow?.dispatchDestroyEvent()
         //gameWindow?.close() // Do not close, since it will be automatically closed by the destroy event
         gameWindow = null

@@ -42,7 +42,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	abstract val nativeComponent: Any
 
     fun contextLost() {
-        println("AG.contextLost()")
+        println("AG.contextLost() : $this")
         contextVersion++
     }
 
