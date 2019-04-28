@@ -26,6 +26,9 @@ abstract class KorgwActivity : Activity() {
 
     var fps: Int = 60
 
+    protected val pauseEvent = PauseEvent()
+    protected val resumeEvent = ResumeEvent()
+    protected val destroyEvent = DestroyEvent()
     protected val renderEvent = RenderEvent()
     protected val initEvent = InitEvent()
     protected val disposeEvent = DisposeEvent()
@@ -40,13 +43,14 @@ abstract class KorgwActivity : Activity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        println("---------------- KorgwActivity.onCreate(savedInstanceState=$savedInstanceState) --------------")
         Log.e("KorgwActivity", "onCreate")
         //println("KorgwActivity.onCreate")
 
         //ag = AGOpenglFactory.create(this).create(this, AGConfig())
         ag = object : AGOpengl() {
-            override val gl: KmlGl = CheckErrorsKmlGlProxy(KmlGlAndroid())
-            //override val gl: KmlGl = KmlGlAndroid()
+            //override val gl: KmlGl = CheckErrorsKmlGlProxy(KmlGlAndroid())
+            override val gl: KmlGl = KmlGlAndroid()
             override val nativeComponent: Any get() = this@KorgwActivity
             override val gles: Boolean = true
 
@@ -67,14 +71,15 @@ abstract class KorgwActivity : Activity() {
                 setRenderer(object : GLSurfaceView.Renderer {
                     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
                         //GLES20.glClearColor(0.0f, 0.4f, 0.7f, 1.0f)
-                        println("---------------- onSurfaceCreated --------------")
+                        println("---------------- GLSurfaceView.onSurfaceCreated($config) --------------")
                         contextLost = true
                     }
 
                     override fun onDrawFrame(unused: GL10) {
                         if (contextLost) {
                             contextLost = false
-                            ag.contextVersion++
+                            println("---------------- Trigger AG.contextLost --------------")
+                            ag.contextLost()
                         }
                         if (!initialized) {
                             initialized = true
@@ -93,7 +98,7 @@ abstract class KorgwActivity : Activity() {
                     }
 
                     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
-                        println("---------------- onSurfaceChanged --------------")
+                        println("---------------- GLSurfaceView.onSurfaceChanged($width, $height) --------------")
                         //ag.contextVersion++
                         //GLES20.glViewport(0, 0, width, height)
                         surfaceChanged = true
@@ -136,29 +141,59 @@ abstract class KorgwActivity : Activity() {
                 })
                 return true
             }
+
+            override fun onResume() {
+                //Looper.getMainLooper().
+                println("---------------- GLSurfaceView.onResume --------------")
+                super.onResume()
+            }
+
+            override fun onPause() {
+                println("---------------- GLSurfaceView.onPause --------------")
+                super.onPause()
+            }
         }
 
         setContentView(mGLView)
 
         Korio(this) {
-            activityMain()
+            try {
+                activityMain()
+            } finally {
+                println("KorgwActivity.activityMain completed!")
+            }
         }
     }
 
     override fun onResume() {
         //Looper.getMainLooper().
-        println("---------------- onResume --------------")
+        println("---------------- KorgwActivity.onResume --------------")
         super.onResume()
+        mGLView?.onResume()
+        gameWindow?.dispatchResumeEvent()
     }
 
     override fun onPause() {
-        println("---------------- onPause --------------")
+        println("---------------- KorgwActivity.onPause --------------")
         super.onPause()
+        mGLView?.onPause()
+        gameWindow?.dispatchPauseEvent()
     }
 
     override fun onStop() {
-        println("---------------- onStop --------------")
+        println("---------------- KorgwActivity.onStop --------------")
         super.onStop()
+        gameWindow?.dispatchStopEvent()
+    }
+
+    override fun onDestroy() {
+        println("---------------- KorgwActivity.onDestroy --------------")
+        super.onDestroy()
+        //mGLView?.
+        //mGLView = null
+        gameWindow?.dispatchDestroyEvent()
+        //gameWindow?.close() // Do not close, since it will be automatically closed by the destroy event
+        gameWindow = null
     }
 
     abstract suspend fun activityMain(): Unit

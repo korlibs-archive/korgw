@@ -41,6 +41,11 @@ abstract class AG : Extra by Extra.Mixin() {
 	var contextVersion = 0
 	abstract val nativeComponent: Any
 
+    fun contextLost() {
+        println("AG.contextLost()")
+        contextVersion++
+    }
+
 	open val maxTextureSize = Size(2048, 2048)
 
 	open val devicePixelRatio: Double = 1.0

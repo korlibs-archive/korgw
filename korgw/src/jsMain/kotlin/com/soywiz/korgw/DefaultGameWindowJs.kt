@@ -289,8 +289,18 @@ class BrowserGameWindow : GameWindow() {
         TODO()
     }
 
-    override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+    private var loopJob: Job? = null
+
+    override fun close() {
+        super.close()
         launchImmediately(coroutineDispatcher) {
+            loopJob?.cancelAndJoin()
+        }
+        loopJob = null
+    }
+
+    override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+        loopJob = launchImmediately(coroutineDispatcher) {
             entry()
         }
         jsFrame(0.0)

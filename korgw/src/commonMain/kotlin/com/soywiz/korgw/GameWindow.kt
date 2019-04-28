@@ -89,17 +89,28 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun close() {
-
+        executePending()
+        println("GameWindowCoroutineDispatcher.close")
+        while (timedTasks.isNotEmpty()) {
+            timedTasks.removeHead().continuation?.resume(Unit)
+        }
+        while (tasks.isNotEmpty()) {
+            tasks.dequeue()?.run()
+        }
     }
 
-    override fun toString(): String = "MyNativeCoroutineDispatcher"
+    override fun toString(): String = "GameWindowCoroutineDispatcher"
 }
 
-open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
+open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable {
     open val ag: AG = LogAG()
 
     open val coroutineDispatcher: GameWindowCoroutineDispatcher = GameWindowCoroutineDispatcher()
 
+    protected val pauseEvent = PauseEvent()
+    protected val resumeEvent = ResumeEvent()
+    protected val stopEvent = StopEvent()
+    protected val destroyEvent = DestroyEvent()
     protected val renderEvent = RenderEvent()
     protected val initEvent = InitEvent()
     protected val disposeEvent = DisposeEvent()
@@ -132,20 +143,26 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
         AUTOMATIC
     }
 
-    open fun setSize(width: Int, height: Int) {
-    }
-
+    open fun setSize(width: Int, height: Int): Unit = Unit
     override suspend fun browse(url: URL): Unit = unsupported()
     override suspend fun alert(message: String): Unit = unsupported()
     override suspend fun confirm(message: String): Boolean = unsupported()
     override suspend fun prompt(message: String, default: String): String = unsupported()
     override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> = unsupported()
 
+    var running = true; private set
+    override fun close() = run {
+        running = false
+        println("GameWindow.close")
+        coroutineDispatcher.close()
+        coroutineDispatcher.cancelChildren()
+    }
+
     open suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         launchImmediately(coroutineDispatcher) {
             entry()
         }
-        while (true) {
+        while (running) {
             val time = measureTime {
                 frame()
             }
@@ -161,6 +178,22 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface {
 
     fun dispatchInitEvent() {
         dispatch(initEvent)
+    }
+
+    fun dispatchPauseEvent() {
+        dispatch(pauseEvent)
+    }
+
+    fun dispatchResumeEvent() {
+        dispatch(resumeEvent)
+    }
+
+    fun dispatchStopEvent() {
+        dispatch(stopEvent)
+    }
+
+    fun dispatchDestroyEvent() {
+        dispatch(destroyEvent)
     }
 
     fun dispatchDisposeEvent() {

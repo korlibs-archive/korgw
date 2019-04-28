@@ -430,8 +430,11 @@ abstract class AGOpengl : AG() {
 
         private fun ensure() {
             if (cachedVersion != contextVersion) {
+                val oldCachedVersion = cachedVersion
                 cachedVersion = contextVersion
                 id = gl.createProgram()
+
+                println("OpenglAG: Created program ${program.name} with id $id because contextVersion: $oldCachedVersion != $contextVersion")
 
                 //println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
 
@@ -451,7 +454,7 @@ abstract class AGOpengl : AG() {
             }
         }
 
-        fun createShader(type: Int, str: String): Int {
+        private fun createShader(type: Int, str: String): Int {
             val shaderId = gl.createShader(type)
 
             gl.shaderSource(shaderId, str)

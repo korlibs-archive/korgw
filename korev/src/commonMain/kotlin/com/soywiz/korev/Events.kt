@@ -233,6 +233,26 @@ class InitEvent() : Event() {
     }
 }
 
+class ResumeEvent() : Event() {
+    fun copyFrom(other: ResumeEvent) {
+    }
+}
+
+class PauseEvent() : Event() {
+    fun copyFrom(other: PauseEvent) {
+    }
+}
+
+class StopEvent() : Event() {
+    fun copyFrom(other: StopEvent) {
+    }
+}
+
+class DestroyEvent() : Event() {
+    fun copyFrom(other: DestroyEvent) {
+    }
+}
+
 class DisposeEvent() : Event() {
     fun copyFrom(other: DisposeEvent) {
     }
