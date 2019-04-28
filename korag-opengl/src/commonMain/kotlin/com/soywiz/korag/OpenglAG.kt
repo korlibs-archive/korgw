@@ -537,6 +537,7 @@ abstract class AGOpengl : AG() {
         fun getGlId(gl: KmlGl): Int {
             if (cachedVersion != contextVersion) {
                 cachedVersion = contextVersion
+                dirty = true
                 id = -1
             }
             if (id < 0) {

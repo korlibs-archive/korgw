@@ -21,7 +21,7 @@ import javax.microedition.khronos.opengles.GL10
 
 abstract class KorgwActivity : Activity() {
     var gameWindow: AndroidGameWindow? = null
-    private lateinit var mGLView: GLSurfaceView
+    private var mGLView: GLSurfaceView? = null
     lateinit var ag: AGOpengl
 
     var fps: Int = 60
@@ -47,7 +47,7 @@ abstract class KorgwActivity : Activity() {
         override val gles: Boolean = true
 
         override fun repaint() {
-            mGLView.invalidate()
+            mGLView?.invalidate()
         }
 
         init {
@@ -164,9 +164,13 @@ abstract class KorgwActivity : Activity() {
 
         setContentView(mGLView)
 
+        val gameWindow = AndroidGameWindow()
+        this.gameWindow = gameWindow
         Korio(this) {
             try {
-                activityMain()
+                kotlinx.coroutines.withContext(coroutineContext + gameWindow) {
+                    activityMain()
+                }
             } finally {
                 println("KorgwActivity.activityMain completed!")
             }
@@ -200,7 +204,7 @@ abstract class KorgwActivity : Activity() {
         mGLView?.onPause()
         //mGLView?.requestExitAndWait()
         //mGLView?.
-        //mGLView = null
+        mGLView = null
         setContentView(android.view.View(this))
         gameWindow?.dispatchDestroyEvent()
         //gameWindow?.close() // Do not close, since it will be automatically closed by the destroy event

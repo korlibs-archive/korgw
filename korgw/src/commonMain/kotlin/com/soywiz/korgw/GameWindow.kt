@@ -102,7 +102,10 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     override fun toString(): String = "GameWindowCoroutineDispatcher"
 }
 
-open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable {
+open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element {
+    override val key: CoroutineContext.Key<*> get() = CoroutineKey
+    companion object CoroutineKey : CoroutineContext.Key<GameWindow>
+
     open val ag: AG = LogAG()
 
     open val coroutineDispatcher: GameWindowCoroutineDispatcher = GameWindowCoroutineDispatcher()
