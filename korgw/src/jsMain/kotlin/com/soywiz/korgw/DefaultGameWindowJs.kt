@@ -345,7 +345,7 @@ private external class JsGamepadEvent : Event {
 class NodeJsGameWindow : GameWindow() {
 }
 
-actual val DefaultGameWindow: GameWindow = if (OS.isJsNodeJs) NodeJsGameWindow() else BrowserGameWindow()
+actual fun CreateDefaultGameWindow(): GameWindow = if (OS.isJsNodeJs) NodeJsGameWindow() else BrowserGameWindow()
 
 /*
 public external open class TouchEvent(type: String, eventInitDict: MouseEventInit = definedExternally) : UIEvent {

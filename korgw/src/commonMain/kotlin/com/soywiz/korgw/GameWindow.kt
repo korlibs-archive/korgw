@@ -14,7 +14,7 @@ import com.soywiz.korio.net.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
-expect val DefaultGameWindow: GameWindow
+expect fun CreateDefaultGameWindow(): GameWindow
 
 interface DialogInterface {
     suspend fun browse(url: URL): Unit = unsupported()

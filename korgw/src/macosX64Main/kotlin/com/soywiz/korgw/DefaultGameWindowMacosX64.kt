@@ -15,7 +15,7 @@ import platform.CoreGraphics.*
 import platform.Foundation.*
 import platform.darwin.*
 
-actual val DefaultGameWindow: GameWindow = object : GameWindow() {
+actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     val app = NSApplication.sharedApplication()
     val controller = WinController()
 

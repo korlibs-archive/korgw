@@ -173,7 +173,7 @@ class GlutGameWindow : GameWindow() {
 }
 
 val glutGameWindow = com.soywiz.korgw.GlutGameWindow()
-actual val DefaultGameWindow: GameWindow = glutGameWindow
+actual fun CreateDefaultGameWindow(): GameWindow = glutGameWindow
 
 fun glutDisplay() = glutGameWindow.display()
 fun glutReshape(width: Int, height: Int) = glutGameWindow.reshape(width, height)

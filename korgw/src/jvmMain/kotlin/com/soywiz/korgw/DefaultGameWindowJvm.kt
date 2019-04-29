@@ -15,7 +15,7 @@ import java.awt.event.MouseEvent
 import javax.swing.*
 
 
-actual val DefaultGameWindow: GameWindow = object : GameWindow() {
+actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     val frame = object : JFrame() {
         init {
             defaultCloseOperation = JFrame.EXIT_ON_CLOSE

@@ -56,6 +56,6 @@ class IosGameWindow : GameWindow() {
     }
 }
 
-var MyIosGameWindow = IosGameWindow()
+val MyIosGameWindow = IosGameWindow() // Creates instance everytime
 
-actual val DefaultGameWindow: GameWindow get() = MyIosGameWindow
+actual fun CreateDefaultGameWindow(): GameWindow = MyIosGameWindow

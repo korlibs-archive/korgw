@@ -62,7 +62,7 @@ class KCube {
     private val uniformValues = AG.UniformValues()
 
     fun run() = Korio {
-        DefaultGameWindow.loop {
+        CreateDefaultGameWindow().loop {
             //TODO: why can't I use width and height vars here ?
             configure(400, 400, "Multicolored cube", fullscreen = false)
             addEventListener<ReshapeEvent> {

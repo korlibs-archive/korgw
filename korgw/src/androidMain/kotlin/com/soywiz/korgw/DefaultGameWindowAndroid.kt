@@ -12,7 +12,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
-actual val DefaultGameWindow: GameWindow get() = TODO()
+actual fun CreateDefaultGameWindow(): GameWindow = TODO()
 
 class AndroidGameWindow() : GameWindow() {
     lateinit var activity: KorgwActivity

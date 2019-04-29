@@ -15,7 +15,7 @@ import kotlin.math.*
 //override val ag: AG = AGNative()
 
 val windowsGameWindow: WindowsGameWindow = WindowsGameWindow()
-actual val DefaultGameWindow: GameWindow = windowsGameWindow
+actual fun CreateDefaultGameWindow(): GameWindow = windowsGameWindow
 
 fun processString(maxLen: Int, callback: (ptr: CPointer<WCHARVar>, maxLen: Int) -> Unit): String {
     return memScoped {

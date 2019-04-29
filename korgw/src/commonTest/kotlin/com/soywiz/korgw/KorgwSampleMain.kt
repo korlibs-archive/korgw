@@ -5,7 +5,7 @@ import com.soywiz.korim.color.*
 import com.soywiz.korio.*
 
 fun main(args: Array<String>) = Korio {
-    DefaultGameWindow.loop {
+    CreateDefaultGameWindow().loop {
         configure(640, 480, "hello", fullscreen = false)
         addEventListener<MouseEvent> { e ->
             if (e.type == MouseEvent.Type.CLICK) {
