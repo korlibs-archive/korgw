@@ -1,8 +1,9 @@
 apply plugin: com.soywiz.korlibs.KorlibsPlugin
 
 korlibs {
-    dependencyProject(":korag-opengl")
-    dependencyProject(":korev")
+    exposeVersion()
+    //dependencyCInteropsExternal("com.soywiz:korim:$korimVersion", "stb_image", ["linuxX64", "iosX64", "iosArm32", "iosArm64"])
+    dependencyCInterops("GL", ["linuxX64"])
 
     if (hasAndroid) {
         dependencies {
@@ -10,3 +11,51 @@ korlibs {
         }
     }
 }
+
+dependencies {
+    commonMainApi("com.soywiz.korlibs.korim:korim:$korimVersion")
+}
+
+configurations {
+    maybeCreate("rtArtifacts")
+}
+
+// To debug jogl loading: java -Djogamp.debug.JNILibLoader=true
+
+dependencies {
+    def gluegenVersion = project.property("gluegenVersion")
+    def joglVersion = project.property("joglVersion")
+    def nativewindowVersion = project.property("nativewindowVersion")
+
+    add("jvmMainApi", "org.jogamp.gluegen:gluegen-rt:$gluegenVersion")
+    add("jvmMainApi", "org.jogamp.jogl:jogl-all:$joglVersion")
+    add("jvmMainApi", "org.jogamp.jogl:nativewindow:$nativewindowVersion")
+
+    for (target in ["linux-amd64", "linux-armv6", "linux-armv6hf", "linux-i586", "macosx-universal", "windows-amd64", "windows-i586"]) {
+        for (config in ["rtArtifacts", "jvmMainApi"]) {
+            add(config, "org.jogamp.gluegen:gluegen-rt:$gluegenVersion:natives-$target")
+            add(config, "org.jogamp.jogl:jogl-all:$joglVersion:natives-$target")
+            add(config, "org.jogamp.jogl:nativewindow:$nativewindowVersion:natives-$target")
+        }
+    }
+}
+
+tasks.create("processrtRtArtifacts") {
+    inputs.files(configurations["rtArtifacts"])
+    doLast {
+        for (file in configurations["rtArtifacts"]) {
+            copy {
+                from(zipTree(file))
+                into("libs")
+            }
+        }
+    }
+}
+
+kotlin.sourceSets {
+    jvmMain {
+        resources.srcDir("libs")
+    }
+}
+
+tasks.getByName("jvmProcessResources").dependsOn("processrtRtArtifacts")

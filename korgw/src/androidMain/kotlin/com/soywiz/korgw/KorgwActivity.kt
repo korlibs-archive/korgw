@@ -3,12 +3,9 @@ package com.soywiz.korgw
 import android.app.Activity
 import android.opengl.GLSurfaceView
 import android.os.Bundle
-import android.support.v4.util.Pools
 import android.util.Log
 import android.view.MotionEvent
-import android.widget.LinearLayout
 import com.soywiz.kds.Pool
-import com.soywiz.kgl.CheckErrorsKmlGlProxy
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.KmlGlAndroid
 import com.soywiz.klock.DateTime

@@ -1,7 +1,0 @@
-apply plugin: com.soywiz.korlibs.KorlibsPlugin
-
-korlibs {
-    dependencyMulti("com.soywiz:korim:$korimVersion")
-    dependencyMulti("com.soywiz:kds:$kdsVersion")
-    dependencyCInteropsExternal("com.soywiz:korim:$korimVersion", "stb_image", ["linuxX64", "iosX64", "iosArm32", "iosArm64"])
-}
