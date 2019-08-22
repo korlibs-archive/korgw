@@ -324,7 +324,7 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
                 wglMakeCurrent(hDC, windowsGameWindow.glRenderContext)
 
                 val wglSwapIntervalEXT = wglGetProcAddressAny("wglSwapIntervalEXT")
-                    .uncheckedCast<CPointer<CFunction<Function1<Int, Int>>>?>()
+                    .reinterpret<CPointer<CFunction<Function1<Int, Int>>>?>()
 
                 println("wglSwapIntervalEXT: $wglSwapIntervalEXT")
                 wglSwapIntervalEXT?.invoke(0)
@@ -463,22 +463,22 @@ val LoadCursorAFunc by lazy {
     GetProcAddress(
         USER32_DLL,
         "LoadCursorA"
-    ).uncheckedCast<CPointer<CFunction<Function2<Int, Int, HCURSOR?>>>>()
+    ).reinterpret<CPointer<CFunction<Function2<Int, Int, HCURSOR?>>>>()
 }
 
 val LoadIconAFunc by lazy {
     GetProcAddress(
         USER32_DLL,
         "LoadIconA"
-    ).uncheckedCast<CPointer<CFunction<Function2<HMODULE?, Int, HICON?>>>>()
+    ).reinterpret<CPointer<CFunction<Function2<HMODULE?, Int, HICON?>>>>()
 }
 
 val FindResourceAFunc by lazy {
     GetProcAddress(
         USER32_DLL,
         "FindResourceA"
-    ).uncheckedCast<CPointer<CFunction<Function2<HMODULE?, Int, HICON?>>>>()
+    ).reinterpret<CPointer<CFunction<Function2<HMODULE?, Int, HICON?>>>>()
 }
 
-//val ARROW_CURSOR by lazy { LoadCursorA(null, 32512.uncheckedCast<CPointer<ByteVar>>().reinterpret()) }
+//val ARROW_CURSOR by lazy { LoadCursorA(null, 32512.reinterpret<CPointer<ByteVar>>().reinterpret()) }
 val ARROW_CURSOR by lazy { LoadCursorAFunc(0, 32512) }
