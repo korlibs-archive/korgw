@@ -3,11 +3,28 @@ apply plugin: com.soywiz.korlibs.KorlibsPlugin
 korlibs {
     exposeVersion()
     //dependencyCInteropsExternal("com.soywiz:korim:$korimVersion", "stb_image", ["linuxX64", "iosX64", "iosArm32", "iosArm64"])
-    dependencyCInterops("GL", ["linuxX64"])
+    //dependencyCInterops("GL", ["linuxX64"])
 
     if (hasAndroid) {
         dependencies {
             add("androidMainApi", "com.android.support:appcompat-v7:28.0.0")
+        }
+    }
+}
+
+kotlin {
+    linuxX64 {
+        compilations.main {
+            cinterops {
+                GL {
+                    //print(it)
+                    def linuxFolder = new File(rootDir, "nlib/linuxX64")
+                    compilerOpts("-I/usr/include", "-I/usr/include/x86_64-linux-gnu/")
+                    compilerOpts("-I${new File(linuxFolder, "include").absolutePath}")
+                    linkerOpts("-L/usr/X11R6/lib", "-L/usr/lib/x86_64-linux-gnu")
+                    linkerOpts("-L${new File(linuxFolder, "lib/x86_64-linux-gnu").absolutePath}")
+                }
+            }
         }
     }
 }
