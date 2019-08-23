@@ -95,7 +95,7 @@ class WindowsGameWindow : GameWindow() {
             val menu = false
             AdjustWindowRectEx(rect.ptr, (style and WS_OVERLAPPED.inv()).convert(), if (menu) 1 else 0, exstyle.convert())
             println("SetWindowPos: ($width, $height) -> (${rect.width}, ${rect.height})")
-            SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.width, rect.height, 0)
+            SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.width, rect.height, 0.convert())
         }
         Unit
     }
@@ -139,7 +139,7 @@ class WindowsGameWindow : GameWindow() {
             val clazzNamePtr = clazzName.wcstr.getPointer(this@memScoped)
             wc.lpfnWndProc = staticCFunction(::WndProc)
             wc.hInstance = null
-            wc.hbrBackground = COLOR_BACKGROUND.reinterpret()
+            wc.hbrBackground = COLOR_BACKGROUND.convert()
 
             val hInstance = GetModuleHandleA(null)
             //FindResourceA(null, null, 124)
@@ -323,8 +323,8 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
                 windowsGameWindow.glRenderContext = wglCreateContext(hDC)
                 wglMakeCurrent(hDC, windowsGameWindow.glRenderContext)
 
-                val wglSwapIntervalEXT = wglGetProcAddressAny("wglSwapIntervalEXT")
-                    .reinterpret<CPointer<CFunction<Function1<Int, Int>>>?>()
+                val wglSwapIntervalEXT = wglGetProcAddressAny("wglSwapIntervalEXT")!!
+                    .reinterpret<CFunction<Function1<Int, Int>>>()
 
                 println("wglSwapIntervalEXT: $wglSwapIntervalEXT")
                 wglSwapIntervalEXT?.invoke(0)
@@ -463,22 +463,22 @@ val LoadCursorAFunc by lazy {
     GetProcAddress(
         USER32_DLL,
         "LoadCursorA"
-    ).reinterpret<CPointer<CFunction<Function2<Int, Int, HCURSOR?>>>>()
+    )!!.reinterpret<CFunction<Function2<Int, Int, HCURSOR?>>>()
 }
 
 val LoadIconAFunc by lazy {
     GetProcAddress(
         USER32_DLL,
         "LoadIconA"
-    ).reinterpret<CPointer<CFunction<Function2<HMODULE?, Int, HICON?>>>>()
+    )!!.reinterpret<CFunction<Function2<HMODULE?, Int, HICON?>>>()
 }
 
 val FindResourceAFunc by lazy {
     GetProcAddress(
         USER32_DLL,
         "FindResourceA"
-    ).reinterpret<CPointer<CFunction<Function2<HMODULE?, Int, HICON?>>>>()
+    )!!.reinterpret<CFunction<Function2<HMODULE?, Int, HICON?>>>()
 }
 
 //val ARROW_CURSOR by lazy { LoadCursorA(null, 32512.reinterpret<CPointer<ByteVar>>().reinterpret()) }
-val ARROW_CURSOR by lazy { LoadCursorAFunc(0, 32512) }
+val ARROW_CURSOR: HICON? by lazy { LoadCursorAFunc(0, 32512)!! }
