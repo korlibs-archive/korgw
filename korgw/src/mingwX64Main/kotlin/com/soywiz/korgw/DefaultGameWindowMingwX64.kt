@@ -139,7 +139,7 @@ class WindowsGameWindow : GameWindow() {
             val clazzNamePtr = clazzName.wcstr.getPointer(this@memScoped)
             wc.lpfnWndProc = staticCFunction(::WndProc)
             wc.hInstance = null
-            wc.hbrBackground = COLOR_BACKGROUND.convert()
+            wc.hbrBackground = COLOR_BACKGROUND.toLong().toCPointer()
 
             val hInstance = GetModuleHandleA(null)
             //FindResourceA(null, null, 124)
