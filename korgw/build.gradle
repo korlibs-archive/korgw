@@ -19,8 +19,6 @@ kotlin {
                 cinterops {
                     GL {
                         //print(it)
-                        compilerOpts("-I/usr/include", "-I/usr/include/x86_64-linux-gnu/")
-                        linkerOpts("-L/usr/X11R6/lib", "-L/usr/lib/x86_64-linux-gnu")
                         //def linuxFolder = new File(rootDir, "nlib/linuxX64")
                         //compilerOpts("-I${new File(linuxFolder, "include").absolutePath}")
                         //linkerOpts("-L${new File(linuxFolder, "lib/x86_64-linux-gnu").absolutePath}")
