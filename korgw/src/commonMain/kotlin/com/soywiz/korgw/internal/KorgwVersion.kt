@@ -1,3 +1,3 @@
 package com.soywiz.korgw.internal
 
-internal const val KORGW_VERSION = "1.8.1"
+internal const val KORGW_VERSION = "1.8.2-SNAPSHOT"
