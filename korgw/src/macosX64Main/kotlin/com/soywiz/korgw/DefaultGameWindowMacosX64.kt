@@ -65,6 +65,8 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     private val openglView: NSOpenGLView = NSOpenGLView(NSMakeRect(0.0, 0.0, 16.0, 16.0), pixelFormat)
     var timer: NSTimer? = null
 
+    private var responder: NSResponder
+
     private val window: NSWindow = NSWindow(windowRect, windowStyle, NSBackingStoreBuffered, false).apply {
         setIsVisible(false)
         title = windowConfigTitle
@@ -98,7 +100,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
         setAcceptsMouseMovedEvents(true)
         setContentView(openglView)
         setContentMinSize(NSMakeSize(150.0, 100.0))
-        val responder = object : NSResponder() {
+        responder = object : NSResponder() {
             override fun acceptsFirstResponder(): Boolean = true
 
             fun getHeight() = openglView.bounds.height
@@ -334,7 +336,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
 
                 openglView.openGLContext?.makeCurrentContext()
                 try {
-                    macTrace("init[a]")
+                    macTrace("init[a] -- bb")
                     macTrace("init[b]")
                     println("KoruiWrap.pentry[0]")
                     ag.__ready()
