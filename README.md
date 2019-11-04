@@ -1,10 +1,28 @@
-## Korui : Kotlin cORoutines User Interfaces : korio + kimage + korui for JVM, Kotlin-JS, Android, Jtransc+Browser
+<p align="center">
+    <img alt="Korio" src="https://raw.githubusercontent.com/korlibs/korlibs-logos/master/128/korui.png" />
+</p>
 
-[![Build Status](https://travis-ci.org/korlibs/korui.svg?branch=master)](https://travis-ci.org/korlibs/korui)
+<h2 align="center">Korui</h2>
 
-With Korui you can create your UI once, and run it in HTML5, Java AWT and Android.
+<p align="center">
+    With Korui you can create your UI once, and run it in HTML5, Java AWT and Android.
+</p>
 
-![](https://raw.githubusercontent.com/soywiz/kor/master/logos/128/korui.png)
+<!-- BADGES -->
+<p align="center">
+	<a href="https://travis-ci.org/korlibs/korgw"><img alt="Build Status" src="https://travis-ci.org/korlibs/korgw.svg?branch=master" /></a>
+	<a href="http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22korgw%22"><img alt="Maven Version" src="https://img.shields.io/github/tag/korlibs/korgw.svg?style=flat&label=maven" /></a>
+	<a href="https://slack.soywiz.com/"><img alt="Slack" src="https://img.shields.io/badge/chat-on%20slack-green?style=flat&logo=slack" /></a>
+</p>
+<!-- /BADGES -->
+
+<!-- SUPPORT -->
+<h2 align="center">Support korgw</h2>
+<p align="center">
+If you like korgw, or want your company logo here, please consider <a href="https://github.com/sponsors/soywiz">becoming a sponsor ★</a>,<br />
+in addition to ensure the continuity of the project, you will get exclusive content.
+</p>
+<!-- /SUPPORT -->
 
 [All KOR libraries](https://github.com/soywiz/kor)
 
