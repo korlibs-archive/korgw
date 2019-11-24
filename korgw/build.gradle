@@ -1,5 +1,9 @@
 apply plugin: com.soywiz.korlibs.KorlibsPlugin
 
+dependencies {
+    commonMainApi("com.soywiz.korlibs.korim:korim:$korimVersion")
+}
+
 korlibs {
     exposeVersion()
     //dependencyCInteropsExternal("com.soywiz:korim:$korimVersion", "stb_image", ["linuxX64", "iosX64", "iosArm32", "iosArm64"])
@@ -27,10 +31,6 @@ kotlin {
             }
         }
     }
-}
-
-dependencies {
-    commonMainApi("com.soywiz.korlibs.korim:korim:$korimVersion")
 }
 
 configurations {

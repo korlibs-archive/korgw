@@ -16,26 +16,20 @@ import javax.swing.*
 
 
 actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
+    override val ag: AGAwt by lazy {
+        AGAwt(AGConfig(antialiasHint = (quality != GameWindow.Quality.PERFORMANCE)))
+    }
+
     val frame = object : JFrame() {
         init {
             defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+            contentPane.add(ag.glcanvas)
+            ag.glcanvas.requestFocusInWindow()
         }
 
         override fun createRootPane(): JRootPane = super.createRootPane().apply {
             putClientProperty("apple.awt.fullscreenable", true)
         }
-    }
-
-    override val ag: AGAwt by lazy {
-        AGAwt(AGConfig(antialiasHint = (quality != GameWindow.Quality.PERFORMANCE)))
-    }
-
-    init {
-        //frame.contentPane.layout = BorderLayout()
-        //frame.contentPane.add(JPanel(), BorderLayout.PAGE_START)
-        //frame.contentPane.add(ag.glcanvas, BorderLayout.CENTER)
-        frame.contentPane.add(ag.glcanvas)
-        ag.glcanvas.requestFocusInWindow()
     }
 
     override var title: String
