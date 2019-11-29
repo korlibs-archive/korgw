@@ -1,17 +1,17 @@
-package com.soywiz.korgw
+package com.soywiz.korgw.osx
 
 import com.soywiz.kgl.KmlGl
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
+import com.soywiz.korgw.GameWindow
+import com.soywiz.korgw.GameWindowCoroutineDispatcher
 import com.soywiz.korgw.osx.*
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
 import kotlin.coroutines.CoroutineContext
-
-fun CreateDefaultGameWindowMac(): GameWindow = MacGameWindow()
 
 class MacAG(val window: Long) : AGOpengl() {
     override val gles: Boolean = true

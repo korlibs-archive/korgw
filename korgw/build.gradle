@@ -10,7 +10,9 @@ korlibs {
     //dependencyCInterops("GL", ["linuxX64"])
 
     dependencies {
-        add("jvmMainApi", "net.java.dev.jna:jna:5.5.0")
+        def jnaVersion = "5.5.0"
+        add("jvmMainApi", "net.java.dev.jna:jna:$jnaVersion")
+        add("jvmMainApi", "net.java.dev.jna:jna-platform:$jnaVersion")
 
         if (hasAndroid) {
             add("androidMainApi", "com.android.support:appcompat-v7:28.0.0")

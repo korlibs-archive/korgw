@@ -54,6 +54,8 @@ enum class Key {
 	companion object {
 	    val MAX = UNKNOWN.ordinal + 1
 
+        val RETURN = ENTER
+
 		val NUMPAD0 = N0
 		val NUMPAD1 = N1
 		val NUMPAD2 = N2

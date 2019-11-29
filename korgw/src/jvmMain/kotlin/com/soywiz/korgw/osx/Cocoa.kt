@@ -1,25 +1,13 @@
 package com.soywiz.korgw.osx
 
+import com.soywiz.korgw.platform.NativeLoad
+import com.soywiz.korgw.platform.NativeName
 import com.sun.jna.*
 
 //inline class ID(val id: Long)
 typealias ID = Long
 
-annotation class NativeName(val name: String) {
-    companion object {
-        val OPTIONS = mapOf(
-            Library.OPTION_FUNCTION_MAPPER to FunctionMapper { _, method ->
-                method.getAnnotation(NativeName::class.java)?.name ?: method.name
-            }
-        )
-    }
-}
-
-typealias NSRectPtr = Pointer
-
-inline fun <reified T : Library> NativeLoad(name: String) = Native.load(name, T::class.java, NativeName.OPTIONS) as T
-
-interface GL : Library {
+internal interface GL : Library {
     fun glViewport(x: Int, y: Int, width: Int, height: Int)
     fun glClearColor(r: Float, g: Float, b: Float, a: Float)
     fun glClear(flags: Int)

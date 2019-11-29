@@ -1,5 +1,6 @@
-package com.soywiz.korgw.osx
+package com.soywiz.korgw.win32
 
+import com.jogamp.common.os.NativeLibrary
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.nioBuffer
 import com.soywiz.kgl.nioFloatBuffer
@@ -8,18 +9,23 @@ import com.soywiz.kmem.FBuffer
 import com.soywiz.korgw.platform.NativeLoad
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.bitmap.NativeImage
+import com.sun.jna.Function
 import com.sun.jna.Library
-import com.sun.jna.NativeLibrary
+import com.sun.jna.Pointer
+import com.sun.jna.platform.win32.*
+import jogamp.common.os.WindowsDynamicLinkerImpl
+import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
-typealias IntSize = Long
-typealias VoidPtr = ByteBuffer
-typealias IntPtr = IntBuffer
-typealias FloatPtr = FloatBuffer
+private typealias IntSize = Long
+private typealias VoidPtr = ByteBuffer
+private typealias IntPtr = IntBuffer
+private typealias FloatPtr = FloatBuffer
 
-interface MacGL : Library {
+interface Win32GL : Library {
     fun glActiveTexture(texture: Int)
     fun glAttachShader(program: Int, shader: Int)
     fun glBindAttribLocation(program: Int, index: Int, name: String)
@@ -164,17 +170,30 @@ interface MacGL : Library {
     fun glVertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: IntSize)
     fun glViewport(x: Int, y: Int, width: Int, height: Int)
 
-    fun CGLSetParameter(vararg args: Any?)
-    fun CGLEnable(vararg args: Any?)
+    companion object : Win32GL by OpenglLoadProxy()
+}
 
-    companion object : MacGL by NativeLoad("OpenGL") {
-        const val GL_COLOR_BUFFER_BIT = 0x00004000
-        val NATIVE = NativeLibrary.getInstance("OpenGL")
-    }
+fun PointerOrNull(value: Long): Pointer? {
+    if (value == 0L) return null
+    return Pointer.createConstant(value)
+}
+
+fun OpenglLoadProxy(): Win32GL {
+    val funcs = LinkedHashMap<Method, Function>()
+    val classLoader = Win32KmlGl::class.java.classLoader
+    val opengl32Lib = NativeLibrary.open("opengl32", classLoader)
+    return Proxy.newProxyInstance(classLoader, arrayOf(Win32GL::class.java)) { obj: Any?, method: Method, args: Array<Any?>? ->
+        val func = funcs.getOrPut(method) {
+            Function.getFunction(OpenGL32.INSTANCE.wglGetProcAddress(method.name)
+                ?: PointerOrNull(opengl32Lib.dynamicLookupFunction(method.name))
+                ?: error("Can't find opengl method ${method.name}"))
+        }
+        func.invoke(method.returnType, args)
+    } as Win32GL
 }
 
 
-class MacKmlGl(val gl: MacGL = MacGL) : KmlGl() {
+class Win32KmlGl(val gl: Win32GL = Win32GL) : KmlGl() {
     override fun activeTexture(texture: Int): Unit = gl.glActiveTexture(texture)
     override fun attachShader(program: Int, shader: Int): Unit = gl.glAttachShader(program, shader)
     override fun bindAttribLocation(program: Int, index: Int, name: String): Unit = gl.glBindAttribLocation(program, index, name)
