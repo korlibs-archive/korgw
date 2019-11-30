@@ -19,20 +19,12 @@ actual fun CreateDefaultGameWindow(): GameWindow = when {
             MacGameWindow.isMainThread -> MacGameWindow()
             else -> {
                 println("WARNING. Slower startup: NOT in main thread! Using AWT! (on mac use -XstartOnFirstThread when possible)")
-                //CreateJoglGameWindow()
                 AwtGameWindow()
             }
         }
     }
-    OS.isWindows -> {
-        Win32GameWindow()
-        //AwtGameWindow()
-    }
-    else -> {
-        X11GameWindow()
-        //AwtGameWindow()
-        //CreateJoglGameWindow()
-    }
+    OS.isWindows -> Win32GameWindow()
+    else -> X11GameWindow()
 }
 
 object JvmAGFactory : AGFactory {

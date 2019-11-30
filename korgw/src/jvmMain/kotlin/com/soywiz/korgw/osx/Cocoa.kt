@@ -58,6 +58,8 @@ interface ObjectiveC : Library {
     fun object_getClass(obj: ID): ID
     fun class_getName(clazz: ID): String
 
+    fun object_getClassName(obj: ID): String
+
     fun property_getName(prop: ID): String
     fun property_getAttributes(prop: ID): String
 

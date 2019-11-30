@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 apply plugin: com.soywiz.korlibs.KorlibsPlugin
 
 dependencies {
@@ -89,7 +91,9 @@ task runSample(type: JavaExec) {
 
 task runSampleMainThread(type: JavaExec) {
     classpath = kotlin.targets.jvm.compilations.test.runtimeDependencyFiles
-    jvmArgs "-XstartOnFirstThread"
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+        jvmArgs "-XstartOnFirstThread"
+    }
     main = 'com.soywiz.korgw.TestGameWindow'
 }
 
