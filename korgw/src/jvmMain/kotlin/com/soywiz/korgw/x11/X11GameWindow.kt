@@ -7,6 +7,7 @@ import com.soywiz.korev.MouseButton
 import com.soywiz.korev.MouseEvent
 import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.GameWindowCoroutineDispatcher
+import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korgw.util.KStructure
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
@@ -26,12 +27,34 @@ class X11Ag(val window: X11GameWindow, override val gl: KmlGl = X11KmlGl()) : AG
     override val nativeComponent: Any = window
 }
 
+// https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
+class X11OpenglContext(val d: Display?, val w: Window?, val doubleBuffered: Boolean = true) : BaseOpenglContext {
+    val vi = X.glXChooseVisual(d, 0, intArrayOf(
+        GLX_RGBA,
+        GLX_DEPTH_SIZE, 24,
+        *(if (doubleBuffered) intArrayOf(GLX_DOUBLEBUFFER) else intArrayOf()),
+        None
+    ))
+    val glc = X.glXCreateContext(d, vi, null, true)
+
+    init {
+        println("VI: $vi, d: $d, w: $w, glc: $glc")
+        makeCurrent()
+        println("GL_VENDOR: " + X.glGetString(GL.GL_VENDOR))
+        println("GL_VERSION: " + X.glGetString(GL.GL_VERSION))
+    }
+
+    override fun makeCurrent() {
+        X.glXMakeCurrent(d, w, glc)
+    }
+
+    override fun swapBuffers() {
+        X.glXSwapBuffers(d, w)
+    }
+}
+
 class X11GameWindow : GameWindow() {
-    override val key: CoroutineContext.Key<*>
-        get() = super.key
-    override val ag: X11Ag = X11Ag(this)
-    override val coroutineDispatcher: GameWindowCoroutineDispatcher
-        get() = super.coroutineDispatcher
+    override val ag: X11Ag by lazy { X11Ag(this) }
     override var fps: Int
         get() = super.fps
         set(value) {}
@@ -64,6 +87,7 @@ class X11GameWindow : GameWindow() {
     }
 
     override suspend fun browse(url: URL) {
+        // system("open https://your.domain/uri");
         //Shell32.ShellExecute()
         //ShellExecute(0, 0, L"http://www.google.com", 0, 0 , SW_SHOW );
 
@@ -97,7 +121,6 @@ class X11GameWindow : GameWindow() {
     var root: Window? = null
     var w: Window? = null
     var s: Int = 0
-    var vi: XVisualInfo? = null
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         launchImmediately(coroutineDispatcher) {
@@ -108,9 +131,6 @@ class X11GameWindow : GameWindow() {
             d = XOpenDisplay(null)
             s = XDefaultScreen(d)
             root = XDefaultRootWindow(d)
-            vi = glXChooseVisual(d, 0, intArrayOf(GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None))
-
-            println("VI: $vi")
 
             //val cmap = XCreateColormap(d, root, vi->visual, AllocNone);
             val screenWidth = XDisplayWidth(d, s)
@@ -141,10 +161,8 @@ class X11GameWindow : GameWindow() {
             XSetIconName(d, w, title)
             XMapWindow(d, w)
 
-            val glc = glXCreateContext(d, vi, null, true)
-            glXMakeCurrent(d, w, glc)
-            println(glGetString(GL.GL_VENDOR))
-            println(glGetString(GL.GL_VERSION))
+            val ctx = X11OpenglContext(d, w)
+            ctx.makeCurrent()
 
             val keysim = XStringToKeysym("A")
             println("keysim: $keysim")
@@ -152,12 +170,12 @@ class X11GameWindow : GameWindow() {
             var frame = 0
 
             fun render() {
-                glXMakeCurrent(d, w, glc)
+                ctx.makeCurrent()
                 glViewport(0, 0, width, height)
                 glClearColor(.3f, .6f, (frame % 60).toFloat() / 60, 1f)
                 glClear(GL.GL_COLOR_BUFFER_BIT)
                 frame()
-                glXSwapBuffers(d, w)
+                ctx.swapBuffers()
             }
 
             var running = true

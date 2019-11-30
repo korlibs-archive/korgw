@@ -7,6 +7,7 @@ import com.soywiz.korev.MouseEvent
 import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.GameWindowCoroutineDispatcher
 import com.soywiz.korgw.win32.Win32KmlGl
+import com.soywiz.korgw.win32.Win32OpenglContext
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
@@ -22,7 +23,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-class Win32Ag(val window: Win32GameWindow, override val gl: KmlGl = Win32KmlGl()) : AGOpengl() {
+class Win32Ag(val window: Win32GameWindow, override val gl: KmlGl = Win32KmlGl) : AGOpengl() {
     override val gles: Boolean = true
     override val nativeComponent: Any = window
 }
@@ -30,6 +31,7 @@ class Win32Ag(val window: Win32GameWindow, override val gl: KmlGl = Win32KmlGl()
 class Win32GameWindow : GameWindow() {
     var hRC: WinDef.HGLRC? = null
     var hDC: WinDef.HDC? = null
+    var glCtx: Win32OpenglContext? = null
     var hWnd: HWND? = null
 
     override val key: CoroutineContext.Key<*>
@@ -337,31 +339,10 @@ class Win32GameWindow : GameWindow() {
                 null, null, hInst, null
             )
 
-            hDC = GetDC(hWnd)
-
-            val pfd = WinGDI.PIXELFORMATDESCRIPTOR.ByReference()
-            pfd.nSize = pfd.size().toShort();
-            pfd.nVersion = 1;
-            //pfd.dwFlags = PFD_DRAW_TO_WINDOW or PFD_SUPPORT_OPENGL or PFD_DOUBLEBUFFER;
-            pfd.dwFlags = WinGDI.PFD_DRAW_TO_WINDOW or WinGDI.PFD_SUPPORT_OPENGL;
-            pfd.iPixelType = WinGDI.PFD_TYPE_RGBA.toByte();
-            pfd.cColorBits = 32;
-            //pfd.cColorBits = 24;
-            pfd.cDepthBits = 16;
-
-            val pf = ChoosePixelFormat(hDC, pfd);
-
-            SetPixelFormat(hDC, pf, pfd)
-            //DescribePixelFormat(hDC, pf, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-            //val attribs = intArrayOf(
-            //    WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-            //    WGL_CONTEXT_MINOR_VERSION_ARB, 3
-            //)
-
-            //hRC = wglCreateContextAttribsARB (hDC, null, attribs);
-            hRC = wglCreateContext(hDC);
-            wglMakeCurrent(hDC, hRC);
+            glCtx = Win32OpenglContext(hWnd!!)
+            hDC = glCtx!!.hDC
+            hRC = glCtx!!.hRC
+            glCtx!!.makeCurrent()
 
             //val test2 = OpenGL32.INSTANCE.wglGetProcAddress("wglCreateContextAttribsARB")
 
@@ -398,7 +379,6 @@ object Win32 : MyKernel32 by MyKernel32,
     MyUser32 by MyUser32,
     MyGdi32 by MyGdi32,
     MyOpenGL32 by MyOpenGL32 {
-
 }
 
 interface MyKernel32 : Kernel32 {

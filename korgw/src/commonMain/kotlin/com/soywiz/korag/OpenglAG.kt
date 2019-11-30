@@ -461,9 +461,10 @@ abstract class AGOpengl : AG() {
             gl.compileShader(shaderId)
 
             val out = gl.getShaderiv(shaderId, gl.COMPILE_STATUS)
+            val errorInt = gl.getError()
             if (out != gl.TRUE) {
                 val error = gl.getShaderInfoLog(shaderId)
-                throw RuntimeException("Error Compiling Shader : $error : source=$str, gl.versionInt=${gl.versionInt}, gl.versionString=${gl.versionString}")
+                throw RuntimeException("Error Compiling Shader : $errorInt : '$error' : source='$str', gl.versionInt=${gl.versionInt}, gl.versionString='${gl.versionString}', gl=$gl")
             }
             return shaderId
         }

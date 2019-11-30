@@ -99,7 +99,7 @@ interface X11GL : Library {
     fun glGetShaderInfoLog(shader: Int, bufSize: Int, length: IntPtr, infoLog: VoidPtr)
     fun glGetShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: IntPtr, precision: IntPtr)
     fun glGetShaderSource(shader: Int, bufSize: Int, length: IntPtr, source: VoidPtr)
-    fun glGetString(name: Int): String
+    fun glGetString(name: Int): String?
     fun glGetTexParameterfv(target: Int, pname: Int, params: FloatPtr)
     fun glGetTexParameteriv(target: Int, pname: Int, params: IntPtr)
     fun glGetUniformfv(program: Int, location: Int, params: FloatPtr)
@@ -248,7 +248,7 @@ class X11KmlGl(val gl: X11GL = X11GL) : KmlGl() {
     override fun getShaderInfoLog(shader: Int, bufSize: Int, length: FBuffer, infoLog: FBuffer): Unit = gl.glGetShaderInfoLog(shader, bufSize, length.nioIntBuffer, infoLog.nioBuffer)
     override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: FBuffer, precision: FBuffer): Unit = gl.glGetShaderPrecisionFormat(shadertype, precisiontype, range.nioIntBuffer, precision.nioIntBuffer)
     override fun getShaderSource(shader: Int, bufSize: Int, length: FBuffer, source: FBuffer): Unit = gl.glGetShaderSource(shader, bufSize, length.nioIntBuffer, source.nioBuffer)
-    override fun getString(name: Int): String = gl.glGetString(name)
+    override fun getString(name: Int): String = gl.glGetString(name) ?: ""
     override fun getTexParameterfv(target: Int, pname: Int, params: FBuffer): Unit = gl.glGetTexParameterfv(target, pname, params.nioFloatBuffer)
     override fun getTexParameteriv(target: Int, pname: Int, params: FBuffer): Unit = gl.glGetTexParameteriv(target, pname, params.nioIntBuffer)
     override fun getUniformfv(program: Int, location: Int, params: FBuffer): Unit = gl.glGetUniformfv(program, location, params.nioFloatBuffer)

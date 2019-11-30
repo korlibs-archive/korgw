@@ -38,6 +38,14 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     val tasks = Queue<Runnable>()
     val timedTasks = PriorityQueue<TimedTask> { a, b -> a.time.compareTo(b.time) }
 
+    fun queue(block: () -> Unit) {
+        tasks.enqueue(Runnable { block() })
+    }
+
+    fun queue(block: Runnable) {
+        tasks.enqueue(block)
+    }
+
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         tasks.enqueue(block)
     }
@@ -109,6 +117,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open val ag: AG = LogAG()
 
     open val coroutineDispatcher: GameWindowCoroutineDispatcher = GameWindowCoroutineDispatcher()
+
+    fun queue(callback: () -> Unit) = coroutineDispatcher.queue(callback)
+    fun queue(callback: Runnable) = coroutineDispatcher.queue(callback)
 
     protected val pauseEvent = PauseEvent()
     protected val resumeEvent = ResumeEvent()

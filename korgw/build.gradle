@@ -79,4 +79,9 @@ kotlin.sourceSets {
     }
 }
 
+task runSample(type: JavaExec) {
+    classpath = kotlin.targets.jvm.compilations.test.runtimeDependencyFiles
+    main = 'com.soywiz.korgw.TestGameWindow'
+}
+
 tasks.getByName("jvmProcessResources").dependsOn("processrtRtArtifacts")
