@@ -20,6 +20,7 @@ import com.soywiz.korio.util.OS
 import com.sun.jna.Native
 import com.sun.jna.platform.unix.X11
 import com.sun.jna.platform.win32.WinDef
+import java.awt.Dimension
 import java.awt.EventQueue
 import java.awt.Graphics
 import java.awt.Toolkit.getDefaultToolkit
@@ -135,6 +136,10 @@ class AwtGameWindow : GameWindow() {
 
     override fun setSize(width: Int, height: Int) {
         frame.contentPane.setSize(width, height)
+        frame.contentPane.preferredSize = Dimension(width, height)
+        frame.pack()
+        val dim = getDefaultToolkit().screenSize
+        frame.setLocation(dim.width / 2 - frame.size.width / 2, dim.height / 2 - frame.size.height / 2)
     }
 
     override suspend fun browse(url: URL) {
