@@ -128,7 +128,7 @@ class X11GameWindow : GameWindow() {
         }
 
         X.apply {
-            d = XOpenDisplay(null)
+            d = XOpenDisplay(null) ?: error("Can't open main display")
             s = XDefaultScreen(d)
             root = XDefaultRootWindow(d)
 
