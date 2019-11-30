@@ -1,4 +1,4 @@
-package com.soywiz.korgw.util
+package com.soywiz.korgw.platform
 
 import com.sun.jna.*
 import kotlin.reflect.KProperty
@@ -15,6 +15,7 @@ open class KStructure(pointer: Pointer? = null) : NativeMapped {
 
     fun byte() = layout.byte()
     fun int() = layout.integer()
+    fun nativeFloat() = layout.nativeFloat()
     fun nativeLong() = layout.nativeLong()
     fun <T> pointer() = layout.pointer<T>()
 
@@ -44,9 +45,14 @@ class LayoutBuilder {
 
     fun byte() = DelegateByteProperty(alloc(Byte.SIZE_BYTES))
     fun integer() = DelegateIntProperty(alloc(Int.SIZE_BYTES))
+    fun float() = DelegateFloatProperty(alloc(4))
+    fun double() = DelegateFloatProperty(alloc(8))
+    fun nativeFloat() = DelegateNativeDoubleProperty(alloc(Native.POINTER_SIZE))
     fun nativeLong() = DelegateNativeLongProperty(alloc(NativeLong.SIZE))
-    fun <T> pointer() = DelegatePointerProperty<T>(alloc(Native.POINTER_SIZE))
+    fun <T> pointer() =
+        DelegatePointerProperty<T>(alloc(Native.POINTER_SIZE))
 }
+
 
 inline class DelegateByteProperty(val offset: Int) {
     operator fun getValue(obj: KStructure, property: KProperty<*>): Byte = obj.pointer.getByte(offset.toLong())
@@ -56,6 +62,28 @@ inline class DelegateByteProperty(val offset: Int) {
 inline class DelegateIntProperty(val offset: Int) {
     operator fun getValue(obj: KStructure, property: KProperty<*>): Int = obj.pointer.getInt(offset.toLong())
     operator fun setValue(obj: KStructure, property: KProperty<*>, i: Int) = run { obj.pointer.setInt(offset.toLong(), i) }
+}
+
+inline class DelegateFloatProperty(val offset: Int) {
+    operator fun getValue(obj: KStructure, property: KProperty<*>): Float = obj.pointer.getFloat(offset.toLong())
+    operator fun setValue(obj: KStructure, property: KProperty<*>, i: Float) = run { obj.pointer.setFloat(offset.toLong(), i) }
+}
+
+inline class DelegateDoubleProperty(val offset: Int) {
+    operator fun getValue(obj: KStructure, property: KProperty<*>): Double = obj.pointer.getDouble(offset.toLong())
+    operator fun setValue(obj: KStructure, property: KProperty<*>, i: Double) = run { obj.pointer.setDouble(offset.toLong(), i) }
+}
+
+inline class DelegateNativeDoubleProperty(val offset: Int) {
+    operator fun getValue(obj: KStructure, property: KProperty<*>): Double = if (Native.POINTER_SIZE == 4) obj.pointer.getFloat(offset.toLong()).toDouble() else obj.pointer.getDouble(offset.toLong())
+    operator fun setValue(obj: KStructure, property: KProperty<*>, i: Double) = run {
+        if (Native.POINTER_SIZE == 4) {
+            obj.pointer.setFloat(offset.toLong(), i.toFloat())
+        } else {
+            obj.pointer.setDouble(offset.toLong(), i)
+        }
+    }
+
 }
 
 inline class DelegateNativeLongProperty(val offset: Int) {

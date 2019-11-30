@@ -28,11 +28,12 @@ import javax.swing.JFrame
 
 class AwtAg(val window: AwtGameWindow) : AGOpengl() {
     override val nativeComponent: Any = window
+    override val gles: Boolean = true
     override val gl: KmlGl by lazy {
         when {
             OS.isMac -> KmlGlDummy
             OS.isWindows -> Win32KmlGl
-            else -> X11KmlGl()
+            else -> X11KmlGl
         }
     }
 }

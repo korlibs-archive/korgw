@@ -6,9 +6,10 @@ import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korev.MouseEvent
 import com.soywiz.korgw.GameWindow
-import com.soywiz.korgw.GameWindowCoroutineDispatcher
 import com.soywiz.korgw.platform.BaseOpenglContext
-import com.soywiz.korgw.util.KStructure
+import com.soywiz.korgw.platform.INativeGL
+import com.soywiz.korgw.platform.KStructure
+import com.soywiz.korgw.platform.NativeKgl
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
@@ -19,12 +20,22 @@ import com.sun.jna.NativeLong
 import com.sun.jna.Pointer
 import com.sun.jna.platform.unix.X11
 import com.sun.jna.platform.unix.X11.*
-import kotlin.coroutines.CoroutineContext
 
 //class X11Ag(val window: X11GameWindow, override val gl: KmlGl = LogKmlGlProxy(X11KmlGl())) : AGOpengl() {
-class X11Ag(val window: X11GameWindow, override val gl: KmlGl = X11KmlGl()) : AGOpengl() {
+class X11Ag(val window: X11GameWindow, override val gl: KmlGl = X11KmlGl) : AGOpengl() {
     override val gles: Boolean = true
     override val nativeComponent: Any = window
+}
+
+object X11KmlGl : NativeKgl(X11GL)
+
+interface X11GL : INativeGL, Library {
+    fun glXChooseVisual(display: X11.Display, screen: Int, attribList: IntArray): XVisualInfo
+    fun glXCreateContext(display: X11.Display, vis: XVisualInfo, shareList: GLXContext?, direct: Boolean): GLXContext
+    fun glXMakeCurrent(display: X11.Display, drawable: X11.Window, ctx: GLXContext?): Boolean
+    fun glXSwapBuffers(display: X11.Display, drawable: X11.Window)
+
+    companion object : X11GL by Native.load("GL", X11GL::class.java)
 }
 
 // https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)

@@ -33,8 +33,7 @@ interface AGContainer {
 	fun repaint(): Unit
 }
 
-abstract class AGWindow : AGContainer {
-	abstract override val ag: AG
+interface AGWindow : AGContainer {
 }
 
 abstract class AG : Extra by Extra.Mixin() {

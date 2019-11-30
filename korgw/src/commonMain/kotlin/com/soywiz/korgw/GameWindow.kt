@@ -110,12 +110,11 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     override fun toString(): String = "GameWindowCoroutineDispatcher"
 }
 
-open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element {
+open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element, AGWindow {
     override val key: CoroutineContext.Key<*> get() = CoroutineKey
     companion object CoroutineKey : CoroutineContext.Key<GameWindow>
 
-    open val ag: AG = LogAG()
-
+    override val ag: AG = LogAG()
     open val coroutineDispatcher: GameWindowCoroutineDispatcher = GameWindowCoroutineDispatcher()
 
     fun queue(callback: () -> Unit) = coroutineDispatcher.queue(callback)
@@ -164,12 +163,15 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     override suspend fun prompt(message: String, default: String): String = unsupported()
     override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> = unsupported()
 
-    var running = true; private set
+    var running = true; protected set
     override fun close() = run {
         running = false
         println("GameWindow.close")
         coroutineDispatcher.close()
         coroutineDispatcher.cancelChildren()
+    }
+
+    override fun repaint() {
     }
 
     open suspend fun loop(entry: suspend GameWindow.() -> Unit) {

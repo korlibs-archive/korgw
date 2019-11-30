@@ -1,180 +1,15 @@
-package com.soywiz.korgw.osx
+package com.soywiz.korgw.platform
 
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.nioBuffer
 import com.soywiz.kgl.nioFloatBuffer
 import com.soywiz.kgl.nioIntBuffer
 import com.soywiz.kmem.FBuffer
-import com.soywiz.korgw.platform.NativeLoad
+import com.soywiz.korgw.osx.MacGL
 import com.soywiz.korim.awt.AwtNativeImage
 import com.soywiz.korim.bitmap.NativeImage
-import com.sun.jna.Library
-import com.sun.jna.NativeLibrary
-import java.nio.ByteBuffer
-import java.nio.FloatBuffer
-import java.nio.IntBuffer
 
-typealias IntSize = Long
-typealias VoidPtr = ByteBuffer
-typealias IntPtr = IntBuffer
-typealias FloatPtr = FloatBuffer
-
-interface MacGL : Library {
-    fun glActiveTexture(texture: Int)
-    fun glAttachShader(program: Int, shader: Int)
-    fun glBindAttribLocation(program: Int, index: Int, name: String)
-    fun glBindBuffer(target: Int, buffer: Int)
-    fun glBindFramebuffer(target: Int, framebuffer: Int)
-    fun glBindRenderbuffer(target: Int, renderbuffer: Int)
-    fun glBindTexture(target: Int, texture: Int)
-    fun glBlendColor(red: Float, green: Float, blue: Float, alpha: Float)
-    fun glBlendEquation(mode: Int)
-    fun glBlendEquationSeparate(modeRGB: Int, modeAlpha: Int)
-    fun glBlendFunc(sfactor: Int, dfactor: Int)
-    fun glBlendFuncSeparate(sfactorRGB: Int, dfactorRGB: Int, sfactorAlpha: Int, dfactorAlpha: Int)
-    fun glBufferData(target: Int, size: IntSize, data: VoidPtr, usage: Int)
-    fun glBufferSubData(target: Int, offset: IntSize, size: IntSize, data: VoidPtr)
-    fun glCheckFramebufferStatus(target: Int): Int
-    fun glClear(mask: Int)
-    fun glClearColor(red: Float, green: Float, blue: Float, alpha: Float)
-    fun glClearDepth(d: Double)
-    fun glClearStencil(s: Int)
-    fun glColorMask(red: Boolean, green: Boolean, blue: Boolean, alpha: Boolean)
-    fun glCompileShader(shader: Int)
-    fun glCompressedTexImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, imageSize: Int, data: VoidPtr)
-    fun glCompressedTexSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, imageSize: Int, data: VoidPtr)
-    fun glCopyTexImage2D(target: Int, level: Int, internalformat: Int, x: Int, y: Int, width: Int, height: Int, border: Int)
-    fun glCopyTexSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, x: Int, y: Int, width: Int, height: Int)
-    fun glCreateProgram(): Int
-    fun glCreateShader(type: Int): Int
-    fun glCullFace(mode: Int)
-    fun glDeleteBuffers(n: Int, items: IntPtr)
-    fun glDeleteFramebuffers(n: Int, items: IntPtr)
-    fun glDeleteProgram(program: Int)
-    fun glDeleteRenderbuffers(n: Int, items: IntPtr)
-    fun glDeleteShader(shader: Int)
-    fun glDeleteTextures(n: Int, items: IntPtr)
-    fun glDepthFunc(func: Int)
-    fun glDepthMask(flag: Boolean)
-    fun glDepthRange(n: Double, f: Double)
-    fun glDetachShader(program: Int, shader: Int)
-    fun glDisable(cap: Int)
-    fun glDisableVertexAttribArray(index: Int)
-    fun glDrawArrays(mode: Int, first: Int, count: Int)
-    fun glDrawElements(mode: Int, count: Int, type: Int, indices: IntSize)
-    fun glEnable(cap: Int)
-    fun glEnableVertexAttribArray(index: Int)
-    fun glFinish()
-    fun glFlush()
-    fun glFramebufferRenderbuffer(target: Int, attachment: Int, renderbuffertarget: Int, renderbuffer: Int)
-    fun glFramebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int)
-    fun glFrontFace(mode: Int)
-    fun glGenBuffers(n: Int, buffers: IntPtr)
-    fun glGenerateMipmap(target: Int)
-    fun glGenFramebuffers(n: Int, framebuffers: IntPtr)
-    fun glGenRenderbuffers(n: Int, renderbuffers: IntPtr)
-    fun glGenTextures(n: Int, textures: IntPtr)
-    fun glGetActiveAttrib(program: Int, index: Int, bufSize: Int, length: IntPtr, size: IntPtr, type: IntPtr, name: VoidPtr)
-    fun glGetActiveUniform(program: Int, index: Int, bufSize: Int, length: IntPtr, size: IntPtr, type: IntPtr, name: VoidPtr)
-    fun glGetAttachedShaders(program: Int, maxCount: Int, count: IntPtr, shaders: IntPtr)
-    fun glGetAttribLocation(program: Int, name: String): Int
-    fun glGetUniformLocation(program: Int, name: String): Int
-    fun glGetBooleanv(pname: Int, data: VoidPtr)
-    fun glGetBufferParameteriv(target: Int, pname: Int, params: IntPtr)
-    fun glGetError(): Int
-    fun glGetFloatv(pname: Int, data: FloatPtr)
-    fun glGetFramebufferAttachmentParameteriv(target: Int, attachment: Int, pname: Int, params: IntPtr)
-    fun glGetIntegerv(pname: Int, data: IntPtr)
-    fun glGetProgramInfoLog(program: Int, bufSize: Int, length: IntPtr, infoLog: VoidPtr)
-    fun glGetRenderbufferParameteriv(target: Int, pname: Int, params: IntPtr)
-    fun glGetProgramiv(program: Int, pname: Int, params: IntPtr)
-    fun glGetShaderiv(shader: Int, pname: Int, params: IntPtr)
-    fun glGetShaderInfoLog(shader: Int, bufSize: Int, length: IntPtr, infoLog: VoidPtr)
-    fun glGetShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: IntPtr, precision: IntPtr)
-    fun glGetShaderSource(shader: Int, bufSize: Int, length: IntPtr, source: VoidPtr)
-    fun glGetString(name: Int): String
-    fun glGetTexParameterfv(target: Int, pname: Int, params: FloatPtr)
-    fun glGetTexParameteriv(target: Int, pname: Int, params: IntPtr)
-    fun glGetUniformfv(program: Int, location: Int, params: FloatPtr)
-    fun glGetUniformiv(program: Int, location: Int, params: IntPtr)
-    fun glGetVertexAttribfv(index: Int, pname: Int, params: FloatPtr)
-    fun glGetVertexAttribiv(index: Int, pname: Int, params: IntPtr)
-    fun glGetVertexAttribPointerv(index: Int, pname: Int, pointer: FBuffer)
-    fun glHint(target: Int, mode: Int)
-    fun glIsBuffer(buffer: Int): Boolean
-    fun glIsEnabled(cap: Int): Boolean
-    fun glIsFramebuffer(framebuffer: Int): Boolean
-    fun glIsProgram(program: Int): Boolean
-    fun glIsRenderbuffer(renderbuffer: Int): Boolean
-    fun glIsShader(shader: Int): Boolean
-    fun glIsTexture(texture: Int): Boolean
-    fun glLineWidth(width: Float)
-    fun glLinkProgram(program: Int)
-    fun glPixelStorei(pname: Int, param: Int)
-    fun glPolygonOffset(factor: Float, units: Float)
-    fun glReadPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int, pixels: VoidPtr)
-    fun glReleaseShaderCompiler()
-    fun glRenderbufferStorage(target: Int, internalformat: Int, width: Int, height: Int)
-    fun glSampleCoverage(value: Float, invert: Boolean)
-    fun glScissor(x: Int, y: Int, width: Int, height: Int)
-    fun glShaderBinary(count: Int, shaders: IntPtr, binaryformat: Int, binary: VoidPtr, length: Int)
-    fun glShaderSource(shader: Int, count: IntSize, string: Array<String>, length: IntArray?)
-    fun glStencilFunc(func: Int, ref: Int, mask: Int)
-    fun glStencilFuncSeparate(face: Int, func: Int, ref: Int, mask: Int)
-    fun glStencilMask(mask: Int)
-    fun glStencilMaskSeparate(face: Int, mask: Int)
-    fun glStencilOp(fail: Int, zfail: Int, zpass: Int)
-    fun glStencilOpSeparate(face: Int, sfail: Int, dpfail: Int, dppass: Int)
-    fun glTexImage2D(target: Int, level: Int, internalformat: Int, width: Int, height: Int, border: Int, format: Int, type: Int, pixels: VoidPtr?)
-    fun glTexImage2D(target: Int, level: Int, internalformat: Int, format: Int, type: Int, data: NativeImage)
-    fun glTexParameterf(target: Int, pname: Int, param: Float)
-    fun glTexParameterfv(target: Int, pname: Int, params: FloatPtr)
-    fun glTexParameteri(target: Int, pname: Int, param: Int)
-    fun glTexParameteriv(target: Int, pname: Int, params: IntPtr)
-    fun glTexSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, pixels: VoidPtr)
-    fun glUniform1f(location: Int, v0: Float)
-    fun glUniform1fv(location: Int, count: Int, value: FloatPtr)
-    fun glUniform1i(location: Int, v0: Int)
-    fun glUniform1iv(location: Int, count: Int, value: IntPtr)
-    fun glUniform2f(location: Int, v0: Float, v1: Float)
-    fun glUniform2fv(location: Int, count: Int, value: FloatPtr)
-    fun glUniform2i(location: Int, v0: Int, v1: Int)
-    fun glUniform2iv(location: Int, count: Int, value: IntPtr)
-    fun glUniform3f(location: Int, v0: Float, v1: Float, v2: Float)
-    fun glUniform3fv(location: Int, count: Int, value: FloatPtr)
-    fun glUniform3i(location: Int, v0: Int, v1: Int, v2: Int)
-    fun glUniform3iv(location: Int, count: Int, value: IntPtr)
-    fun glUniform4f(location: Int, v0: Float, v1: Float, v2: Float, v3: Float)
-    fun glUniform4fv(location: Int, count: Int, value: FloatPtr)
-    fun glUniform4i(location: Int, v0: Int, v1: Int, v2: Int, v3: Int)
-    fun glUniform4iv(location: Int, count: Int, value: IntPtr)
-    fun glUniformMatrix2fv(location: Int, count: Int, transpose: Boolean, value: FloatPtr)
-    fun glUniformMatrix3fv(location: Int, count: Int, transpose: Boolean, value: FloatPtr)
-    fun glUniformMatrix4fv(location: Int, count: Int, transpose: Boolean, value: FloatPtr)
-    fun glUseProgram(program: Int)
-    fun glValidateProgram(program: Int)
-    fun glVertexAttrib1f(index: Int, x: Float)
-    fun glVertexAttrib1fv(index: Int, v: FloatPtr)
-    fun glVertexAttrib2f(index: Int, x: Float, y: Float)
-    fun glVertexAttrib2fv(index: Int, v: FloatPtr)
-    fun glVertexAttrib3f(index: Int, x: Float, y: Float, z: Float)
-    fun glVertexAttrib3fv(index: Int, v: FloatPtr)
-    fun glVertexAttrib4f(index: Int, x: Float, y: Float, z: Float, w: Float)
-    fun glVertexAttrib4fv(index: Int, v: FloatPtr)
-    fun glVertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: IntSize)
-    fun glViewport(x: Int, y: Int, width: Int, height: Int)
-
-    fun CGLSetParameter(vararg args: Any?)
-    fun CGLEnable(vararg args: Any?)
-
-    companion object : MacGL by NativeLoad("OpenGL") {
-        const val GL_COLOR_BUFFER_BIT = 0x00004000
-        val NATIVE = NativeLibrary.getInstance("OpenGL")
-    }
-}
-
-
-class MacKmlGl(val gl: MacGL = MacGL) : KmlGl() {
+open class NativeKgl(val gl: INativeGL) : KmlGl() {
     override fun activeTexture(texture: Int): Unit = gl.glActiveTexture(texture)
     override fun attachShader(program: Int, shader: Int): Unit = gl.glAttachShader(program, shader)
     override fun bindAttribLocation(program: Int, index: Int, name: String): Unit = gl.glBindAttribLocation(program, index, name)
@@ -247,7 +82,7 @@ class MacKmlGl(val gl: MacGL = MacGL) : KmlGl() {
     override fun getShaderInfoLog(shader: Int, bufSize: Int, length: FBuffer, infoLog: FBuffer): Unit = gl.glGetShaderInfoLog(shader, bufSize, length.nioIntBuffer, infoLog.nioBuffer)
     override fun getShaderPrecisionFormat(shadertype: Int, precisiontype: Int, range: FBuffer, precision: FBuffer): Unit = gl.glGetShaderPrecisionFormat(shadertype, precisiontype, range.nioIntBuffer, precision.nioIntBuffer)
     override fun getShaderSource(shader: Int, bufSize: Int, length: FBuffer, source: FBuffer): Unit = gl.glGetShaderSource(shader, bufSize, length.nioIntBuffer, source.nioBuffer)
-    override fun getString(name: Int): String = gl.glGetString(name)
+    override fun getString(name: Int): String = gl.glGetString(name) ?: ""
     override fun getTexParameterfv(target: Int, pname: Int, params: FBuffer): Unit = gl.glGetTexParameterfv(target, pname, params.nioFloatBuffer)
     override fun getTexParameteriv(target: Int, pname: Int, params: FBuffer): Unit = gl.glGetTexParameteriv(target, pname, params.nioIntBuffer)
     override fun getUniformfv(program: Int, location: Int, params: FBuffer): Unit = gl.glGetUniformfv(program, location, params.nioFloatBuffer)

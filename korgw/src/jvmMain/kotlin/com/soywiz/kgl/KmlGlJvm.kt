@@ -3,7 +3,7 @@
 @file:Suppress("unused", "RedundantUnitReturnType", "PropertyName")
 
 package com.soywiz.kgl
-
+/*
 import com.soywiz.kmem.*
 import com.jogamp.opengl.*
 import com.soywiz.korim.bitmap.*
@@ -154,3 +154,4 @@ class JvmKmlGl(val gl: GL2) : KmlGl() {
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit = gl.glVertexAttribPointer(index, size, type, normalized, stride, pointer.toLong())
     override fun viewport(x: Int, y: Int, width: Int, height: Int): Unit = gl.glViewport(x, y, width, height)
 }
+*/

@@ -1,5 +1,6 @@
 package com.soywiz.korag
 
+/*
 import com.jogamp.newt.opengl.*
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.*
@@ -170,3 +171,4 @@ class AGAwt(config: AGConfig, glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBas
 class AGAwtNative(override val nativeComponent: Any, config: AGConfig = AGConfig(), glDecorator: (KmlGl) -> KmlGl = { it }) : AGAwtBase(config, glDecorator) {
 
 }
+*/

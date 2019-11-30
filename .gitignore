@@ -10,4 +10,4 @@ log.txt
 .DS_Store
 /local.properties
 *.hprof
-
+*.log

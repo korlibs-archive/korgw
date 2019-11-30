@@ -1,22 +1,89 @@
 package com.soywiz.korgw.osx
 
 import com.soywiz.kgl.KmlGl
-import com.soywiz.korag.AG
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
+import com.soywiz.korev.KeyEvent
+import com.soywiz.korev.MouseButton
+import com.soywiz.korev.MouseEvent
 import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.GameWindowCoroutineDispatcher
-import com.soywiz.korgw.osx.*
+import com.soywiz.korgw.platform.BaseOpenglContext
+import com.soywiz.korgw.platform.INativeGL
+import com.soywiz.korgw.platform.NativeKgl
+import com.soywiz.korgw.platform.NativeLoad
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
+import com.sun.jna.Callback
+import com.sun.jna.Library
 import kotlin.coroutines.CoroutineContext
 
 class MacAG(val window: Long) : AGOpengl() {
     override val gles: Boolean = true
-    override val gl: KmlGl = MacKmlGl()
+    //override val glSlVersion = 140
+    //override val glSlVersion = 100
+    override val gl: KmlGl = MacKmlGL
     override val nativeComponent: Any = window
+}
+
+object MacKmlGL : NativeKgl(MacGL)
+
+interface MacGL : INativeGL, Library {
+    fun CGLSetParameter(vararg args: Any?)
+    fun CGLEnable(vararg args: Any?)
+
+    companion object : MacGL by NativeLoad("OpenGL")
+}
+
+class MacosGLContext(var contentView: Long) : BaseOpenglContext {
+    val pixelFormat = NSClass("NSOpenGLPixelFormat").alloc().msgSend(
+        "initWithAttributes:", intArrayOf(
+            8, 24,
+            11, 8,
+            5,
+            73,
+            72,
+            55, 1,
+            56, 4,
+            //99, 0x1000, // or 0x3200
+            //99, 0x3200,
+            //99, 0x3100,
+            //99, 0x4100,
+            0
+        )
+    )
+    val openGLContext = NSClass("NSOpenGLContext").alloc().msgSend("initWithFormat:shareContext:", pixelFormat, null)
+
+    init {
+        println("pixelFormat: $pixelFormat")
+        println("openGLContext: $openGLContext")
+        setView(contentView)
+    }
+
+    override fun makeCurrent() {
+        openGLContext.msgSend("makeCurrentContext")
+    }
+
+    override fun swapBuffers() {
+        GL.glFlush()
+        openGLContext.msgSend("flushBuffer")
+    }
+
+    fun clearDrawable() {
+        openGLContext.msgSend("clearDrawable")
+    }
+
+    fun setView(contentView: Long) {
+        openGLContext.msgSend("setView:", contentView)
+    }
+
+    fun setParameters() {
+        val dims = intArrayOf(720, 480)
+        GL.CGLSetParameter(openGLContext, 304, dims)
+        GL.CGLEnable(openGLContext, 304)
+    }
 }
 
 class MacGameWindow : GameWindow() {
@@ -25,10 +92,14 @@ class MacGameWindow : GameWindow() {
     companion object {
         val isMainThread get() = NSClass("NSThread").msgSend("isMainThread") != 0L
     }
+
+    val initialWidth = 128
+    val initialHeight = 128
+
     val app = NSClass("NSApplication").msgSend("sharedApplication")
     val sharedApp = app
     val MyNsWindow = AllocateClass("MyNSWindow", "NSWindow")
-    val rect = NSRect(0, 0, 128, 128)
+    val rect = NSRect(0, 0, initialWidth, initialHeight)
     val window = MyNsWindow.alloc().msgSend(
         "initWithContentRect:styleMask:backing:defer:",
         rect,
@@ -36,7 +107,7 @@ class MacGameWindow : GameWindow() {
         NSBackingStoreBuffered,
         false
     ).also {
-        it.msgSend("setTitle:", NSString(""))
+        it.msgSend("setTitle:", NSString("Korgw"))
     }
 
     override val key: CoroutineContext.Key<*>
@@ -50,12 +121,12 @@ class MacGameWindow : GameWindow() {
     override var title: String
         get() = NSString(window.msgSend("title")).toString()
         set(value) {
-            window.msgSend("title", NSString(value).id)
+            window.msgSend("setTitle:", NSString(value))
         }
-    override val width: Int
-        get() = super.width
-    override val height: Int
-        get() = super.height
+    override var width: Int = initialWidth
+        protected set
+    override var height: Int = initialHeight
+        protected set
     override var icon: Bitmap?
         get() = super.icon
         set(value) {}
@@ -71,6 +142,8 @@ class MacGameWindow : GameWindow() {
 
     override fun setSize(width: Int, height: Int) {
         window.msgSend("setContentSize:", MyNativeNSPoint.ByValue(width, height))
+        this.width = width
+        this.height = height
 
     }
 
@@ -99,6 +172,52 @@ class MacGameWindow : GameWindow() {
         autoreleasePool.msgSend("drain")
     }
 
+    //var running = true
+
+    val windowWillClose = object : WindowWillCloseCallback {
+        override fun invoke(self: Long, _sel: Long, sender: Long): Long {
+            running = false
+            System.exit(0)
+            return 0L
+        }
+    }
+
+
+    val applicationShouldTerminate = object : ApplicationShouldTerminateCallback {
+        override fun invoke(self: Long, _sel: Long, sender: Long): Long {
+            println("applicationShouldTerminateCallback")
+            running = false
+            System.exit(0)
+            return 0L
+        }
+    }
+
+    var glCtx: MacosGLContext? = null
+
+    fun renderOpengl() {
+        glCtx?.makeCurrent()
+        GL.glViewport(0, 0, width, height)
+        //GL.glClearColor(.3f, .7f, 1f, 1f)
+        GL.glClearColor(.3f, .3f, .3f, 1f)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+        //println("RENDER")
+
+        frame()
+
+        glCtx?.swapBuffers()
+    }
+
+    val timerCallback = object : Callback {
+        fun callback() {
+            println("TIMER!")
+        }
+    }
+
+    val timerCallback2 = ObjcCallbackVoid { self, _sel, notification ->
+        println("frame!")
+    }
+
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         launchImmediately(coroutineDispatcher) {
             entry()
@@ -108,7 +227,11 @@ class MacGameWindow : GameWindow() {
         val AppDelegateClass = ObjectiveC.objc_allocateClassPair(NSObject.OBJ_CLASS, "AppDelegate", 0)
         val NSApplicationDelegate = ObjectiveC.objc_getProtocol("NSApplicationDelegate")
         ObjectiveC.class_addProtocol(AppDelegateClass, NSApplicationDelegate)
-        ObjectiveC.class_addMethod(AppDelegateClass, sel("applicationShouldTerminate:"), applicationShouldTerminateCallback, "@:@");
+        ObjectiveC.class_addMethod(AppDelegateClass, sel("applicationShouldTerminate:"), applicationShouldTerminate, "@:@")
+        ObjectiveC.class_addMethod(AppDelegateClass, sel("applicationDidBecomeActive:"), ObjcCallbackVoidEmpty {
+            println("applicationDidBecomeActive")
+            renderOpengl()
+        }, "@:@")
         val appDelegate = AppDelegateClass.alloc().msgSend("init")
         app.msgSend("setDelegate:", appDelegate)
         app.msgSend("finishLaunching")
@@ -126,7 +249,12 @@ class MacGameWindow : GameWindow() {
 
         val appMenu = NSClass("NSMenu").alloc().msgSend("init")
         val quitMenuItem = NSClass("NSMenuItem").alloc()
-            .msgSend("initWithTitle:action:keyEquivalent:", NSString("Quit $processName").id, sel("terminate:"), NSString("q").id)
+            .msgSend(
+                "initWithTitle:action:keyEquivalent:",
+                NSString("Quit $processName").id,
+                sel("terminate:"),
+                NSString("q").id
+            )
         quitMenuItem.msgSend("autorelease")
         appMenu.msgSend("addItem:", quitMenuItem)
         appMenuItem.msgSend("setSubmenu:", appMenu)
@@ -134,27 +262,10 @@ class MacGameWindow : GameWindow() {
         //window.msgSend("styleMask", window.msgSend("styleMask").toInt() or NSWindowStyleMaskFullScreen)
 
         window.msgSend("setReleasedWhenClosed:", 0L)
-
         window.msgSend("cascadeTopLeftFromPoint:", NSPoint(20, 20))
 
-        val pixelFormat = NSClass("NSOpenGLPixelFormat").alloc().msgSend(
-            "initWithAttributes:", intArrayOf(
-                8, 24,
-                11, 8,
-                5,
-                73,
-                72,
-                55, 1,
-                56, 4,
-                //99, 0x1000, // or 0x3200
-                //99, 0x3200,
-                99, 0x4100,
-                0
-            )
-        )
-        val openGLContext = NSClass("NSOpenGLContext").alloc().msgSend("initWithFormat:shareContext:", pixelFormat, null)
         val contentView = window.msgSend("contentView")
-        openGLContext.msgSend("setView:", contentView)
+        glCtx = MacosGLContext(contentView)
         println("contentView: $contentView")
         contentView.msgSend("setWantsBestResolutionOpenGLSurface:", true)
 
@@ -163,8 +274,6 @@ class MacGameWindow : GameWindow() {
         //window.msgSend("contentView", openglView)
         //val contentView = window.msgSend("contentView")
 
-        println("pixelFormat: $pixelFormat")
-        println("openGLContext: $openGLContext")
 
         window.msgSend("setAcceptsMouseMovedEvents:", true)
         window.msgSend("setBackgroundColor:", NSClass("NSColor").msgSend("blackColor"))
@@ -183,45 +292,83 @@ class MacGameWindow : GameWindow() {
         //val NSDefaultRunLoopMode = Foundation.NATIVE.getGlobalVariableAddress("NSDefaultRunLoopMode")
         println("NSDefaultRunLoopMode: $NSDefaultRunLoopMode")
 
-        fun renderOpengl() {
-            val rect = MyNativeNSRect()
-            window.msgSend_stret(rect, "frame")
-
-            openGLContext.msgSend("makeCurrentContext")
-            GL.glViewport(0, 0, rect.width.toInt(), rect.height.toInt())
-            GL.glClearColor(.3f, .7f, 1f, 1f)
-            GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-            frame()
-
-            openGLContext.msgSend("flushBuffer")
-        }
-
         val mouseEvent = ObjcCallbackVoid { self, _sel, sender ->
+            val type = sender.msgSend("type")
             val point = sender.msgSendNSPoint("locationInWindow")
             val buttonNumber = sender.msgSend("buttonNumber")
             val clickCount = sender.msgSend("clickCount")
 
-            val rect = MyNativeNSRect()
+            val rect = MyNSRect()
             contentView.msgSend_stret(rect, "frame")
 
-            val rect2 = MyNativeNSRect()
+            val rect2 = MyNSRect()
             window.msgSend_stret(rect2, "frame")
 
-            val rect3 = MyNativeNSRect()
+            val rect3 = MyNSRect()
             window.msgSend_stret(rect3, "contentRectForFrameRect:", rect2)
 
-            val dims = intArrayOf(720, 480)
-            GL.CGLSetParameter(openGLContext, 304, dims)
-            GL.CGLEnable(openGLContext, 304)
+            glCtx?.setParameters()
 
             val point2 = NSPoint(point.x, rect.height - point.y)
+            val x = point2.x.toDouble()
+            val y = point2.y.toDouble()
+            val button = MouseButton[buttonNumber.toInt()]
+            val buttons = 0
+            val isShiftDown = false
+            val isCtrlDown = false
+            val isAltDown = false
+            val isMetaDown = false
+            val scaleCoords = false
+            val scrollDeltaX = 0.0
+            val scrollDeltaY = 0.0
+            val scrollDeltaZ = 0.0
 
             //val res = NSClass("NSEvent").id.msgSend_stret(data, "mouseLocation")
 
             val selName = ObjectiveC.sel_getName(_sel)
+            val ev = when (selName) {
+                "mouseMoved:" -> MouseEvent.Type.MOVE
+                "mouseDown:", "leftMouseDown:", "rightMouseDown:", "otherMouseDown:" -> MouseEvent.Type.DOWN
+                "mouseUp:", "leftMouseUp:", "rightMouseUp:", "otherMouseUp:" -> MouseEvent.Type.UP
+                else -> MouseEvent.Type.MOVE
+            }
 
-            println("MOUSE EVENT ($selName) from NSWindow! $point2 : $buttonNumber : $clickCount")
+            dispatchMouseEvent(ev, 0, x.toInt(), y.toInt(), button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
+            //println("MOUSE EVENT ($type) ($selName) from NSWindow! $point2 : $buttonNumber : $clickCount, $rect, $rect2, $rect3")
+        }
+
+        val windowTimer = ObjcCallbackVoid { self, _sel, sender ->
+            renderOpengl()
+        }
+
+        fun windowDidResize() {
+            //println("windowDidResize:")
+            val frect = MyNSRect()
+            window.msgSend_stret(frect, "frame")
+
+            val rect = frect
+
+            val barSize = 21.0
+            rect.y += barSize
+            rect.height -= barSize
+
+            //val rect = MyNativeNSRect()
+            //window.msgSend_stret(rect, "contentRectForFrameRect:", frect)
+
+            //val rect = MyNativeNSRect()
+            //window.msgSend_stret(rect, "frame")
+
+            glCtx?.clearDrawable()
+            this@MacGameWindow.width = rect.width.toInt()
+            this@MacGameWindow.height = rect.height.toInt()
+            contentView.msgSend("setBoundsSize:", MyNativeNSPoint.ByValue(rect.width, rect.height))
+            glCtx?.setView(contentView)
+            dispatchReshapeEvent(rect.x.toInt(), rect.y.toInt(), rect.width.toInt(), rect.height.toInt())
+            renderOpengl()
+        }
+
+        val windowDidResize = ObjcCallbackVoid { self, _sel, notification ->
+            windowDidResize()
         }
 
         ObjectiveC.class_addMethod(MyNsWindow, sel("mouseEntered:"), mouseEvent, "v@:@")
@@ -238,9 +385,11 @@ class MacGameWindow : GameWindow() {
         ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseMoved:"), mouseEvent, "v@:@")
         ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseDown:"), mouseEvent, "v@:@")
         ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseUp:"), mouseEvent, "v@:@")
+        ObjectiveC.class_addMethod(MyNsWindow, sel("windowTimer:"), windowTimer, "v@:@")
+        ObjectiveC.class_addMethod(MyNsWindow, sel("windowDidResize:"), windowDidResize, "v@:@")
+
 
         val keyEvent = ObjcCallbackVoid { self, _sel, sender ->
-            val selName = ObjectiveC.sel_getName(_sel)
             val characters = NSString(sender.msgSend("characters")).toString()
             val charactersIgnoringModifiers = NSString(sender.msgSend("charactersIgnoringModifiers")).toString()
             val char = charactersIgnoringModifiers.getOrNull(0) ?: '\u0000'
@@ -248,7 +397,16 @@ class MacGameWindow : GameWindow() {
 
             val key = KeyCodesToKeys[keyCode] ?: CharToKeys[char] ?: Key.UNKNOWN
 
-            println("keyDown: $selName : $characters : ${char.toInt()} : $charactersIgnoringModifiers : $keyCode : $key")
+            val selName = ObjectiveC.sel_getName(_sel)
+            val ev = when (selName) {
+                "keyDown:" -> KeyEvent.Type.DOWN
+                "keyUp:" -> KeyEvent.Type.UP
+                "keyPress:" -> KeyEvent.Type.TYPE
+                else -> KeyEvent.Type.TYPE
+            }
+
+            //println("keyDown: $selName : $characters : ${char.toInt()} : $charactersIgnoringModifiers : $keyCode : $key")
+            dispatchKeyEvent(ev, 0, char, key, keyCode)
         }
 
         ObjectiveC.class_addMethod(MyNsWindow, sel("keyDown:"), keyEvent, "v@:@")
@@ -273,39 +431,62 @@ class MacGameWindow : GameWindow() {
                 return 0L
             }
         }
-    val MyResponderClass = AllocateClass("MyResponder", "NSObject", "NSResponder")
-    //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseDragged:"), eventHandler, "v@:@")
-    //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseUp:"), eventHandler, "v@:@")
-    //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseDown:"), eventHandler , "v@:@")
-    ObjectiveC.class_addMethod(MyResponderClass, sel("mouseMoved:"), eventHandler, "v@:@")
-    val Responder = MyResponderClass.alloc().msgSend("init")
-    window.msgSend("setNextResponder:", Responder)
-    */
+        val MyResponderClass = AllocateClass("MyResponder", "NSObject", "NSResponder")
+        //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseDragged:"), eventHandler, "v@:@")
+        //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseUp:"), eventHandler, "v@:@")
+        //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseDown:"), eventHandler , "v@:@")
+        ObjectiveC.class_addMethod(MyResponderClass, sel("mouseMoved:"), eventHandler, "v@:@")
+        val Responder = MyResponderClass.alloc().msgSend("init")
+        window.msgSend("setNextResponder:", Responder)
+        */
 
         val WindowDelegate = AllocateClass("WindowDelegate", "NSObject", "NSWindowDelegate")
         ObjectiveC.class_addMethod(WindowDelegate, sel("windowWillClose:"), windowWillClose, "v@:@")
-        ObjectiveC.class_addMethod(WindowDelegate, sel("windowDidExpose:"), ObjcCallbackVoid { self, _sel, notification ->
-            //println("windowDidExpose")
-            renderOpengl()
-        }, "v@:@")
-        ObjectiveC.class_addMethod(WindowDelegate, sel("windowDidUpdate:"), ObjcCallbackVoid { self, _sel, notification ->
-            //println("windowDidUpdate")
-            renderOpengl()
-        }, "v@:@")
-        ObjectiveC.class_addMethod(WindowDelegate, sel("windowDidResize:"), ObjcCallbackVoid { self, _sel, notification ->
-            val rect = MyNativeNSRect()
-            window.msgSend_stret(rect, "frame")
-            openGLContext.msgSend("clearDrawable")
-            contentView.msgSend("setBoundsSize:", MyNativeNSPoint.ByValue(rect.width, rect.height))
-            openGLContext.msgSend("setView:", contentView)
-            renderOpengl()
-        }, "v@:@")
+        ObjectiveC.class_addMethod(
+            WindowDelegate,
+            sel("windowDidExpose:"),
+            ObjcCallbackVoid { self, _sel, notification ->
+                //println("windowDidExpose")
+                renderOpengl()
+            },
+            "v@:@"
+        )
+        ObjectiveC.class_addMethod(
+            WindowDelegate,
+            sel("windowDidUpdate:"),
+            ObjcCallbackVoid { self, _sel, notification ->
+                //println("windowDidUpdate")
+                renderOpengl()
+            },
+            "v@:@"
+        )
+        ObjectiveC.class_addMethod(
+            WindowDelegate,
+            sel("windowDidResize:"),
+            windowDidResize,
+            "v@:@"
+        )
 
         val Delegate = WindowDelegate.alloc().msgSend("init")
         window.msgSend("setDelegate:", Delegate)
 
+        windowDidResize()
         ag.__ready()
         dispatchInitEvent()
+
+        println(NSClass("NSTimer").listClassMethods())
+
+        //NSClass("NSTimer").msgSend("scheduledTimerWithTimeInterval:repeats:block:", (1.0 / 60.0), true, timerCallback)
+        NSClass("NSTimer").msgSend(
+            "scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:",
+            (1.0 / 60.0),
+            window,
+            sel("windowTimer:"),
+            null,
+            true
+        )
+
+
         app.msgSend("run")
 
         autoreleasePool.msgSend("drain")

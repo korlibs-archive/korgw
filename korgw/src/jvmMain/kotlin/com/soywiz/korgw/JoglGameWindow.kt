@@ -1,5 +1,6 @@
 package com.soywiz.korgw
 
+/*
 import com.soywiz.klock.PerformanceCounter
 import com.soywiz.klock.milliseconds
 import com.soywiz.kmem.clamp
@@ -388,3 +389,4 @@ class JoglGameWindow : GameWindow() {
 
     }
 }
+*/

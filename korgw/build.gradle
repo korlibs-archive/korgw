@@ -37,6 +37,7 @@ kotlin {
     }
 }
 
+/*
 configurations {
     maybeCreate("rtArtifacts")
 }
@@ -72,6 +73,8 @@ tasks.create("processrtRtArtifacts") {
         }
     }
 }
+tasks.getByName("jvmProcessResources").dependsOn("processrtRtArtifacts")
+*/
 
 kotlin.sourceSets {
     jvmMain {
@@ -84,4 +87,10 @@ task runSample(type: JavaExec) {
     main = 'com.soywiz.korgw.TestGameWindow'
 }
 
-tasks.getByName("jvmProcessResources").dependsOn("processrtRtArtifacts")
+task runSampleMainThread(type: JavaExec) {
+    classpath = kotlin.targets.jvm.compilations.test.runtimeDependencyFiles
+    jvmArgs "-XstartOnFirstThread"
+    main = 'com.soywiz.korgw.TestGameWindow'
+}
+
+

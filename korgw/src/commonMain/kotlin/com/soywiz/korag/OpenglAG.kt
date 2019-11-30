@@ -16,6 +16,7 @@ abstract class AGOpengl : AG() {
     open val isGlAvailable = true
     abstract val gl: KmlGl
 
+    open val glSlVersion: Int? = null
     open val gles: Boolean = false
     open val webgl: Boolean = false
 
@@ -440,11 +441,11 @@ abstract class AGOpengl : AG() {
 
                 fragmentShaderId = createShader(
                     gl.FRAGMENT_SHADER,
-                    program.fragment.toNewGlslString(gles = gles, version = gl.versionInt)
+                    program.fragment.toNewGlslString(gles = gles, version = glSlVersion ?: gl.versionInt)
                 )
                 vertexShaderId = createShader(
                     gl.VERTEX_SHADER,
-                    program.vertex.toNewGlslString(gles = gles, version = gl.versionInt)
+                    program.vertex.toNewGlslString(gles = gles, version = glSlVersion ?: gl.versionInt)
                 )
                 gl.attachShader(id, fragmentShaderId)
                 gl.attachShader(id, vertexShaderId)

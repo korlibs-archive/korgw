@@ -1,5 +1,6 @@
 package com.soywiz.korgw.osx
 
+import com.soywiz.korgw.platform.KStructure
 import com.soywiz.korgw.platform.NativeLoad
 import com.soywiz.korgw.platform.NativeName
 import com.sun.jna.*
@@ -11,6 +12,7 @@ internal interface GL : Library {
     fun glViewport(x: Int, y: Int, width: Int, height: Int)
     fun glClearColor(r: Float, g: Float, b: Float, a: Float)
     fun glClear(flags: Int)
+    fun glFlush()
     fun CGLSetParameter(vararg args: Any?)
     fun CGLEnable(vararg args: Any?)
     companion object : GL by NativeLoad("OpenGL") {
@@ -24,6 +26,8 @@ interface ObjectiveC : Library {
     fun objc_getProtocol(name: String): Long
 
     fun class_addProtocol(a: Long, b: Long): Long
+    fun class_copyMethodList(clazz: Long, items: IntArray): Pointer
+
 
     fun objc_msgSend(vararg args: Any?): Long
     @NativeName("objc_msgSend")
@@ -37,6 +41,9 @@ interface ObjectiveC : Library {
     fun objc_msgSend(a: Long, b: Long, c: ByteArray, len: Int): Long
     fun objc_msgSend(a: Long, b: Long, c: CharArray, len: Int): Long
      */
+
+    fun method_getName(m: Long): Long
+
     fun sel_registerName(name: String): Long
 
     fun sel_getName(sel: Long): String
@@ -148,6 +155,23 @@ open class NSClass(val name: String) : NSObject(ObjectiveC.objc_getClass(name)) 
     val OBJ_CLASS = id
 }
 
+fun NSClass.listClassMethods(): List<String> = ObjC_listMethods(ObjectiveC.object_getClass(this.id))
+fun NSClass.listInstanceMethods(): List<String> = ObjC_listMethods(this.id)
+
+fun ObjC_listMethods(clazz: Long): List<String> {
+    val nitemsPtr = IntArray(1)
+    val items2 = ObjectiveC.class_copyMethodList(clazz, nitemsPtr)
+    val nitems = nitemsPtr[0]
+    val out = ArrayList<String>(nitems)
+    for (n in 0 until nitems) {
+        val ptr = items2.getNativeLong((Native.LONG_SIZE * n).toLong())
+        val mname = ObjectiveC.method_getName(ptr.toLong())
+        val selName = ObjectiveC.sel_getName(mname)
+        out.add(selName)
+    }
+    return out
+}
+
 class NSApplication(id: Long) : NSObject(id) {
     fun setActivationPolicy(value: Int) = id.msgSend("setActivationPolicy:", value.toLong())
 
@@ -170,17 +194,6 @@ interface ApplicationShouldTerminateCallback : Callback {
     operator fun invoke(self: Long, _sel: Long, sender: Long): Long
 }
 
-var running = true
-
-val applicationShouldTerminateCallback = object : ApplicationShouldTerminateCallback {
-    override fun invoke(self: Long, _sel: Long, sender: Long): Long {
-        println("applicationShouldTerminateCallback")
-        running = false
-        System.exit(0)
-        return 0L
-    }
-}
-
 interface ObjcCallback : Callback {
     operator fun invoke(self: Long, _sel: Long, sender: Long): Long
 }
@@ -201,16 +214,14 @@ fun ObjcCallbackVoid(callback: (self: Long, _sel: Long, sender: Long) -> Unit): 
     }
 }
 
-interface WindowWillCloseCallback : Callback {
-    operator fun invoke(self: Long, _sel: Long, sender: Long): Long
+fun ObjcCallbackVoidEmpty(callback: () -> Unit): ObjcCallbackVoid {
+    return object : ObjcCallbackVoid {
+        override fun invoke(self: Long, _sel: Long, sender: Long): Unit = callback()
+    }
 }
 
-val windowWillClose = object : WindowWillCloseCallback {
-    override fun invoke(self: Long, _sel: Long, sender: Long): Long {
-        running = false
-        System.exit(0)
-        return 0L
-    }
+interface WindowWillCloseCallback : Callback {
+    operator fun invoke(self: Long, _sel: Long, sender: Long): Long
 }
 
 fun Long.alloc(): Long = this.msgSend("alloc")
@@ -317,6 +328,14 @@ public class NativeNSRect {
     var h: Int get() = pointer.getInt(28L); set(value) = run { pointer.setInt(28L, value) }
 
     override fun toString(): String = "NativeNSRect($a, $b, $c, $d, $e, $f, $g, $h)"
+}
+
+class MyNSRect(pointer: Pointer? = null) : KStructure(pointer) {
+    var x by nativeFloat()
+    var y by nativeFloat()
+    var width by nativeFloat()
+    var height by nativeFloat()
+    override fun toString(): String = "NSRect($x, $y, $width, $height)"
 }
 
 @Structure.FieldOrder("x", "y", "width", "height")
