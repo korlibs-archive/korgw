@@ -313,15 +313,6 @@ class MacGameWindow : GameWindow() {
             val x = point2.x.toDouble()
             val y = point2.y.toDouble()
             val button = MouseButton[buttonNumber.toInt()]
-            val buttons = 0
-            val isShiftDown = false
-            val isCtrlDown = false
-            val isAltDown = false
-            val isMetaDown = false
-            val scaleCoords = false
-            val scrollDeltaX = 0.0
-            val scrollDeltaY = 0.0
-            val scrollDeltaZ = 0.0
 
             //val res = NSClass("NSEvent").id.msgSend_stret(data, "mouseLocation")
 
@@ -333,7 +324,7 @@ class MacGameWindow : GameWindow() {
                 else -> MouseEvent.Type.MOVE
             }
 
-            dispatchMouseEvent(ev, 0, x.toInt(), y.toInt(), button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
+            dispatchSimpleMouseEvent(ev, 0, x.toInt(), y.toInt(), button, simulateClickOnUp = true)
             //println("MOUSE EVENT ($type) ($selName) from NSWindow! $point2 : $buttonNumber : $clickCount, $rect, $rect2, $rect3")
         }
 

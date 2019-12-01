@@ -253,6 +253,24 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         })
     }
 
+    fun dispatchSimpleMouseEvent(
+        type: MouseEvent.Type, id: Int, x: Int, y: Int, button: MouseButton, simulateClickOnUp: Boolean = false
+    ) {
+        val buttons = 0
+        val scrollDeltaX: Double = 0.0
+        val scrollDeltaY: Double = 0.0
+        val scrollDeltaZ: Double = 0.0
+        val isShiftDown: Boolean = false
+        val isCtrlDown: Boolean = false
+        val isAltDown: Boolean = false
+        val isMetaDown: Boolean = false
+        val scaleCoords = false
+        dispatchMouseEvent(type, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
+        if (simulateClickOnUp && type == MouseEvent.Type.UP) {
+            dispatchMouseEvent(MouseEvent.Type.CLICK, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
+        }
+    }
+
     fun dispatchMouseEvent(
         type: MouseEvent.Type, id: Int, x: Int, y: Int, button: MouseButton, buttons: Int,
         scrollDeltaX: Double, scrollDeltaY: Double, scrollDeltaZ: Double,
