@@ -16,6 +16,7 @@ import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
+import com.soywiz.korio.util.OS
 import com.sun.jna.Callback
 import com.sun.jna.Library
 import kotlin.coroutines.CoroutineContext
@@ -86,11 +87,13 @@ class MacosGLContext(var contentView: Long) : BaseOpenglContext {
     }
 }
 
+internal val isOSXMainThread get() = OS.isMac && (NSClass("NSThread").msgSend("isMainThread") != 0L)
+
 class MacGameWindow : GameWindow() {
     val autoreleasePool = NSClass("NSAutoreleasePool").alloc().msgSend("init")
 
     companion object {
-        val isMainThread get() = NSClass("NSThread").msgSend("isMainThread") != 0L
+        val isMainThread get() = isOSXMainThread
     }
 
     val initialWidth = 128
