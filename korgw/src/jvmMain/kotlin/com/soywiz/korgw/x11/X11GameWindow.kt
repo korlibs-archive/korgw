@@ -229,13 +229,6 @@ class X11GameWindow : GameWindow() {
                         }
                         MotionNotify, ButtonPress, ButtonRelease -> {
                             val mot = MyXMotionEvent(e.pointer)
-                            val scrollDeltaX = 0.0
-                            val scrollDeltaY = 0.0
-                            val scrollDeltaZ = 0.0
-                            val isShiftDown = false
-                            val isCtrlDown = false
-                            val isAltDown = false
-                            val isMetaDown = false
                             val ev = when (e.type) {
                                 MotionNotify -> MouseEvent.Type.MOVE
                                 ButtonPress -> MouseEvent.Type.DOWN
@@ -254,11 +247,7 @@ class X11GameWindow : GameWindow() {
                             //println(mot.size)
                             //println("MOUSE ${ev} ${mot.x} ${mot.y} ${mot.button}")
 
-                            dispatchMouseEvent(ev, 0, mot.x, mot.y, button, 0, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, false)
-                            if (ev == MouseEvent.Type.UP) {
-                                // @TODO: Check the down event to see if we should produce a click event!
-                                dispatchMouseEvent(MouseEvent.Type.CLICK, 0, mot.x, mot.y, button, 0, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, false)
-                            }
+                            dispatchSimpleMouseEvent(ev, 0, mot.x, mot.y, button, simulateClickOnUp = true)
                         }
                         else -> {
                             //println("OTHER EVENT ${e.type}")

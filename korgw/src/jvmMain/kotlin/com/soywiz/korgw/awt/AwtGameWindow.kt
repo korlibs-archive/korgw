@@ -213,31 +213,7 @@ class AwtGameWindow : GameWindow() {
                 val x = e.x
                 val y = e.y
                 val button = MouseButton[e.button - 1]
-                val buttons = 0
-                val scrollDeltaX = 0.0
-                val scrollDeltaY = 0.0
-                val scrollDeltaZ = 0.0
-                val isShiftDown = false
-                val isCtrlDown = false
-                val isAltDown = false
-                val isMetaDown = false
-                val scaleCoords = false
-                dispatchMouseEvent(
-                    ev,
-                    id,
-                    x,
-                    y,
-                    button,
-                    buttons,
-                    scrollDeltaX,
-                    scrollDeltaY,
-                    scrollDeltaZ,
-                    isShiftDown,
-                    isCtrlDown,
-                    isAltDown,
-                    isMetaDown,
-                    scaleCoords
-                )
+                dispatchSimpleMouseEvent(ev, id, x, y, button, simulateClickOnUp = false)
             }
         }
 

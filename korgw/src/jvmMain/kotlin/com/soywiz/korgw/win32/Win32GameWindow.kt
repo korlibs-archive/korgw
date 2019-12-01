@@ -325,41 +325,7 @@ class Win32GameWindow : GameWindow() {
                         else -> MouseButton.BUTTON_UNKNOWN
                     }
 
-                    dispatchMouseEvent(
-                        event,
-                        0,
-                        xPos,
-                        yPos,
-                        button,
-                        0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        false,
-                        false,
-                        false,
-                        false,
-                        false
-                    )
-                    if (event == MouseEvent.Type.UP) {
-                        // @TODO: Check latest down event to see if this should be emited
-                        dispatchMouseEvent(
-                            MouseEvent.Type.CLICK,
-                            0,
-                            xPos,
-                            yPos,
-                            button,
-                            0,
-                            0.0,
-                            0.0,
-                            0.0,
-                            false,
-                            false,
-                            false,
-                            false,
-                            false
-                        )
-                    }
+                    dispatchSimpleMouseEvent(event, 0, xPos, yPos, button, simulateClickOnUp = true)
                     LRESULT(0)
                 }
                 WM_KEYDOWN, WM_KEYUP -> {
