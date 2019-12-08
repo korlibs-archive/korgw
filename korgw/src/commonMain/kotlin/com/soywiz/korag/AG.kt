@@ -116,8 +116,8 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	data class Scissor(
-		val x: Int, val y: Int,
-		val width: Int, val height: Int
+		var x: Int, var y: Int,
+		var width: Int, var height: Int
 	) {
 		val top get() = y
 		val left get() = x
@@ -133,7 +133,6 @@ abstract class AG : Extra by Extra.Mixin() {
 		val eqRGB: BlendEquation = BlendEquation.ADD,
 		val eqA: BlendEquation = eqRGB
 	) {
-
 		constructor(src: BlendFactor, dst: BlendFactor, eq: BlendEquation = BlendEquation.ADD) : this(
 			src, dst,
 			src, dst,
