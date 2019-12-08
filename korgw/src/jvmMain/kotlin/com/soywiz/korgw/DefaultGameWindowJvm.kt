@@ -5,26 +5,44 @@ import com.soywiz.korag.AGConfig
 import com.soywiz.korag.AGFactory
 import com.soywiz.korag.AGWindow
 import com.soywiz.korgw.awt.AwtGameWindow
+import com.soywiz.korgw.jogl.JoglGameWindow
 import com.soywiz.korgw.osx.MacGameWindow
+import com.soywiz.korgw.osx.isOSXMainThread
 import com.soywiz.korgw.win32.Win32GameWindow
 import com.soywiz.korgw.x11.X11GameWindow
-import com.soywiz.korim.color.Colors
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.util.OS
 import kotlinx.coroutines.runBlocking
 
-actual fun CreateDefaultGameWindow(): GameWindow = when {
-    OS.isMac -> {
-        when {
-            MacGameWindow.isMainThread -> MacGameWindow()
-            else -> {
-                println("WARNING. Slower startup: NOT in main thread! Using AWT! (on mac use -XstartOnFirstThread when possible)")
-                AwtGameWindow()
+actual fun CreateDefaultGameWindow(): GameWindow {
+    val engine = korgwJvmEngine
+        ?: System.getenv("KORGW_JVM_ENGINE")
+        ?: System.getProperty("korgw.jvm.engine")
+        ?: "jogl"
+
+    return when (engine) {
+        "jna" -> when {
+            OS.isMac -> {
+                when {
+                    isOSXMainThread -> MacGameWindow()
+                    else -> {
+                        println("WARNING. Slower startup: NOT in main thread! Using AWT! (on mac use -XstartOnFirstThread when possible)")
+                        AwtGameWindow()
+                    }
+                }
+            }
+            OS.isWindows -> Win32GameWindow()
+            else -> X11GameWindow()
+        }
+        else -> {
+            if (isOSXMainThread) {
+                println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")
+                MacGameWindow()
+            } else {
+                JoglGameWindow()
             }
         }
     }
-    OS.isWindows -> Win32GameWindow()
-    else -> X11GameWindow()
 }
 
 object JvmAGFactory : AGFactory {
