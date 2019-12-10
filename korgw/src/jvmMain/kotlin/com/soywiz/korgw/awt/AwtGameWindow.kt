@@ -259,6 +259,8 @@ class AwtGameWindow : GameWindow() {
         queue {
             dispatchInitEvent()
             dispatchReshapeEvent()
+        }
+        EventQueue.invokeLater {
             frame.isVisible = true
         }
 
