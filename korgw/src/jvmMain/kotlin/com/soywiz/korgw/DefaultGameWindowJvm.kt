@@ -7,6 +7,7 @@ import com.soywiz.korag.AGWindow
 import com.soywiz.korgw.awt.AwtGameWindow
 import com.soywiz.korgw.jogl.JoglGameWindow
 import com.soywiz.korgw.osx.MacGameWindow
+import com.soywiz.korgw.osx.initializeMacOnce
 import com.soywiz.korgw.osx.isOSXMainThread
 import com.soywiz.korgw.win32.Win32GameWindow
 import com.soywiz.korgw.x11.X11GameWindow
@@ -15,6 +16,10 @@ import com.soywiz.korio.util.OS
 import kotlinx.coroutines.runBlocking
 
 actual fun CreateDefaultGameWindow(): GameWindow {
+    if (OS.isMac) {
+        initializeMacOnce()
+    }
+
     val engine = korgwJvmEngine
         ?: System.getenv("KORGW_JVM_ENGINE")
         ?: System.getProperty("korgw.jvm.engine")

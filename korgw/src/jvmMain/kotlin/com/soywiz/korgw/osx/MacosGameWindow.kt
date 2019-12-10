@@ -17,6 +17,7 @@ import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
 import com.soywiz.korio.util.OS
+import com.soywiz.korio.util.Once
 import com.sun.jna.Callback
 import com.sun.jna.Library
 import kotlin.coroutines.CoroutineContext
@@ -89,8 +90,9 @@ class MacosGLContext(var contentView: Long) : BaseOpenglContext {
 
 internal val isOSXMainThread get() = OS.isMac && (NSClass("NSThread").msgSend("isMainThread") != 0L)
 
-class MacGameWindow : GameWindow() {
-    init {
+private val _initializeMacOnce = Once()
+fun initializeMacOnce() = _initializeMacOnce {
+    if (OS.isMac) {
         // https://indiestack.com/2016/12/touch-bar-crash-protection/
         //[[NSUserDefaults standardUserDefaults] registerDefaults:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:@"NSFunctionBarAPIEnabled"]];
         NSClass("NSUserDefaults").msgSend("standardUserDefaults").msgSend(
@@ -101,6 +103,12 @@ class MacGameWindow : GameWindow() {
                 NSString("NSFunctionBarAPIEnabled")
             )
         )
+    }
+}
+
+class MacGameWindow : GameWindow() {
+    init {
+        initializeMacOnce()
     }
 
     val autoreleasePool = NSClass("NSAutoreleasePool").alloc().msgSend("init")
