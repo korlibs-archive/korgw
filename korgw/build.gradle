@@ -40,6 +40,7 @@ kotlin {
     }
 }
 
+/*
 def enableJogl = true
 if (enableJogl) {
     configurations {
@@ -79,6 +80,7 @@ if (enableJogl) {
     }
     tasks.getByName("jvmProcessResources").dependsOn("processrtRtArtifacts")
 }
+ */
 
 kotlin.sourceSets {
     jvmMain {

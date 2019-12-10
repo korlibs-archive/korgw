@@ -5,7 +5,7 @@ import com.soywiz.korag.AGConfig
 import com.soywiz.korag.AGFactory
 import com.soywiz.korag.AGWindow
 import com.soywiz.korgw.awt.AwtGameWindow
-import com.soywiz.korgw.jogl.JoglGameWindow
+//import com.soywiz.korgw.jogl.JoglGameWindow
 import com.soywiz.korgw.osx.MacGameWindow
 import com.soywiz.korgw.osx.initializeMacOnce
 import com.soywiz.korgw.osx.isOSXMainThread
@@ -40,15 +40,15 @@ actual fun CreateDefaultGameWindow(): GameWindow {
             OS.isWindows -> Win32GameWindow()
             else -> X11GameWindow()
         }
-        "jogl" -> {
-            if (isOSXMainThread) {
-                println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")
-                MacGameWindow()
-            } else {
-                // @TODO: Remove JoGL after a month once we ensure JNA/native versions work for everyone
-                JoglGameWindow()
-            }
-        }
+        //"jogl" -> {
+        //    if (isOSXMainThread) {
+        //        println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")
+        //        MacGameWindow()
+        //    } else {
+        //        // @TODO: Remove JoGL after a month once we ensure JNA/native versions work for everyone
+        //        JoglGameWindow()
+        //    }
+        //}
         else -> {
             error("Unsupported KORGW_JVM_ENGINE,korgw.jvm.engine='$engine'")
         }

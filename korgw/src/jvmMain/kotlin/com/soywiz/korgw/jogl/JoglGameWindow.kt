@@ -1,5 +1,6 @@
 package com.soywiz.korgw.jogl
 
+/*
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.*
 import com.jogamp.opengl.awt.GLCanvas
@@ -696,3 +697,4 @@ class JvmKmlGl(val gl: GL2) : KmlGl() {
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit = gl.glVertexAttribPointer(index, size, type, normalized, stride, pointer.toLong())
     override fun viewport(x: Int, y: Int, width: Int, height: Int): Unit = gl.glViewport(x, y, width, height)
 }
+*/
