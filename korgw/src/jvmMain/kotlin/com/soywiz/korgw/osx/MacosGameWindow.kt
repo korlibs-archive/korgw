@@ -90,6 +90,19 @@ class MacosGLContext(var contentView: Long) : BaseOpenglContext {
 internal val isOSXMainThread get() = OS.isMac && (NSClass("NSThread").msgSend("isMainThread") != 0L)
 
 class MacGameWindow : GameWindow() {
+    init {
+        // https://indiestack.com/2016/12/touch-bar-crash-protection/
+        //[[NSUserDefaults standardUserDefaults] registerDefaults:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:NO] forKey:@"NSFunctionBarAPIEnabled"]];
+        NSClass("NSUserDefaults").msgSend("standardUserDefaults").msgSend(
+            "registerDefaults:",
+            NSClass("NSDictionary").msgSend(
+                "dictionaryWithObject:forKey:",
+                NSClass("NSNumber").msgSend("numberWithBool:", 0),
+                NSString("NSFunctionBarAPIEnabled")
+            )
+        )
+    }
+
     val autoreleasePool = NSClass("NSAutoreleasePool").alloc().msgSend("init")
 
     companion object {
