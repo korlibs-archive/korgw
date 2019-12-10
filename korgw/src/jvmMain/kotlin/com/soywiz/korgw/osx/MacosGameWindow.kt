@@ -59,8 +59,8 @@ class MacosGLContext(var contentView: Long) : BaseOpenglContext {
     val openGLContext = NSClass("NSOpenGLContext").alloc().msgSend("initWithFormat:shareContext:", pixelFormat, null)
 
     init {
-        println("pixelFormat: $pixelFormat")
-        println("openGLContext: $openGLContext")
+        //println("pixelFormat: $pixelFormat")
+        //println("openGLContext: $openGLContext")
         setView(contentView)
     }
 
@@ -119,12 +119,151 @@ class MacGameWindow : GameWindow() {
 
     val initialWidth = 128
     val initialHeight = 128
+    var contentView: Long = 0L
 
     val app = NSClass("NSApplication").msgSend("sharedApplication")
     val sharedApp = app
-    val MyNsWindow = AllocateClass("MyNSWindow", "NSWindow")
+
+
+    val windowWillClose: WindowWillCloseCallback = object : WindowWillCloseCallback {
+        override fun invoke(self: Long, _sel: Long, sender: Long): Long {
+            running = false
+            System.exit(0)
+            return 0L
+        }
+    }
+
+    val applicationShouldTerminate: ApplicationShouldTerminateCallback = object : ApplicationShouldTerminateCallback {
+        override fun invoke(self: Long, _sel: Long, sender: Long): Long {
+            //println("applicationShouldTerminateCallback")
+            running = false
+            System.exit(0)
+            return 0L
+        }
+    }
+
+    val mouseEventHandler: ObjcCallbackVoid = ObjcCallbackVoid { self, _sel, sender ->
+        val type = sender.msgSend("type")
+        val point = sender.msgSendNSPoint("locationInWindow")
+        val buttonNumber = sender.msgSend("buttonNumber")
+        val clickCount = sender.msgSend("clickCount")
+
+        val rect = MyNSRect()
+        contentView.msgSend_stret(rect, "frame")
+
+        val rect2 = MyNSRect()
+        window.msgSend_stret(rect2, "frame")
+
+        val rect3 = MyNSRect()
+        window.msgSend_stret(rect3, "contentRectForFrameRect:", rect2)
+
+        glCtx?.setParameters()
+
+        val point2 = NSPoint(point.x, rect.height - point.y)
+        val x = point2.x.toDouble()
+        val y = point2.y.toDouble()
+        val button = MouseButton[buttonNumber.toInt()]
+
+        //val res = NSClass("NSEvent").id.msgSend_stret(data, "mouseLocation")
+
+        val selName = ObjectiveC.sel_getName(_sel)
+        val ev = when (selName) {
+            "mouseMoved:" -> MouseEvent.Type.MOVE
+            "mouseDown:", "leftMouseDown:", "rightMouseDown:", "otherMouseDown:" -> MouseEvent.Type.DOWN
+            "mouseUp:", "leftMouseUp:", "rightMouseUp:", "otherMouseUp:" -> MouseEvent.Type.UP
+            else -> MouseEvent.Type.MOVE
+        }
+
+        dispatchSimpleMouseEvent(ev, 0, x.toInt(), y.toInt(), button, simulateClickOnUp = true)
+        //println("MOUSE EVENT ($type) ($selName) from NSWindow! $point2 : $buttonNumber : $clickCount, $rect, $rect2, $rect3")
+    }
+
+    val keyEventHandler: ObjcCallbackVoid = ObjcCallbackVoid { self, _sel, sender ->
+        val characters = NSString(sender.msgSend("characters")).toString()
+        val charactersIgnoringModifiers = NSString(sender.msgSend("charactersIgnoringModifiers")).toString()
+        val char = charactersIgnoringModifiers.getOrNull(0) ?: '\u0000'
+        val keyCode = sender.msgSend("keyCode").toInt()
+
+        val key = KeyCodesToKeys[keyCode] ?: CharToKeys[char] ?: Key.UNKNOWN
+
+        val selName = ObjectiveC.sel_getName(_sel)
+        val ev = when (selName) {
+            "keyDown:" -> KeyEvent.Type.DOWN
+            "keyUp:" -> KeyEvent.Type.UP
+            "keyPress:" -> KeyEvent.Type.TYPE
+            else -> KeyEvent.Type.TYPE
+        }
+
+        //println("keyDown: $selName : $characters : ${char.toInt()} : $charactersIgnoringModifiers : $keyCode : $key")
+        dispatchKeyEvent(ev, 0, char, key, keyCode)
+    }
+
+
+    val windowTimer: ObjcCallbackVoid = ObjcCallbackVoid { self, _sel, sender ->
+        renderOpengl()
+    }
+
+    fun windowDidResize() {
+        //println("windowDidResize:")
+        val frect = MyNSRect()
+        window.msgSend_stret(frect, "frame")
+
+        val rect = frect
+
+        val barSize = 21.0
+        rect.y += barSize
+        rect.height -= barSize
+
+        //val rect = MyNativeNSRect()
+        //window.msgSend_stret(rect, "contentRectForFrameRect:", frect)
+
+        //val rect = MyNativeNSRect()
+        //window.msgSend_stret(rect, "frame")
+
+        glCtx?.clearDrawable()
+        this@MacGameWindow.width = rect.width.toInt()
+        this@MacGameWindow.height = rect.height.toInt()
+        contentView.msgSend("setBoundsSize:", MyNativeNSPoint.ByValue(rect.width, rect.height))
+        glCtx?.setView(contentView)
+        dispatchReshapeEvent(rect.x.toInt(), rect.y.toInt(), rect.width.toInt(), rect.height.toInt())
+        renderOpengl()
+    }
+
+    val windowDidResize = ObjcCallbackVoid { self, _sel, notification ->
+        windowDidResize()
+    }
+
     val rect = NSRect(0, 0, initialWidth, initialHeight)
-    val window = MyNsWindow.alloc().msgSend(
+    val window = AllocateClassAndRegister("MyNSWindow", "NSWindow") {
+        // Mouse
+        addMethod("mouseEntered:", mouseEventHandler, "v@:@")
+        addMethod("mouseExited:", mouseEventHandler, "v@:@")
+        addMethod("mouseDragged:", mouseEventHandler, "v@:@")
+        addMethod("mouseMoved:", mouseEventHandler, "v@:@")
+        addMethod("mouseDown:", mouseEventHandler, "v@:@")
+        addMethod("mouseUp:", mouseEventHandler, "v@:@")
+        addMethod("rightMouseDragged:", mouseEventHandler, "v@:@")
+        addMethod("rightMouseMoved:", mouseEventHandler, "v@:@")
+        addMethod("rightMouseDown:", mouseEventHandler, "v@:@")
+        addMethod("rightMouseUp:", mouseEventHandler, "v@:@")
+        addMethod("otherMouseDragged:", mouseEventHandler, "v@:@")
+        addMethod("otherMouseMoved:", mouseEventHandler, "v@:@")
+        addMethod("otherMouseDown:", mouseEventHandler, "v@:@")
+        addMethod("otherMouseUp:", mouseEventHandler, "v@:@")
+
+        // Keyboard
+        addMethod("keyDown:", keyEventHandler, "v@:@")
+        addMethod("keyUp:", keyEventHandler, "v@:@")
+        addMethod("keyPress:", keyEventHandler, "v@:@")
+        addMethod("flagsChanged:", ObjcCallbackVoid { self, _sel, sender ->
+            val modifierFlags = sender.msgSend("modifierFlags")
+            //println("flags changed! : $modifierFlags")
+        }, "v@:@")
+
+        // Other
+        addMethod("windowTimer:", windowTimer, "v@:@")
+        addMethod("windowDidResize:", windowDidResize, "v@:@")
+    }.alloc().msgSend(
         "initWithContentRect:styleMask:backing:defer:",
         rect,
         NSWindowStyleMaskTitled or NSWindowStyleMaskClosable or NSWindowStyleMaskMiniaturizable or NSWindowStyleMaskResizable or NSWindowStyleMaskResizable,
@@ -198,24 +337,6 @@ class MacGameWindow : GameWindow() {
 
     //var running = true
 
-    val windowWillClose = object : WindowWillCloseCallback {
-        override fun invoke(self: Long, _sel: Long, sender: Long): Long {
-            running = false
-            System.exit(0)
-            return 0L
-        }
-    }
-
-
-    val applicationShouldTerminate = object : ApplicationShouldTerminateCallback {
-        override fun invoke(self: Long, _sel: Long, sender: Long): Long {
-            println("applicationShouldTerminateCallback")
-            running = false
-            System.exit(0)
-            return 0L
-        }
-    }
-
     var glCtx: MacosGLContext? = null
 
     fun renderOpengl() {
@@ -247,50 +368,41 @@ class MacGameWindow : GameWindow() {
             entry()
         }
 
-        app.msgSend("setActivationPolicy:", 0)
-        val AppDelegateClass = ObjectiveC.objc_allocateClassPair(NSObject.OBJ_CLASS, "AppDelegate", 0)
-        val NSApplicationDelegate = ObjectiveC.objc_getProtocol("NSApplicationDelegate")
-        ObjectiveC.class_addProtocol(AppDelegateClass, NSApplicationDelegate)
-        ObjectiveC.class_addMethod(AppDelegateClass, sel("applicationShouldTerminate:"), applicationShouldTerminate, "@:@")
-        ObjectiveC.class_addMethod(AppDelegateClass, sel("applicationDidBecomeActive:"), ObjcCallbackVoidEmpty {
-            println("applicationDidBecomeActive")
-            renderOpengl()
-        }, "@:@")
-        val appDelegate = AppDelegateClass.alloc().msgSend("init")
-        app.msgSend("setDelegate:", appDelegate)
+        app.msgSend("setDelegate:", AllocateClassAndRegister("AppDelegate", "NSObject", "NSApplicationDelegate") {
+            addMethod(("applicationShouldTerminate:"), applicationShouldTerminate, "@:@")
+            addMethod(("applicationDidBecomeActive:"), ObjcCallbackVoidEmpty {
+                //println("applicationDidBecomeActive")
+                renderOpengl()
+            }, "@:@")
+            addMethod("applicationWillFinishLaunching:", ObjcCallbackVoidEmpty {
+                //println("applicationWillFinishLaunching")
+            }, "@:@")
+            addMethod("applicationDidFinishLaunching:", ObjcCallbackVoidEmpty {
+                val processName = NSString(NSClass("NSProcessInfo").msgSend("processInfo").msgSend("processName"))
+
+                app.msgSend("setMainMenu:", NSMenu {
+                    addItem(NSMenuItem {
+                        setSubmenu(NSMenu {
+                            //addItem(NSMenuItem("About $processName", "onAboutTouched:", ""))
+                            addItem(NSMenuItem("Quit $processName", "terminate:", "q"))
+                        })
+                    })
+                }.id)
+
+                app.msgSend("setActivationPolicy:", 0)
+                app.msgSend("activateIgnoringOtherApps:", true)
+
+                //println("applicationDidFinishLaunching")
+            }, "@:@")
+        }.alloc().msgSend("init"))
         app.msgSend("finishLaunching")
-
-        val menubar = NSClass("NSMenu").alloc().msgSend("init")
-        val appMenuItem = NSClass("NSMenuItem").alloc().msgSend("init")
-        menubar.msgSend("addItem:", appMenuItem)
-        app.msgSend("setMainMenu:", menubar)
-
-        ///////////////////
-
-        val processName = NSString(NSClass("NSProcessInfo").msgSend("processInfo").msgSend("processName"))
-
-        var a: NSRect
-
-        val appMenu = NSClass("NSMenu").alloc().msgSend("init")
-        val quitMenuItem = NSClass("NSMenuItem").alloc()
-            .msgSend(
-                "initWithTitle:action:keyEquivalent:",
-                NSString("Quit $processName").id,
-                sel("terminate:"),
-                NSString("q").id
-            )
-        quitMenuItem.msgSend("autorelease")
-        appMenu.msgSend("addItem:", quitMenuItem)
-        appMenuItem.msgSend("setSubmenu:", appMenu)
-
-        //window.msgSend("styleMask", window.msgSend("styleMask").toInt() or NSWindowStyleMaskFullScreen)
 
         window.msgSend("setReleasedWhenClosed:", 0L)
         window.msgSend("cascadeTopLeftFromPoint:", NSPoint(20, 20))
 
-        val contentView = window.msgSend("contentView")
+        contentView = window.msgSend("contentView")
         glCtx = MacosGLContext(contentView)
-        println("contentView: $contentView")
+        //println("contentView: $contentView")
         contentView.msgSend("setWantsBestResolutionOpenGLSurface:", true)
 
         //val openglView = NSClass("NSOpenGLView").alloc().msgSend("initWithFrame:pixelFormat:", MyNativeNSRect.ByValue(0, 0, 512, 512), pixelFormat)
@@ -309,187 +421,25 @@ class MacGameWindow : GameWindow() {
         window.msgSend("makeKeyWindow")
         window.msgSend("setIsVisible:", true)
 
-        //contentView.msgSend("fullScreenEnable")
-
-        //val NSApp = Foundation.NATIVE.getGlobalVariableAddress("NSApp")
-        val NSDefaultRunLoopMode = Foundation.NATIVE.getGlobalVariableAddress("NSDefaultRunLoopMode")
-        //val NSDefaultRunLoopMode = Foundation.NATIVE.getGlobalVariableAddress("NSDefaultRunLoopMode")
-        println("NSDefaultRunLoopMode: $NSDefaultRunLoopMode")
-
-        val mouseEvent = ObjcCallbackVoid { self, _sel, sender ->
-            val type = sender.msgSend("type")
-            val point = sender.msgSendNSPoint("locationInWindow")
-            val buttonNumber = sender.msgSend("buttonNumber")
-            val clickCount = sender.msgSend("clickCount")
-
-            val rect = MyNSRect()
-            contentView.msgSend_stret(rect, "frame")
-
-            val rect2 = MyNSRect()
-            window.msgSend_stret(rect2, "frame")
-
-            val rect3 = MyNSRect()
-            window.msgSend_stret(rect3, "contentRectForFrameRect:", rect2)
-
-            glCtx?.setParameters()
-
-            val point2 = NSPoint(point.x, rect.height - point.y)
-            val x = point2.x.toDouble()
-            val y = point2.y.toDouble()
-            val button = MouseButton[buttonNumber.toInt()]
-
-            //val res = NSClass("NSEvent").id.msgSend_stret(data, "mouseLocation")
-
-            val selName = ObjectiveC.sel_getName(_sel)
-            val ev = when (selName) {
-                "mouseMoved:" -> MouseEvent.Type.MOVE
-                "mouseDown:", "leftMouseDown:", "rightMouseDown:", "otherMouseDown:" -> MouseEvent.Type.DOWN
-                "mouseUp:", "leftMouseUp:", "rightMouseUp:", "otherMouseUp:" -> MouseEvent.Type.UP
-                else -> MouseEvent.Type.MOVE
-            }
-
-            dispatchSimpleMouseEvent(ev, 0, x.toInt(), y.toInt(), button, simulateClickOnUp = true)
-            //println("MOUSE EVENT ($type) ($selName) from NSWindow! $point2 : $buttonNumber : $clickCount, $rect, $rect2, $rect3")
-        }
-
-        val windowTimer = ObjcCallbackVoid { self, _sel, sender ->
-            renderOpengl()
-        }
-
-        fun windowDidResize() {
-            //println("windowDidResize:")
-            val frect = MyNSRect()
-            window.msgSend_stret(frect, "frame")
-
-            val rect = frect
-
-            val barSize = 21.0
-            rect.y += barSize
-            rect.height -= barSize
-
-            //val rect = MyNativeNSRect()
-            //window.msgSend_stret(rect, "contentRectForFrameRect:", frect)
-
-            //val rect = MyNativeNSRect()
-            //window.msgSend_stret(rect, "frame")
-
-            glCtx?.clearDrawable()
-            this@MacGameWindow.width = rect.width.toInt()
-            this@MacGameWindow.height = rect.height.toInt()
-            contentView.msgSend("setBoundsSize:", MyNativeNSPoint.ByValue(rect.width, rect.height))
-            glCtx?.setView(contentView)
-            dispatchReshapeEvent(rect.x.toInt(), rect.y.toInt(), rect.width.toInt(), rect.height.toInt())
-            renderOpengl()
-        }
-
-        val windowDidResize = ObjcCallbackVoid { self, _sel, notification ->
-            windowDidResize()
-        }
-
-        ObjectiveC.class_addMethod(MyNsWindow, sel("mouseEntered:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("mouseExited:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("mouseDragged:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("mouseMoved:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("mouseDown:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("mouseUp:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("rightMouseDragged:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("rightMouseMoved:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("rightMouseDown:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("rightMouseUp:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseDragged:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseMoved:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseDown:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("otherMouseUp:"), mouseEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("windowTimer:"), windowTimer, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("windowDidResize:"), windowDidResize, "v@:@")
-
-
-        val keyEvent = ObjcCallbackVoid { self, _sel, sender ->
-            val characters = NSString(sender.msgSend("characters")).toString()
-            val charactersIgnoringModifiers = NSString(sender.msgSend("charactersIgnoringModifiers")).toString()
-            val char = charactersIgnoringModifiers.getOrNull(0) ?: '\u0000'
-            val keyCode = sender.msgSend("keyCode").toInt()
-
-            val key = KeyCodesToKeys[keyCode] ?: CharToKeys[char] ?: Key.UNKNOWN
-
-            val selName = ObjectiveC.sel_getName(_sel)
-            val ev = when (selName) {
-                "keyDown:" -> KeyEvent.Type.DOWN
-                "keyUp:" -> KeyEvent.Type.UP
-                "keyPress:" -> KeyEvent.Type.TYPE
-                else -> KeyEvent.Type.TYPE
-            }
-
-            //println("keyDown: $selName : $characters : ${char.toInt()} : $charactersIgnoringModifiers : $keyCode : $key")
-            dispatchKeyEvent(ev, 0, char, key, keyCode)
-        }
-
-        ObjectiveC.class_addMethod(MyNsWindow, sel("keyDown:"), keyEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("keyUp:"), keyEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("keyPress:"), keyEvent, "v@:@")
-        ObjectiveC.class_addMethod(MyNsWindow, sel("flagsChanged:"), ObjcCallbackVoid { self, _sel, sender ->
-            val modifierFlags = sender.msgSend("modifierFlags")
-            println("flags changed! : $modifierFlags")
-        }, "v@:@")
         window.msgSend("setAcceptsMouseMovedEvents:", true)
-
-        /*
-        val eventHandler = object : ObjcCallback {
-            override fun invoke(self: Long, _sel: Long, sender: Long): Long {
-                val point = NSPoint()
-
-                val senderName = ObjectiveC.class_getName(ObjectiveC.object_getClass(sender))
-                //val res = sender.msgSend_stret(data, "mouseLocation:")
-                //println("Mouse moved! $self, $_sel, $sender : $senderName : ${ObjectiveC.sel_getName(_sel)} : $res : $point : $data : ${sender.msgSend("buttonNumber")} : ${sender.msgSend("clickCount")}")
-
-                renderOpengl()
-                return 0L
-            }
-        }
-        val MyResponderClass = AllocateClass("MyResponder", "NSObject", "NSResponder")
-        //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseDragged:"), eventHandler, "v@:@")
-        //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseUp:"), eventHandler, "v@:@")
-        //ObjectiveC.class_addMethod(MyResponderClass, sel("mouseDown:"), eventHandler , "v@:@")
-        ObjectiveC.class_addMethod(MyResponderClass, sel("mouseMoved:"), eventHandler, "v@:@")
-        val Responder = MyResponderClass.alloc().msgSend("init")
-        window.msgSend("setNextResponder:", Responder)
-        */
-
-        val WindowDelegate = AllocateClass("WindowDelegate", "NSObject", "NSWindowDelegate")
-        ObjectiveC.class_addMethod(WindowDelegate, sel("windowWillClose:"), windowWillClose, "v@:@")
-        ObjectiveC.class_addMethod(
-            WindowDelegate,
-            sel("windowDidExpose:"),
-            ObjcCallbackVoid { self, _sel, notification ->
-                //println("windowDidExpose")
-                renderOpengl()
-            },
-            "v@:@"
-        )
-        ObjectiveC.class_addMethod(
-            WindowDelegate,
-            sel("windowDidUpdate:"),
-            ObjcCallbackVoid { self, _sel, notification ->
-                //println("windowDidUpdate")
-                renderOpengl()
-            },
-            "v@:@"
-        )
-        ObjectiveC.class_addMethod(
-            WindowDelegate,
-            sel("windowDidResize:"),
-            windowDidResize,
-            "v@:@"
-        )
-
-        val Delegate = WindowDelegate.alloc().msgSend("init")
-        window.msgSend("setDelegate:", Delegate)
+        window.msgSend("setDelegate:", AllocateClassAndRegister("WindowDelegate", "NSObject", "NSWindowDelegate") {
+            addMethod("windowWillClose:", windowWillClose, "v@:@")
+            addMethod("windowDidExpose:", ObjcCallbackVoid { self, _sel, notification -> renderOpengl() }, "v@:@")
+            addMethod("windowDidUpdate:", ObjcCallbackVoid { self, _sel, notification -> renderOpengl() }, "v@:@")
+            addMethod("windowDidResize:", windowDidResize, "v@:@")
+        }.alloc().msgSend("init"))
 
         windowDidResize()
         ag.__ready()
         dispatchInitEvent()
 
-        println(NSClass("NSTimer").listClassMethods())
+
+        //contentView.msgSend("fullScreenEnable")
+
+        //val NSApp = Foundation.NATIVE.getGlobalVariableAddress("NSApp")
+        val NSDefaultRunLoopMode = Foundation.NATIVE.getGlobalVariableAddress("NSDefaultRunLoopMode")
+        //val NSDefaultRunLoopMode = Foundation.NATIVE.getGlobalVariableAddress("NSDefaultRunLoopMode")
+        //println("NSDefaultRunLoopMode: $NSDefaultRunLoopMode")
 
         //NSClass("NSTimer").msgSend("scheduledTimerWithTimeInterval:repeats:block:", (1.0 / 60.0), true, timerCallback)
         NSClass("NSTimer").msgSend(

@@ -1,12 +1,22 @@
 package com.soywiz.korgw.osx
-
-import com.soywiz.korgw.platform.KStructure
-import com.soywiz.korgw.platform.NativeLoad
-import com.soywiz.korgw.platform.NativeName
 import com.sun.jna.*
 
 //inline class ID(val id: Long)
 typealias ID = Long
+
+annotation class NativeName(val name: String) {
+    companion object {
+        val OPTIONS = mapOf(
+            Library.OPTION_FUNCTION_MAPPER to FunctionMapper { _, method ->
+                method.getAnnotation(NativeName::class.java)?.name ?: method.name
+            }
+        )
+    }
+}
+
+typealias NSRectPtr = Pointer
+
+inline fun <reified T : Library> NativeLoad(name: String) = Native.load(name, T::class.java, NativeName.OPTIONS) as T
 
 internal interface GL : Library {
     fun glViewport(x: Int, y: Int, width: Int, height: Int)
@@ -28,6 +38,8 @@ interface ObjectiveC : Library {
     fun class_addProtocol(a: Long, b: Long): Long
     fun class_copyMethodList(clazz: Long, items: IntArray): Pointer
 
+    fun objc_registerClassPair(cls: Long)
+    fun objc_lookUpClass(name: String): Long
 
     fun objc_msgSend(vararg args: Any?): Long
     @NativeName("objc_msgSend")
@@ -41,7 +53,6 @@ interface ObjectiveC : Library {
     fun objc_msgSend(a: Long, b: Long, c: ByteArray, len: Int): Long
     fun objc_msgSend(a: Long, b: Long, c: CharArray, len: Int): Long
      */
-
     fun method_getName(m: Long): Long
 
     fun sel_registerName(name: String): Long
@@ -54,6 +65,7 @@ interface ObjectiveC : Library {
     fun class_getProperty(clazz: ID, name: String): ID
 
     fun class_addMethod(cls: Long, name: Long, imp: Callback, types: String): Long
+    fun class_conformsToProtocol(cls: Long, protocol: Long): Boolean
 
     fun object_getClass(obj: ID): ID
     fun class_getName(clazz: ID): String
@@ -68,12 +80,32 @@ interface ObjectiveC : Library {
     }
 }
 
-fun AllocateClass(name: String, base: String, vararg protocols: String): Long {
+@PublishedApi
+internal fun __AllocateClass(name: String, base: String, vararg protocols: String): Long {
     val clazz = ObjectiveC.objc_allocateClassPair(ObjectiveC.objc_getClass(base), name, 0)
     for (protocol in protocols) {
-        ObjectiveC.class_addProtocol(clazz, ObjectiveC.objc_getProtocol(protocol))
+        val protocolId = ObjectiveC.objc_getProtocol(protocol)
+        if (protocolId != 0L) {
+            ObjectiveC.class_addProtocol(clazz, protocolId)
+        }
     }
     return clazz
+}
+
+inline fun AllocateClassAndRegister(name: String, base: String, vararg protocols: String, configure: AllocateClassMethodRegister.() -> Unit = {}): Long {
+    val clazz = __AllocateClass(name, base, *protocols)
+    try {
+        configure(AllocateClassMethodRegister(clazz))
+    } finally {
+        ObjectiveC.objc_registerClassPair(clazz)
+    }
+    return clazz
+}
+
+inline class AllocateClassMethodRegister(val clazz: Long) {
+    fun addMethod(sel: String, callback: Callback, types: String) {
+        ObjectiveC.class_addMethod(clazz, sel(sel), callback, types)
+    }
 }
 
 interface Foundation : Library {
@@ -196,6 +228,17 @@ interface ApplicationShouldTerminateCallback : Callback {
     operator fun invoke(self: Long, _sel: Long, sender: Long): Long
 }
 
+var running = true
+
+val applicationShouldTerminateCallback = object : ApplicationShouldTerminateCallback {
+    override fun invoke(self: Long, _sel: Long, sender: Long): Long {
+        println("applicationShouldTerminateCallback")
+        running = false
+        System.exit(0)
+        return 0L
+    }
+}
+
 interface ObjcCallback : Callback {
     operator fun invoke(self: Long, _sel: Long, sender: Long): Long
 }
@@ -224,6 +267,14 @@ fun ObjcCallbackVoidEmpty(callback: () -> Unit): ObjcCallbackVoid {
 
 interface WindowWillCloseCallback : Callback {
     operator fun invoke(self: Long, _sel: Long, sender: Long): Long
+}
+
+val windowWillClose = object : WindowWillCloseCallback {
+    override fun invoke(self: Long, _sel: Long, sender: Long): Long {
+        running = false
+        System.exit(0)
+        return 0L
+    }
 }
 
 fun Long.alloc(): Long = this.msgSend("alloc")
@@ -332,14 +383,6 @@ public class NativeNSRect {
     override fun toString(): String = "NativeNSRect($a, $b, $c, $d, $e, $f, $g, $h)"
 }
 
-class MyNSRect(pointer: Pointer? = null) : KStructure(pointer) {
-    var x by nativeFloat()
-    var y by nativeFloat()
-    var width by nativeFloat()
-    var height by nativeFloat()
-    override fun toString(): String = "NSRect($x, $y, $width, $height)"
-}
-
 @Structure.FieldOrder("x", "y", "width", "height")
 open class MyNativeNSRect : Structure {
     @JvmField var x: Double = 0.0
@@ -423,4 +466,45 @@ open class MyNativeNSPointLong() : Structure() {
     class ByValue : MyNativeNSPoint(), Structure.ByValue
 
     override fun toString(): String = "NSPoint($x, $y)"
+}
+
+inline class NSMenuItem(val id: Long) {
+    constructor() : this(NSClass("NSMenuItem").alloc().msgSend("init"))
+    constructor(text: String, sel: String, keyEquivalent: String) : this(
+        NSClass("NSMenuItem").alloc().msgSend(
+            "initWithTitle:action:keyEquivalent:",
+            NSString(text).id,
+            sel(sel),
+            NSString(keyEquivalent).id
+        ).autorelease()
+    )
+
+    companion object {
+        operator fun invoke(callback: NSMenuItem.() -> Unit) = NSMenuItem().apply(callback)
+    }
+
+    fun setSubmenu(menu: NSMenu) {
+        id.msgSend("setSubmenu:", menu.id)
+    }
+}
+
+inline class NSMenu(val id: Long) {
+    constructor() : this(NSClass("NSMenu").alloc().msgSend("init"))
+
+    companion object {
+        operator fun invoke(callback: NSMenu.() -> Unit) = NSMenu().apply(callback)
+    }
+
+    fun addItem(menuItem: NSMenuItem) {
+        id.msgSend("addItem:", menuItem.id)
+    }
+}
+
+inline fun autoreleasePool(body: () -> Unit) {
+    val autoreleasePool = NSClass("NSAutoreleasePool").alloc().msgSend("init")
+    try {
+        body()
+    } finally {
+        autoreleasePool.msgSend("drain")
+    }
 }

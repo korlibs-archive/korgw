@@ -23,7 +23,8 @@ actual fun CreateDefaultGameWindow(): GameWindow {
     val engine = korgwJvmEngine
         ?: System.getenv("KORGW_JVM_ENGINE")
         ?: System.getProperty("korgw.jvm.engine")
-        ?: "jogl"
+        //?: "jogl"
+        ?: "jna"
 
     return when (engine) {
         "jna" -> when {
@@ -44,6 +45,7 @@ actual fun CreateDefaultGameWindow(): GameWindow {
                 println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")
                 MacGameWindow()
             } else {
+                // @TODO: Remove JoGL after a month once we ensure JNA/native versions work for everyone
                 JoglGameWindow()
             }
         }
@@ -81,7 +83,7 @@ object TestGameWindow {
                     ag.clear(RGBA(64, 96, step % 256, 255))
                     step++
                 }
-                println("HELLO")
+                //println("HELLO")
             }
         }
     }
