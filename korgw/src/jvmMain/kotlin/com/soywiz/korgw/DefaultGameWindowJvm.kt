@@ -40,7 +40,7 @@ actual fun CreateDefaultGameWindow(): GameWindow {
             OS.isWindows -> Win32GameWindow()
             else -> X11GameWindow()
         }
-        else -> {
+        "jogl" -> {
             if (isOSXMainThread) {
                 println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")
                 MacGameWindow()
@@ -48,6 +48,9 @@ actual fun CreateDefaultGameWindow(): GameWindow {
                 // @TODO: Remove JoGL after a month once we ensure JNA/native versions work for everyone
                 JoglGameWindow()
             }
+        }
+        else -> {
+            error("Unsupported KORGW_JVM_ENGINE,korgw.jvm.engine='$engine'")
         }
     }
 }
