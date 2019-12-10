@@ -91,7 +91,7 @@ task runSample(type: JavaExec) {
     main = 'com.soywiz.korgw.TestGameWindow'
 }
 
-task runSampleMainThread(type: JavaExec) {
+task runSampleFirstThread(type: JavaExec) {
     classpath = kotlin.targets.jvm.compilations.test.runtimeDependencyFiles
     if (Os.isFamily(Os.FAMILY_MAC)) {
         jvmArgs "-XstartOnFirstThread"
@@ -99,4 +99,6 @@ task runSampleMainThread(type: JavaExec) {
     main = 'com.soywiz.korgw.TestGameWindow'
 }
 
-
+task runSampleMainThread {
+    dependsOn runSampleFirstThread
+}
