@@ -620,10 +620,12 @@ abstract class AGOpengl : AG() {
 
             if (bmp is NativeImage) {
                 prepareUploadNativeTexture(bmp)
-                gl.texImage2D(gl.TEXTURE_2D, 0, type, type, gl.UNSIGNED_BYTE, bmp)
+                if (bmp.area != 0) {
+                    gl.texImage2D(gl.TEXTURE_2D, 0, type, type, gl.UNSIGNED_BYTE, bmp)
+                }
             } else {
                 val buffer = createBufferForBitmap(bmp)
-                if (buffer != null) {
+                if (buffer != null && source.width != 0 && source.height != 0 && buffer.size != 0) {
                     gl.texImage2D(
                         gl.TEXTURE_2D, 0, type,
                         source.width, source.height,
