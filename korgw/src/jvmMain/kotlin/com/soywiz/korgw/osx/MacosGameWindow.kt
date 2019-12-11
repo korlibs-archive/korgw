@@ -39,7 +39,7 @@ interface MacGL : INativeGL, Library {
     companion object : MacGL by NativeLoad("OpenGL")
 }
 
-class MacosGLContext(var contentView: Long) : BaseOpenglContext {
+class MacosGLContext(var contentView: Long, val window: Long) : BaseOpenglContext {
     val pixelFormat = NSClass("NSOpenGLPixelFormat").alloc().msgSend(
         "initWithAttributes:", intArrayOf(
             8, 24,
@@ -63,6 +63,8 @@ class MacosGLContext(var contentView: Long) : BaseOpenglContext {
         //println("openGLContext: $openGLContext")
         setView(contentView)
     }
+
+    override val scaleFactor: Double get() = if (window != 0L) window.msgSendCGFloat("backingScaleFactor").toDouble() else 1.0
 
     override fun makeCurrent() {
         openGLContext.msgSend("makeCurrentContext")
@@ -426,7 +428,7 @@ class MacGameWindow : GameWindow() {
         window.msgSend("cascadeTopLeftFromPoint:", NSPoint(20, 20))
 
         contentView = window.msgSend("contentView")
-        glCtx = MacosGLContext(contentView)
+        glCtx = MacosGLContext(contentView, window)
         //println("contentView: $contentView")
         contentView.msgSend("setWantsBestResolutionOpenGLSurface:", true)
 

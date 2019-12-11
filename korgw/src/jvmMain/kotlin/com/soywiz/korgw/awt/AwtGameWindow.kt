@@ -20,13 +20,12 @@ import com.soywiz.korio.util.OS
 import com.sun.jna.Native
 import com.sun.jna.platform.unix.X11
 import com.sun.jna.platform.win32.WinDef
-import java.awt.Dimension
-import java.awt.EventQueue
-import java.awt.Graphics
+import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
+import java.lang.reflect.Method
 import javax.swing.JFrame
-
+import kotlin.system.exitProcess
 
 class AwtAg(val window: AwtGameWindow) : AGOpengl() {
     override val nativeComponent: Any = window
@@ -45,7 +44,7 @@ class AwtGameWindow : GameWindow() {
 
     var ctx: BaseOpenglContext? = null
     //val frame = Window(Frame("Korgw"))
-    val frame = object : JFrame("Korgw") {
+    val frame: JFrame = object : JFrame("Korgw") {
         //val frame = object : Frame("Korgw") {
         init {
             isVisible = false
@@ -59,6 +58,8 @@ class AwtGameWindow : GameWindow() {
         override fun paintComponents(g: Graphics?) {
 
         }
+
+        private var lastFactor = 0.0
 
         override fun paint(g: Graphics) {
             val frame = this
@@ -74,6 +75,8 @@ class AwtGameWindow : GameWindow() {
                         invokeWithOGLContextCurrentMethod.isAccessible = true
 
                         object : BaseOpenglContext {
+                            override val scaleFactor: Double get() = frameScaleFactor
+
                             override fun useContext(obj: Any?, action: Runnable) {
                                 invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, action)
                             }
@@ -93,8 +96,6 @@ class AwtGameWindow : GameWindow() {
                     )
                     else -> {
                         val d = X.XOpenDisplay(null)
-                        val d2 = X.XOpenDisplay(null)
-                        println("DISPLAY: $d, $d2")
                         X11.Display()
                         X11OpenglContext(d, X11.Window(Native.getWindowID(frame)))
                     }
@@ -103,7 +104,15 @@ class AwtGameWindow : GameWindow() {
 
             ctx?.useContext(g, Runnable {
                 val gl = ag.gl
-                gl.viewport(0, 0, this@AwtGameWindow.width, this@AwtGameWindow.height)
+                val factor = frameScaleFactor
+                if (lastFactor != factor) {
+                    lastFactor = factor
+                    dispatchReshapeEvent()
+                }
+
+
+                //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
+                gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
                 //gl.clearColor(.2f, .4f, .9f, 1f)
                 gl.clearColor(.3f, .3f, .3f, 1f)
                 gl.clear(gl.COLOR_BUFFER_BIT)
@@ -115,12 +124,34 @@ class AwtGameWindow : GameWindow() {
         }
     }
 
+    private fun getDisplayScalingFactor(component: Component): Double {
+        val device = (component.graphicsConfiguration?.device ?: GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice)
+        val getScaleFactorMethod: Method? = try { device.javaClass.getMethod("getScaleFactor") } catch (e: Throwable) { null }
+        return if (getScaleFactorMethod != null) {
+            val scale: Any = getScaleFactorMethod.invoke(device)
+            ((scale as? Number)?.toDouble()) ?: 1.0
+        } else {
+            (component.graphicsConfiguration ?: GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice.defaultConfiguration).defaultTransform.scaleX
+        }
+    }
+
+    val frameScaleFactor: Double get() = run {
+        getDisplayScalingFactor(frame)
+        //val res = frame.toolkit.getDesktopProperty("apple.awt.contentScaleFactor") as? Number
+        //if (res != null) return res.toDouble()
+    }
+
+    val nonScaledWidth get() = frame.contentPane.width.toDouble()
+    val nonScaledHeight get() = frame.contentPane.height.toDouble()
+
+    val scaledWidth get() = frame.contentPane.width * frameScaleFactor
+    val scaledHeight get() = frame.contentPane.height * frameScaleFactor
 
     override var title: String
         get() = frame.title
         set(value) = run { frame.title = value }
-    override val width: Int get() = frame.contentPane.width
-    override val height: Int get() = frame.contentPane.height
+    override val width: Int get() = (scaledWidth).toInt()
+    override val height: Int get() = (scaledHeight).toInt()
     override var icon: Bitmap?
         get() = super.icon
         set(value) {}
@@ -172,6 +203,16 @@ class AwtGameWindow : GameWindow() {
         exiting = true
     }
 
+    fun dispatchReshapeEvent() {
+        val factor = frameScaleFactor
+        dispatchReshapeEvent(
+            frame.x,
+            frame.y,
+            (frame.contentPane.width * factor).toInt(),
+            (frame.contentPane.height * factor).toInt()
+        )
+    }
+
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         launchImmediately(coroutineDispatcher) {
             entry()
@@ -186,10 +227,6 @@ class AwtGameWindow : GameWindow() {
                 exiting = true
             }
         })
-
-        fun dispatchReshapeEvent() {
-            dispatchReshapeEvent(frame.x, frame.y, frame.contentPane.width, frame.contentPane.height)
-        }
 
         frame.addComponentListener(object : ComponentAdapter() {
             override fun componentResized(e: ComponentEvent) {
@@ -213,7 +250,10 @@ class AwtGameWindow : GameWindow() {
                 val x = e.x
                 val y = e.y
                 val button = MouseButton[e.button - 1]
-                dispatchSimpleMouseEvent(ev, id, x, y, button, simulateClickOnUp = false)
+                val factor = frameScaleFactor
+                val sx = x * factor
+                val sy = y * factor
+                dispatchSimpleMouseEvent(ev, id, sx.toInt(), sy.toInt(), button, simulateClickOnUp = false)
             }
         }
 
@@ -274,7 +314,7 @@ class AwtGameWindow : GameWindow() {
 
         dispatchDestroyEvent()
 
-        System.exit(0)
+        exitProcess(0)
     }
 }
 

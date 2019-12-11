@@ -40,6 +40,7 @@ actual fun CreateDefaultGameWindow(): GameWindow {
             OS.isWindows -> Win32GameWindow()
             else -> X11GameWindow()
         }
+        "awt" -> AwtGameWindow()
         //"jogl" -> {
         //    if (isOSXMainThread) {
         //        println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")
