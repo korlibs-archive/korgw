@@ -252,6 +252,7 @@ class MacGameWindow : GameWindow() {
         if (lastBackingScaleFactor != backingScaleFactor) {
             lastBackingScaleFactor = backingScaleFactor
             windowDidResize()
+            return
         }
         //println(backingScaleFactor)
 

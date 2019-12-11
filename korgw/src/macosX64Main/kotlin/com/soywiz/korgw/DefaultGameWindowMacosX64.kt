@@ -4,6 +4,7 @@ import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
+import com.soywiz.korim.format.cg.toCgFloat
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
 import com.soywiz.korio.lang.*
@@ -79,21 +80,16 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
         openglView.setFrame(contentRectForFrameRect(frame))
         delegate = object : NSObject(), NSWindowDelegateProtocol {
             override fun windowShouldClose(sender: NSWindow): Boolean {
-                println("windowShouldClose")
+                //println("windowShouldClose")
                 return true
             }
 
             override fun windowWillClose(notification: NSNotification) {
-                println("windowWillClose")
+                //println("windowWillClose")
             }
 
             override fun windowDidResize(notification: NSNotification) {
-                println("windowDidResize")
-                val width = openglView.bounds.width.toInt()
-                val height = openglView.bounds.height.toInt()
-                //macTrace("windowDidResize")
-                dispatchReshapeEvent(0, 0, width, height)
-                doRender()
+                doWindowDidResize()
             }
         }
 
@@ -141,10 +137,14 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
 
 
             private fun mouseEvent(etype: MouseEvent.Type, ex: Int, ey: Int, ebutton: Int) {
+                val factor = backingScaleFactor
+                val sx = ex * factor
+                val sy = ey * factor
+
                 dispatch(mouseEvent.apply {
                     this.type = etype
-                    this.x = ex
-                    this.y = ey
+                    this.x = sx.toInt()
+                    this.y = sy.toInt()
                     this.buttons = 1 shl ebutton
                     this.isAltDown = false
                     this.isCtrlDown = false
@@ -208,9 +208,32 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
         setIsVisible(false)
     }
 
+    private fun doWindowDidResize() {
+        //println("windowDidResize")
+
+        val factor = backingScaleFactor
+        val width = openglView.bounds.width
+        val height = openglView.bounds.height
+        val scaledWidth = width * factor
+        val scaledHeight = height * factor
+        //macTrace("windowDidResize")
+        dispatchReshapeEvent(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
+        doRender()
+    }
+
+    @Suppress("RemoveRedundantCallsOfConversionMethods")
+    private val backingScaleFactor: Double get() = window.backingScaleFactor.toDouble()
+    private var lastBackingScaleFactor = 0.0
+
     private fun doRender() {
         //macTrace("render")
         val context = openglView.openGLContext
+
+        if (lastBackingScaleFactor != backingScaleFactor) {
+            lastBackingScaleFactor = backingScaleFactor
+            doWindowDidResize()
+            return
+        }
 
         coroutineDispatcher.executePending()
 
@@ -225,8 +248,11 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     override val ag: AG = AGNative()
 
     override var fps: Int = 60
-    override val width: Int get() = window.frame.width.toInt()
-    override val height: Int get() = window.frame.height.toInt()
+    //override val width: Int get() = window.frame.width.toInt()
+    //override val height: Int get() = window.frame.height.toInt()
+    override val width: Int get() = openglView.bounds.width.toInt()
+    override val height: Int get() = openglView.bounds.height.toInt()
+
     override var title: String = ""
         set(value) {
             field = value
@@ -259,13 +285,16 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
         }
 
     override fun setSize(width: Int, height: Int) {
-        val frame = NSScreen.mainScreen()!!.frame
-        val rect = NSMakeRect(
-            ((frame.width - width) * 0.5), ((frame.height - height) * 0.5),
-            width.toDouble(), height.toDouble()
-        )
+        //val frame = NSScreen.mainScreen()!!.frame
+        //val rect = NSMakeRect(
+        //    ((frame.width - width) * 0.5), ((frame.height - height) * 0.5),
+        //    width.toDouble(), height.toDouble()
+        //)
 
-        window.setFrame(rect, true, false)
+        //window.setFrame(rect, true, false)
+        window.setContentSize(NSMakeSize(width.toCgFloat(), height.toCgFloat()))
+        window.center()
+        //window.setFrameTopLeftPoint()
     }
 
     override suspend fun browse(url: URL) {
@@ -298,21 +327,6 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) = autoreleasepool {
-        app.mainMenu = NSMenu().apply {
-            //this.autoenablesItems = true
-            addItem(NSMenuItem("Application", null, "").apply {
-                this.submenu = NSMenu().apply {
-                    //this.autoenablesItems = true
-                    addItem(NSMenuItem("Quit", NSSelectorFromString(WinController::doTerminate.name), "q").apply {
-                        target = controller
-                        //enabled = true
-                    })
-                }
-                //enabled = true
-            })
-        }
-
-
         val agNativeComponent = Any()
         val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 
@@ -321,34 +335,50 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
             //private val openglView: AppNSOpenGLView
 
             override fun applicationShouldTerminateAfterLastWindowClosed(app: NSApplication): Boolean {
-                println("applicationShouldTerminateAfterLastWindowClosed")
+                //println("applicationShouldTerminateAfterLastWindowClosed")
                 return true
             }
 
             override fun applicationWillFinishLaunching(notification: NSNotification) {
-                println("applicationWillFinishLaunching")
+                //println("applicationWillFinishLaunching")
                 //window.makeKeyAndOrderFront(this)
             }
 
             override fun applicationDidFinishLaunching(notification: NSNotification) {
                 //val data = decodeImageData(readBytes("icon.jpg"))
                 //println("${data.width}, ${data.height}")
+                app.mainMenu = NSMenu().apply {
+                    //this.autoenablesItems = true
+                    addItem(NSMenuItem("Application", null, "").apply {
+                        this.submenu = NSMenu().apply {
+                            //this.autoenablesItems = true
+                            addItem(NSMenuItem("Quit", NSSelectorFromString(WinController::doTerminate.name), "q").apply {
+                                target = controller
+                                //enabled = true
+                            })
+                        }
+                        //enabled = true
+                    })
+                }
+
+                app.setActivationPolicy(NSApplicationActivationPolicy.NSApplicationActivationPolicyRegular)
+                app.activateIgnoringOtherApps(true)
 
                 openglView.openGLContext?.makeCurrentContext()
                 try {
                     macTrace("init[a] -- bb")
                     macTrace("init[b]")
-                    println("KoruiWrap.pentry[0]")
+                    //println("KoruiWrap.pentry[0]")
                     ag.__ready()
                     //launch(KoruiDispatcher) { // Doesn't work!
-                    println("KoruiWrap.pentry[1]")
-                    println("KoruiWrap.entry[0]")
+                    //println("KoruiWrap.pentry[1]")
+                    //println("KoruiWrap.entry[0]")
                     kotlinx.coroutines.GlobalScope.launch(coroutineDispatcher) {
                         entry()
                     }
-                    println("KoruiWrap.entry[1]")
+                    //println("KoruiWrap.entry[1]")
                     //}
-                    println("KoruiWrap.pentry[2]")
+                    //println("KoruiWrap.pentry[2]")
 
                     doRender()
                     timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 60.0, true, ::timer)
@@ -364,14 +394,11 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
             }
 
             override fun applicationWillTerminate(notification: NSNotification) {
-                println("applicationWillTerminate")
+                //println("applicationWillTerminate")
                 // Insert code here to tear down your application
-
             }
         }
 
-        app.setActivationPolicy(NSApplicationActivationPolicy.NSApplicationActivationPolicyRegular)
-        app.activateIgnoringOtherApps(true)
         coroutineDispatcher.executePending()
         app.run()
     }
