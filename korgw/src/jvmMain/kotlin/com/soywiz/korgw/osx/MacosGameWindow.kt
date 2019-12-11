@@ -174,7 +174,12 @@ class MacGameWindow : GameWindow() {
             else -> MouseEvent.Type.MOVE
         }
 
-        dispatchSimpleMouseEvent(ev, 0, x.toInt(), y.toInt(), button, simulateClickOnUp = true)
+        val factor = backingScaleFactor
+
+        val sx = x * factor
+        val sy = y * factor
+
+        dispatchSimpleMouseEvent(ev, 0, sx.toInt(), sy.toInt(), button, simulateClickOnUp = true)
         //println("MOUSE EVENT ($type) ($selName) from NSWindow! $point2 : $buttonNumber : $clickCount, $rect, $rect2, $rect3")
     }
 
@@ -210,9 +215,16 @@ class MacGameWindow : GameWindow() {
 
         val rect = frect
 
+        val factor = backingScaleFactor
+
         val barSize = 21.0
         rect.y += barSize
         rect.height -= barSize
+
+        val width = rect.width
+        val height = rect.height
+        val scaledWidth = rect.width * factor
+        val scaledHeight = rect.height * factor
 
         //val rect = MyNativeNSRect()
         //window.msgSend_stret(rect, "contentRectForFrameRect:", frect)
@@ -220,13 +232,38 @@ class MacGameWindow : GameWindow() {
         //val rect = MyNativeNSRect()
         //window.msgSend_stret(rect, "frame")
 
+        //println("factor=$factor, width=$width, height=$height, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
+
         glCtx?.clearDrawable()
-        this@MacGameWindow.width = rect.width.toInt()
-        this@MacGameWindow.height = rect.height.toInt()
-        contentView.msgSend("setBoundsSize:", MyNativeNSPoint.ByValue(rect.width, rect.height))
+        this@MacGameWindow.width = (scaledWidth).toInt()
+        this@MacGameWindow.height = (scaledHeight).toInt()
+        contentView.msgSend("setBoundsSize:", MyNativeNSPoint.ByValue(scaledWidth, scaledHeight))
         glCtx?.setView(contentView)
-        dispatchReshapeEvent(rect.x.toInt(), rect.y.toInt(), rect.width.toInt(), rect.height.toInt())
+        dispatchReshapeEvent(rect.x.toInt(), rect.y.toInt(), scaledWidth.toInt(), scaledHeight.toInt())
         renderOpengl()
+    }
+
+    private var lastBackingScaleFactor = 0.0
+
+    fun renderOpengl() {
+        // This allows to detect a change in the scale factor of the window without having to resize (changing resolution)
+        if (lastBackingScaleFactor != backingScaleFactor) {
+            lastBackingScaleFactor = backingScaleFactor
+            windowDidResize()
+        }
+        //println(backingScaleFactor)
+
+        glCtx?.makeCurrent()
+        GL.glViewport(0, 0, width, height)
+        //GL.glClearColor(.3f, .7f, 1f, 1f)
+        GL.glClearColor(.3f, .3f, .3f, 1f)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+        //println("RENDER")
+
+        frame()
+
+        glCtx?.swapBuffers()
     }
 
     val windowDidResize = ObjcCallbackVoid { self, _sel, notification ->
@@ -339,19 +376,7 @@ class MacGameWindow : GameWindow() {
 
     var glCtx: MacosGLContext? = null
 
-    fun renderOpengl() {
-        glCtx?.makeCurrent()
-        GL.glViewport(0, 0, width, height)
-        //GL.glClearColor(.3f, .7f, 1f, 1f)
-        GL.glClearColor(.3f, .3f, .3f, 1f)
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-        //println("RENDER")
-
-        frame()
-
-        glCtx?.swapBuffers()
-    }
+    val backingScaleFactor get() = if (window != 0L) window.msgSendCGFloat("backingScaleFactor").toDouble() else 1.0
 
     val timerCallback = object : Callback {
         fun callback() {

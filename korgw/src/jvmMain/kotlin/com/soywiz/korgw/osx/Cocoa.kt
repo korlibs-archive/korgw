@@ -43,6 +43,8 @@ interface ObjectiveC : Library {
 
     fun objc_msgSend(vararg args: Any?): Long
     @NativeName("objc_msgSend")
+    fun objc_msgSendCGFloat(vararg args: Any?): CGFloat
+    @NativeName("objc_msgSend")
     fun objc_msgSendNSPoint(vararg args: Any?): NSPointRes
     fun objc_msgSend_stret(structPtr: Any?, vararg args: Any?): Unit
     /*
@@ -139,6 +141,7 @@ typealias NSPointRes = MyNativeNSPoint.ByValue
 
 fun sel(name: String) = ObjectiveC.sel_registerName(name)
 fun Long.msgSend(sel: String, vararg args: Any?): Long = ObjectiveC.objc_msgSend(this, sel(sel), *args)
+fun Long.msgSendCGFloat(sel: String, vararg args: Any?): CGFloat = ObjectiveC.objc_msgSendCGFloat(this, sel(sel), *args)
 fun Long.msgSendNSPoint(sel: String, vararg args: Any?): NSPointRes = ObjectiveC.objc_msgSendNSPoint(this, sel(sel), *args)
 fun Long.msgSend_stret(output: Any?, sel: String, vararg args: Any?): Unit = ObjectiveC.objc_msgSend_stret(output, this, sel(sel), *args)
 operator fun Long.invoke(sel: String, vararg args: Any?): Long = ObjectiveC.objc_msgSend(this, sel(sel), *args)
