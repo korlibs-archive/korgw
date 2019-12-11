@@ -5,8 +5,10 @@ import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korgw.GameWindow
+import com.soywiz.korgw.internal.MicroDynamic
 import com.soywiz.korgw.osx.MacKmlGL
 import com.soywiz.korgw.platform.BaseOpenglContext
+import com.soywiz.korgw.toggleFullScreen
 import com.soywiz.korgw.win32.Win32KmlGl
 import com.soywiz.korgw.win32.Win32OpenglContext
 import com.soywiz.korgw.x11.X
@@ -23,9 +25,12 @@ import com.sun.jna.platform.win32.WinDef
 import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
+import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
+import java.lang.reflect.Proxy
 import javax.swing.JFrame
 import kotlin.system.exitProcess
+
 
 class AwtAg(val window: AwtGameWindow) : AGOpengl() {
     override val nativeComponent: Any = window
@@ -42,9 +47,25 @@ class AwtAg(val window: AwtGameWindow) : AGOpengl() {
 class AwtGameWindow : GameWindow() {
     override val ag: AwtAg = AwtAg(this)
 
+    /*
+    fun JFrame.isFullScreen(): Boolean {
+        try {
+            awtGetPeer()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            return false
+        }
+    }
+    */
+
     var ctx: BaseOpenglContext? = null
     //val frame = Window(Frame("Korgw"))
+    val classLoader = this.javaClass.classLoader
+
+    //private var currentInFullScreen = false
+
     val frame: JFrame = object : JFrame("Korgw") {
+        val frame = this
         //val frame = object : Frame("Korgw") {
         init {
             isVisible = false
@@ -53,6 +74,35 @@ class AwtGameWindow : GameWindow() {
             val frame = this
             val dim = getDefaultToolkit().screenSize
             frame.setLocation(dim.width / 2 - frame.size.width / 2, dim.height / 2 - frame.size.height / 2)
+
+            if (OS.isMac) {
+                //rootPane.putClientProperty("apple.awt.fullscreenable", true)
+
+                /*
+                val listener = Proxy.newProxyInstance(classLoader, arrayOf(Class.forName("com.apple.eawt.FullScreenListener"))) { proxy, method, args ->
+                    //println("INVOKED: $proxy, $method")
+                    when (method.name) {
+                        "windowEnteredFullScreen" -> {
+                            currentInFullScreen = true
+                        }
+                        "windowExitedFullScreen" -> {
+                            currentInFullScreen = false
+                        }
+                    }
+                    null
+                }
+                */
+
+                MicroDynamic {
+                    getClass("com.apple.eawt.FullScreenUtilities").invoke("setWindowCanFullScreen", frame, true)
+                    //getClass("com.apple.eawt.FullScreenUtilities").invoke("addFullScreenListenerTo", frame, listener)
+                }
+
+                // @TODO: This one owns the whole screen in a bad way
+                //val env = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                //val device = env.defaultScreenDevice
+                //device.fullScreenWindow = this
+            }
         }
 
         override fun paintComponents(g: Graphics?) {
@@ -156,8 +206,21 @@ class AwtGameWindow : GameWindow() {
         get() = super.icon
         set(value) {}
     override var fullscreen: Boolean
-        get() = super.fullscreen
-        set(value) {}
+        get() = frame.rootPane.bounds == frame.bounds
+        set(value) {
+            //println("fullscreen: $fullscreen -> $value")
+            if (fullscreen != value) {
+                if (OS.isMac) {
+                    //println("TOGGLING!")
+                    queue {
+                        MicroDynamic {
+                            //println("INVOKE!: ${getClass("com.apple.eawt.Application").invoke("getApplication")}")
+                            getClass("com.apple.eawt.Application").invoke("getApplication").invoke("requestToggleFullScreen", frame)
+                        }
+                    }
+                }
+            }
+        }
     override var visible: Boolean
         get() = frame.isVisible
         set(value) {

@@ -4,6 +4,8 @@ import com.soywiz.korag.AG
 import com.soywiz.korag.AGConfig
 import com.soywiz.korag.AGFactory
 import com.soywiz.korag.AGWindow
+import com.soywiz.korev.MouseEvent
+import com.soywiz.korev.addEventListener
 import com.soywiz.korgw.awt.AwtGameWindow
 //import com.soywiz.korgw.jogl.JoglGameWindow
 import com.soywiz.korgw.osx.MacGameWindow
@@ -78,6 +80,13 @@ object TestGameWindow {
             val gameWindow = CreateDefaultGameWindow()
             //val gameWindow = Win32GameWindow()
             //val gameWindow = AwtGameWindow()
+            gameWindow.addEventListener<MouseEvent> {
+                if (it.type == MouseEvent.Type.CLICK) {
+                    //println("MOUSE EVENT $it")
+                    gameWindow.toggleFullScreen()
+                }
+            }
+            //gameWindow.toggleFullScreen()
             gameWindow.setSize(320, 240)
             gameWindow.title = "HELLO WORLD"
             var step = 0

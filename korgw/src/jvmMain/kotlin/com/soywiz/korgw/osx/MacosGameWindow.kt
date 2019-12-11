@@ -311,6 +311,8 @@ class MacGameWindow : GameWindow() {
         false
     ).also {
         it.msgSend("setTitle:", NSString("Korgw"))
+        it.msgSend("setCollectionBehavior:", NSWindowCollectionBehaviorFullScreenPrimary)
+        //[self.window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
     }
 
     override val key: CoroutineContext.Key<*>
@@ -334,8 +336,11 @@ class MacGameWindow : GameWindow() {
         get() = super.icon
         set(value) {}
     override var fullscreen: Boolean
-        get() = super.fullscreen
-        set(value) {}
+        get() = (window.msgSend("styleMask") and NSWindowStyleMaskFullScreen.toLong()) == NSWindowStyleMaskFullScreen.toLong()
+        set(value) {
+            println("toggleFullScreen: $window : $value")
+            window.msgSend("toggleFullScreen:", app)
+        }
     override var visible: Boolean
         get() = super.visible
         set(value) {}
@@ -494,6 +499,8 @@ val NSWindowStyleMaskFullScreen = 1 shl 14
 val NSWindowStyleMaskFullSizeContentView = 1 shl 15
 
 val NSBackingStoreBuffered = 2
+
+private val NSWindowCollectionBehaviorFullScreenPrimary = (1 shl 7).toLong()
 
 
 internal val KeyCodesToKeys = mapOf(

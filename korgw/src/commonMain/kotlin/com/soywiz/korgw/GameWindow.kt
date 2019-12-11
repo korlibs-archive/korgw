@@ -42,8 +42,10 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         tasks.enqueue(Runnable { block() })
     }
 
-    fun queue(block: Runnable) {
-        tasks.enqueue(block)
+    fun queue(block: Runnable?) {
+        if (block != null) {
+            tasks.enqueue(block)
+        }
     }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
@@ -88,7 +90,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
 
             while (tasks.isNotEmpty()) {
                 val task = tasks.dequeue()
-                task.run()
+                task?.run()
             }
         } catch (e: Throwable) {
             println("Error in GameWindowCoroutineDispatcher.executePending:")
