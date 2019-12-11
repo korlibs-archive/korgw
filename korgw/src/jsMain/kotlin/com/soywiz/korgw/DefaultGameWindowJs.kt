@@ -254,10 +254,12 @@ class BrowserGameWindow : GameWindow() {
         get() = document.fullscreenElement != null
         set(value) {
             if (fullscreen != value) {
-                if (value) {
-                    canvas.requestFullscreen()
-                } else {
-                    document.exitFullscreen()
+                kotlin.runCatching {
+                    if (value) {
+                        canvas.requestFullscreen()
+                    } else {
+                        document.exitFullscreen()
+                    }
                 }
             }
         }
