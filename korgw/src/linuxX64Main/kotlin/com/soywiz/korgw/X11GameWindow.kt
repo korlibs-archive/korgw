@@ -85,11 +85,7 @@ class X11GameWindow : GameWindow() {
     }
 
     override suspend fun browse(url: URL) {
-        // system("open https://your.domain/uri");
-        //Shell32.ShellExecute()
-        //ShellExecute(0, 0, L"http://www.google.com", 0, 0 , SW_SHOW );
-
-        super.browse(url)
+        platform.posix.system("xdg-open ${url.fullUrl}")
     }
 
     override suspend fun alert(message: String) {
