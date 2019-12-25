@@ -21,6 +21,7 @@ import com.soywiz.korio.util.Once
 import com.sun.jna.Callback
 import com.sun.jna.Library
 import kotlin.coroutines.CoroutineContext
+import kotlin.system.exitProcess
 
 class MacAG(val window: Long) : AGOpengl() {
     override val gles: Boolean = true
@@ -378,6 +379,9 @@ class MacGameWindow : GameWindow() {
     override fun close() {
         super.close()
         autoreleasePool.msgSend("drain")
+        // @TODO: Close window gracefully?
+        window.msgSend("close")
+        //exitProcess(0)
     }
 
     //var running = true

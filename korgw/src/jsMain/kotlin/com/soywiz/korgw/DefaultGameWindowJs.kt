@@ -297,6 +297,7 @@ class BrowserGameWindow : GameWindow() {
         super.close()
         launchImmediately(coroutineDispatcher) {
             loopJob?.cancelAndJoin()
+            window.close()
         }
         loopJob = null
     }

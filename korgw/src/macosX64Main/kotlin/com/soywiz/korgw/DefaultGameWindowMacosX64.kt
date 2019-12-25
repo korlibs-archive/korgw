@@ -326,6 +326,11 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
         }
     }
 
+    override fun close() {
+        super.close()
+        window.close()
+    }
+
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) = autoreleasepool {
         val agNativeComponent = Any()
         val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
