@@ -123,7 +123,16 @@ abstract class AG : Extra by Extra.Mixin() {
 		val left get() = x
 		val right get() = x + width
 		val bottom get() = y + height
-	}
+
+        fun copyFrom(that: Scissor): Scissor = setTo(that.x, that.y, that.width, that.height)
+
+        fun setTo(x: Int, y: Int, width: Int, height: Int): Scissor = this.apply {
+            this.x = x
+            this.y = y
+            this.width = width
+            this.height = height
+        }
+    }
 
 	data class Blending(
 		val srcRGB: BlendFactor,
