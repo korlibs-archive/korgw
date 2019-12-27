@@ -28,6 +28,6 @@ dependencies {
 	})
 	compile 'com.android.support:appcompat-v7:24.2.1'
 	compile "com.soywiz:korui-android:$koruiVersion"
-	compile "com.soywiz:korau-android:$korauVersion"
+	compile "com.soywiz.korlibs.korau:korau-android:$korauVersion"
 	testCompile 'junit:junit:4.12'
 }
