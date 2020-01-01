@@ -3,14 +3,18 @@ package com.soywiz.korgw
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korim.format.PNG
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.net.*
 import com.soywiz.korio.util.*
+import com.soywiz.korio.util.encoding.toBase64
 import kotlinx.coroutines.*
+import org.w3c.dom.HTMLLinkElement
 import org.w3c.dom.events.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
+import org.w3c.dom.get
 import kotlin.browser.*
 
 private external val navigator: dynamic
@@ -247,9 +251,19 @@ class BrowserGameWindow : GameWindow() {
         set(value) { document.title = value }
     override val width: Int get() = canvas.clientWidth
     override val height: Int get() = canvas.clientHeight
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                val link: HTMLLinkElement = document.querySelector("link[rel*='icon']").unsafeCast<HTMLLinkElement>()
+                link.type = "image/png"
+                link.rel = "shortcut icon"
+                link.href = "data:image/png;base64," + PNG.encode(value).toBase64()
+                document.getElementsByTagName("head")[0]?.appendChild(link)
+            } else {
+                document.querySelector("link[rel*='icon']")?.remove()
+            }
+        }
     override var fullscreen: Boolean
         get() = document.fullscreenElement != null
         set(value) {
@@ -309,7 +323,7 @@ class BrowserGameWindow : GameWindow() {
         jsFrame(0.0)
     }
 
-    lateinit private var jsFrame: (Double) -> Unit
+    private lateinit var jsFrame: (Double) -> Unit
     init {
         jsFrame = { step: Double ->
             updateGamepad()
@@ -345,8 +359,7 @@ private external class JsGamepadEvent : Event {
     val gamepad: JsGamePad
 }
 
-class NodeJsGameWindow : GameWindow() {
-}
+class NodeJsGameWindow : GameWindow()
 
 actual fun CreateDefaultGameWindow(): GameWindow = if (OS.isJsNodeJs) NodeJsGameWindow() else BrowserGameWindow()
 
