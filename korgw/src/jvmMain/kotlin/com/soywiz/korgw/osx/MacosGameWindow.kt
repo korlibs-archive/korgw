@@ -13,6 +13,7 @@ import com.soywiz.korgw.platform.INativeGL
 import com.soywiz.korgw.platform.NativeKgl
 import com.soywiz.korgw.platform.NativeLoad
 import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.format.PNG
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
@@ -20,6 +21,7 @@ import com.soywiz.korio.util.OS
 import com.soywiz.korio.util.Once
 import com.sun.jna.Callback
 import com.sun.jna.Library
+import java.nio.ByteBuffer
 import kotlin.coroutines.CoroutineContext
 import kotlin.system.exitProcess
 
@@ -39,6 +41,8 @@ interface MacGL : INativeGL, Library {
 
     companion object : MacGL by NativeLoad("OpenGL")
 }
+
+private fun ByteArray.toNSData(): Long = NSClass("NSData").alloc().msgSend("initWithBytes:length:", ByteBuffer.wrap(this), this.size)
 
 class MacosGLContext(var contentView: Long, val window: Long) : BaseOpenglContext {
     val pixelFormat = NSClass("NSOpenGLPixelFormat").alloc().msgSend(
@@ -333,9 +337,17 @@ class MacGameWindow : GameWindow() {
         protected set
     override var height: Int = initialHeight
         protected set
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            //println("MacosGameWindow. Setting icon: $value")
+            if (value != null) {
+                //val size = image.msgSendNSPoint("size")
+                app.msgSend("setApplicationIconImage:", NSClass("NSImage").alloc().msgSend("initWithData:", PNG.encode(value).toNSData()))
+            } else {
+                app.msgSend("setApplicationIconImage:", 0L)
+            }
+        }
     override var fullscreen: Boolean
         get() = (window.msgSend("styleMask") and NSWindowStyleMaskFullScreen.toLong()) == NSWindowStyleMaskFullScreen.toLong()
         set(value) {
