@@ -339,8 +339,10 @@ class MacGameWindow : GameWindow() {
     override var fullscreen: Boolean
         get() = (window.msgSend("styleMask") and NSWindowStyleMaskFullScreen.toLong()) == NSWindowStyleMaskFullScreen.toLong()
         set(value) {
-            println("toggleFullScreen: $window : $value")
-            window.msgSend("toggleFullScreen:", app)
+            if (this.fullscreen != value) {
+                println("toggleFullScreen: $window : $value")
+                window.msgSend("toggleFullScreen:", app)
+            }
         }
     override var visible: Boolean
         get() = super.visible
