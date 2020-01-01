@@ -205,7 +205,11 @@ class AwtGameWindow : GameWindow() {
             field = value
             val awtImage = value?.toAwt()
             if (awtImage != null) {
-                Taskbar.getTaskbar().iconImage = awtImage
+                kotlin.runCatching {
+                    MicroDynamic {
+                        getClass("java.awt.Taskbar").invoke("getTaskbar").invoke("setIconImage", awtImage)
+                    }
+                }
                 frame.iconImage = awtImage
             }
         }
