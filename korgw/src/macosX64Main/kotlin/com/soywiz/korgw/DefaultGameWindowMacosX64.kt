@@ -1,9 +1,11 @@
 package com.soywiz.korgw
 
+import com.soywiz.kmem.startAddressOf
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
+import com.soywiz.korim.format.PNG
 import com.soywiz.korim.format.cg.toCgFloat
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
@@ -15,6 +17,15 @@ import platform.AppKit.*
 import platform.CoreGraphics.*
 import platform.Foundation.*
 import platform.darwin.*
+
+private fun ByteArray.toNsData(): NSData {
+    val array = this
+    return memScoped {
+        array.usePinned { arrayPin ->
+            NSData.dataWithBytes(arrayPin.startAddressOf, array.size.convert())
+        }
+    }
+}
 
 actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     val app = NSApplication.sharedApplication()
@@ -259,9 +270,13 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
             window.title = value
         }
 
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                app.setApplicationIconImage(NSImage(data = PNG.encode(value).toNsData()))
+            }
+        }
     override var fullscreen: Boolean
         get() = (window.styleMask and NSFullScreenWindowMask) == NSFullScreenWindowMask
         set(value) {
