@@ -1,16 +1,20 @@
 package com.soywiz.korgw
 
-import com.soywiz.klock.*
-import com.soywiz.korag.*
+import com.soywiz.klock.DateTime
+import com.soywiz.korag.AG
+import com.soywiz.korag.AGConfig
+import com.soywiz.korag.AGOpenglFactory
 import com.soywiz.korev.*
-import com.soywiz.korim.bitmap.*
-import com.soywiz.korio.file.*
-import com.soywiz.korio.net.*
+import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.bitmap.Bitmap32
+import com.soywiz.korio.file.VfsFile
+import com.soywiz.korio.net.URL
 import kotlinx.cinterop.*
-import kotlinx.cinterop.nativeHeap.alloc
-import kotlinx.coroutines.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import platform.windows.*
-import kotlin.math.*
+import kotlin.math.max
+import kotlin.math.min
 
 //override val ag: AG = AGNative()
 
@@ -23,6 +27,59 @@ fun processString(maxLen: Int, callback: (ptr: CPointer<WCHARVar>, maxLen: Int) 
         callback(ptr, maxLen)
         ptr.toKString()
     }
+}
+
+private fun Bitmap32.toWin32Icon(): HICON? {
+    val bmp = this.clone().flipY().toBMP32()
+    memScoped {
+        val bi = alloc<BITMAPV5HEADER>()
+        bi.bV5Size = BITMAPV5HEADER.size.convert()
+        bi.bV5Width = bmp.width
+        bi.bV5Height = bmp.height
+        bi.bV5Planes = 1.convert()
+        bi.bV5BitCount = 32.convert()
+        bi.bV5Compression = BI_BITFIELDS.convert()
+        // The following mask specification specifies a supported 32 BPP
+        // alpha format for Windows XP.
+        bi.bV5RedMask = 0x00FF0000.convert()
+        bi.bV5GreenMask = 0x0000FF00.convert()
+        bi.bV5BlueMask = 0x000000FF.convert()
+        bi.bV5AlphaMask = 0xFF000000.convert()
+
+        val lpBits = alloc<COpaquePointerVar>()
+        val hdc = GetDC(null)
+        val hBitmap = CreateDIBSection(hdc, bi.ptr as CPointer<BITMAPINFO>, DIB_RGB_COLORS, lpBits.ptr, NULL, 0.convert())
+        val memdc = CreateCompatibleDC(null)
+        ReleaseDC(null, hdc);
+
+        val bitsPtr = lpBits.reinterpret<CPointerVar<IntVar>>().value!!
+        for (n in 0 until bmp.data.size) {
+            bitsPtr[n] = bmp.data[n].value
+        }
+
+        // Create an empty mask bitmap.
+        val hMonoBitmap = CreateBitmap(bmp.width, bmp.height, 1, 1, NULL)
+
+        val ii = alloc<ICONINFO>()
+        ii.fIcon = TRUE;  // Change fIcon to TRUE to create an alpha icon
+        ii.xHotspot = 0.convert()
+        ii.yHotspot = 0.convert()
+        ii.hbmMask = hMonoBitmap
+        ii.hbmColor = hBitmap
+        val icon = CreateIconIndirect(ii.ptr)
+
+        DeleteDC( memdc );
+        DeleteObject( hBitmap );
+        DeleteObject(hMonoBitmap);
+
+        return icon
+    }
+}
+
+private fun Bitmap32.scaled(width: Int, height: Int): Bitmap32 {
+    val scaleX = width.toDouble() / this.width.toDouble()
+    val scaleY = height.toDouble() / this.height.toDouble()
+    return scaleLinear(scaleX, scaleY)
 }
 
 class WindowsGameWindow : GameWindow() {
@@ -53,9 +110,14 @@ class WindowsGameWindow : GameWindow() {
                 it.bottom - it.top
             }
         }
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                SendMessageA(hwnd, WM_SETICON.convert(), ICON_BIG.convert(), value.toBMP32().scaled(32, 32).toWin32Icon().toLong().convert())
+                SendMessageA(hwnd, WM_SETICON.convert(), ICON_SMALL.convert(), value.toBMP32().scaled(16, 16).toWin32Icon().toLong().convert())
+            }
+        }
     override var fullscreen: Boolean
         get() = memScoped {
             val placement = alloc<WINDOWPLACEMENT>()
