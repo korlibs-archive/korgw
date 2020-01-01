@@ -8,12 +8,12 @@ import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.internal.MicroDynamic
 import com.soywiz.korgw.osx.MacKmlGL
 import com.soywiz.korgw.platform.BaseOpenglContext
-import com.soywiz.korgw.toggleFullScreen
 import com.soywiz.korgw.win32.Win32KmlGl
 import com.soywiz.korgw.win32.Win32OpenglContext
 import com.soywiz.korgw.x11.X
 import com.soywiz.korgw.x11.X11KmlGl
 import com.soywiz.korgw.x11.X11OpenglContext
+import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
@@ -25,9 +25,7 @@ import com.sun.jna.platform.win32.WinDef
 import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
-import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
-import java.lang.reflect.Proxy
 import javax.swing.JFrame
 import kotlin.system.exitProcess
 
@@ -202,9 +200,15 @@ class AwtGameWindow : GameWindow() {
         set(value) = run { frame.title = value }
     override val width: Int get() = (scaledWidth).toInt()
     override val height: Int get() = (scaledHeight).toInt()
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            val awtImage = value?.toAwt()
+            if (awtImage != null) {
+                Taskbar.getTaskbar().iconImage = awtImage
+                frame.iconImage = awtImage
+            }
+        }
     override var fullscreen: Boolean
         get() = frame.rootPane.bounds == frame.bounds
         set(value) {
