@@ -2,26 +2,38 @@ package com.soywiz.korgw.win32
 
 import com.soywiz.kgl.KmlGl
 import com.soywiz.korag.AGOpengl
-import com.soywiz.korev.*
-import com.soywiz.korgw.*
-import com.soywiz.korgw.platform.*
+import com.soywiz.korev.Key
+import com.soywiz.korev.KeyEvent
+import com.soywiz.korev.MouseButton
+import com.soywiz.korev.MouseEvent
+import com.soywiz.korgw.GameWindow
+import com.soywiz.korgw.GameWindowCoroutineDispatcher
+import com.soywiz.korgw.platform.BaseOpenglContext
+import com.soywiz.korgw.platform.INativeGL
+import com.soywiz.korgw.platform.NativeKgl
 import com.soywiz.korgw.win32.*
 import com.soywiz.korim.bitmap.Bitmap
+import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
+import com.sun.jna.*
 import com.sun.jna.Function
-import com.sun.jna.Library
-import com.sun.jna.Native
-import com.sun.jna.Pointer
+import com.sun.jna.Structure.FieldOrder
 import com.sun.jna.platform.win32.*
 import com.sun.jna.platform.win32.WinDef.*
+import com.sun.jna.platform.win32.WinGDI.DIB_RGB_COLORS
 import com.sun.jna.platform.win32.WinUser.*
+import com.sun.jna.ptr.PointerByReference
+import com.sun.jna.win32.StdCallLibrary
+import com.sun.jna.win32.W32APIOptions
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import java.nio.IntBuffer
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.max
 import kotlin.math.min
+
 
 class Win32Ag(val window: Win32GameWindow, override val gl: KmlGl = Win32KmlGl) : AGOpengl() {
     override val gles: Boolean = true
@@ -52,6 +64,58 @@ interface Win32GL : INativeGL, Library {
     }
 }
 
+private fun Bitmap32.toWin32Icon(): HICON? {
+    val bmp = this.clone().flipY().toBMP32()
+
+    val bi = BITMAPV5HEADER()
+    bi.bV5Size = bi.size()
+    bi.bV5Width = bmp.width
+    bi.bV5Height = bmp.height
+    bi.bV5Planes = 1
+    bi.bV5BitCount = 32
+    bi.bV5Compression = WinGDI.BI_BITFIELDS
+    // The following mask specification specifies a supported 32 BPP
+    // alpha format for Windows XP.
+    bi.bV5RedMask = 0x00FF0000
+    bi.bV5GreenMask = 0x0000FF00
+    bi.bV5BlueMask = 0x000000FF
+    bi.bV5AlphaMask = 0xFF000000.toInt()
+
+    val hdc = Win32.GetDC(null)
+
+    val lpBits = PointerByReference()
+    val hBitmap = Win32.CreateDIBSection(hdc, bi, WinGDI.DIB_RGB_COLORS, lpBits, null, 0)
+    val memdc = Win32.CreateCompatibleDC(null)
+    Win32.ReleaseDC(null, hdc);
+
+    val bitsPtr = lpBits.value
+    for (n in 0 until bmp.data.size) {
+        bitsPtr.setInt((n * 4).toLong(), bmp.data[n].value)
+    }
+
+    val hMonoBitmap = Win32.CreateBitmap(bmp.width, bmp.height, 1, 1, null)
+
+    val ii = WinGDI.ICONINFO()
+    ii.fIcon = true // Change fIcon to TRUE to create an alpha icon
+    ii.xHotspot = 0
+    ii.yHotspot = 0
+    ii.hbmMask = hMonoBitmap
+    ii.hbmColor = hBitmap
+    val icon = Win32.CreateIconIndirect(ii)
+
+    Win32.DeleteDC( memdc );
+    Win32.DeleteObject( hBitmap )
+    Win32.DeleteObject(hMonoBitmap)
+
+    return icon
+}
+
+private fun Bitmap32.scaled(width: Int, height: Int): Bitmap32 {
+    val scaleX = width.toDouble() / this.width.toDouble()
+    val scaleY = height.toDouble() / this.height.toDouble()
+    return scaleLinear(scaleX, scaleY)
+}
+
 class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = false) :
     BaseOpenglContext {
     val hDC = Win32.GetDC(hWnd)
@@ -70,7 +134,7 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
         pfd.cDepthBits = 16
     }
 
-    val pf = Win32.ChoosePixelFormat(hDC, pfd);
+    val pf = Win32.ChoosePixelFormat(hDC, pfd)
 
     init {
         Win32.SetPixelFormat(hDC, pf, pfd)
@@ -83,7 +147,7 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
     }
 
     //hRC = wglCreateContextAttribsARB (hDC, null, attribs);
-    val hRC = Win32.wglCreateContext(hDC);
+    val hRC = Win32.wglCreateContext(hDC)
 
     init {
         makeCurrent()
@@ -92,11 +156,11 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
     }
 
     override fun makeCurrent() {
-        Win32.wglMakeCurrent(hDC, hRC);
+        Win32.wglMakeCurrent(hDC, hRC)
     }
 
     override fun releaseCurrent() {
-        Win32.wglMakeCurrent(null, null);
+        Win32.wglMakeCurrent(null, null)
     }
 
     override fun swapBuffers() {
@@ -129,9 +193,14 @@ class Win32GameWindow : GameWindow() {
         }
     override var width: Int = 200; private set
     override var height: Int = 200; private set
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                Win32.SendMessage(hWnd, WM_SETICON, WinDef.WPARAM(ICON_BIG.toLong())  , WinDef.LPARAM(Pointer.nativeValue(value.toBMP32().scaled(32, 32).toWin32Icon()!!.pointer)))
+                Win32.SendMessage(hWnd, WM_SETICON, WinDef.WPARAM(ICON_SMALL.toLong()), WinDef.LPARAM(Pointer.nativeValue(value.toBMP32().scaled(16, 16).toWin32Icon()!!.pointer)))
+            }
+        }
     override var fullscreen: Boolean
         get() = super.fullscreen
         set(value) {}
@@ -245,7 +314,7 @@ class Win32GameWindow : GameWindow() {
                     //FillRect(hdc, ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
                     //EndPaint(hwnd, ps);
                     glCtx?.makeCurrent()
-                    Win32.wglMakeCurrent(hDC, hRC);
+                    Win32.wglMakeCurrent(hDC, hRC)
                     Win32.glClearColor(.3f, .6f, .9f, 1f)
 
                     Win32.glClear(MyOpenGL32.GL_COLOR_BUFFER_BIT)
@@ -274,7 +343,7 @@ class Win32GameWindow : GameWindow() {
                     width = rect.width
                     height = rect.height - getTitleHeight()
                     //println("WM_SIZE: $result, $width, $height")
-                    Win32.wglMakeCurrent(hDC, hRC);
+                    Win32.wglMakeCurrent(hDC, hRC)
                     Win32.glViewport(0, 0, width, height)
                     dispatchReshapeEvent(rect.left, rect.top, width, height)
                     LRESULT(0)
@@ -385,7 +454,7 @@ class Win32GameWindow : GameWindow() {
             wClass.hInstance = hInst
             wClass.lpfnWndProc = windProc
             wClass.lpszClassName = windowClass
-            wClass.hCursor = Win32.LoadCursor(null, IDC_ARROW);
+            wClass.hCursor = Win32.LoadCursor(null, IDC_ARROW)
             RegisterClassEx(wClass)
 
             val windowWidth = max(128, width)
@@ -438,10 +507,10 @@ class Win32GameWindow : GameWindow() {
                 if (exiting) break
             }
 
-            wglMakeCurrent(null, null);
-            ReleaseDC(hWnd, hDC);
-            wglDeleteContext(hRC);
-            DestroyWindow(hWnd);
+            wglMakeCurrent(null, null)
+            ReleaseDC(hWnd, hDC)
+            wglDeleteContext(hRC)
+            DestroyWindow(hWnd)
         }
     }
 }

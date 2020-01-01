@@ -2,8 +2,12 @@ package com.soywiz.korgw.win32
 
 import com.soywiz.korev.Key
 import com.sun.jna.Native
+import com.sun.jna.Pointer
+import com.sun.jna.Structure
 import com.sun.jna.platform.win32.*
+import com.sun.jna.ptr.PointerByReference
 import com.sun.jna.win32.W32APIOptions
+import java.nio.Buffer
 
 object Win32 : MyKernel32 by MyKernel32,
     MyUser32 by MyUser32,
@@ -15,6 +19,8 @@ interface MyKernel32 : Kernel32 {
     companion object : MyKernel32 by Native.load("kernel32", MyKernel32::class.java, W32APIOptions.DEFAULT_OPTIONS)
 }
 
+internal const val WM_SETICON = 0x0080
+
 interface MyUser32 : User32 {
     fun SetWindowText(hWnd: WinDef.HWND?, lpString: String?): Boolean
     fun SetActiveWindow(hWnd: WinDef.HWND?): WinDef.HWND?
@@ -23,14 +29,100 @@ interface MyUser32 : User32 {
     fun LoadCursor(hInstance: WinDef.HINSTANCE?, lpCursorName: String?): WinDef.HCURSOR?
     fun LoadCursor(hInstance: WinDef.HINSTANCE?, lpCursorName: Int): WinDef.HCURSOR?
     fun AllowSetForegroundWindow(dwProcessId: Int): Boolean
+    fun CreateIconIndirect(piconinfo: WinGDI.ICONINFO): WinDef.HICON
+
 
     companion object : MyUser32 by Native.load("user32", MyUser32::class.java, W32APIOptions.DEFAULT_OPTIONS)
 }
 
 interface MyGdi32 : GDI32 {
     fun SwapBuffers(Arg1: WinDef.HDC?): WinDef.BOOL?
+    fun CreateBitmap(
+        nWidth: Int,
+        nHeight: Int,
+        nPlanes: Int,
+        nBitCount: Int,
+        buffer: Buffer?
+    ): WinDef.HBITMAP
+
+    fun CreateDIBSection(hDC: WinDef.HDC?, pbmi: BITMAPV5HEADER?, iUsage: Int, ppvBits: PointerByReference?, hSection: Pointer?, dwOffset: Int): WinDef.HBITMAP?
 
     companion object : MyGdi32 by Native.load("gdi32", MyGdi32::class.java, W32APIOptions.DEFAULT_OPTIONS)
+}
+
+@Structure.FieldOrder("ciexyzX", "ciexyzY", "ciexyzZ")
+class CIEXYZ : Structure() {
+    @JvmField
+    var ciexyzX: Int = 0
+    @JvmField
+    var ciexyzY: Int = 0
+    @JvmField
+    var ciexyzZ: Int = 0
+}
+
+@Structure.FieldOrder("ciexyzRed", "ciexyzGreen", "ciexyzBlue")
+class CIEXYZTRIPLE : Structure() {
+    @JvmField
+    var ciexyzRed = CIEXYZ()
+    @JvmField
+    var ciexyzGreen = CIEXYZ()
+    @JvmField
+    var ciexyzBlue = CIEXYZ()
+}
+
+@Structure.FieldOrder(
+    "bV5Size",
+    "bV5Width",
+    "bV5Height",
+    "bV5Planes",
+    "bV5BitCount",
+    "bV5Compression",
+    "bV5SizeImage",
+    "bV5XPelsPerMeter",
+    "bV5YPelsPerMeter",
+    "bV5ClrUsed",
+    "bV5ClrImportant",
+    "bV5RedMask",
+    "bV5GreenMask",
+    "bV5BlueMask",
+    "bV5AlphaMask",
+    "bV5CSType",
+    "bV5Endpoints",
+    "bV5GammaRed",
+    "bV5GammaGreen",
+    "bV5GammaBlue",
+    "bV5Intent",
+    "bV5ProfileData",
+    "bV5ProfileSize",
+    "bV5Reserved"
+)
+class BITMAPV5HEADER : Structure() {
+    @JvmField var bV5Size = size()
+    @JvmField var bV5Width = 0
+    @JvmField var bV5Height = 0
+    @JvmField var bV5Planes: Short = 0
+    @JvmField var bV5BitCount: Short = 0
+    @JvmField var bV5Compression = 0
+    @JvmField var bV5SizeImage = 0
+    @JvmField var bV5XPelsPerMeter = 0
+    @JvmField var bV5YPelsPerMeter = 0
+    @JvmField var bV5ClrUsed = 0
+    @JvmField var bV5ClrImportant = 0
+    // V4
+    @JvmField var bV5RedMask: Int = 0
+    @JvmField var bV5GreenMask: Int = 0
+    @JvmField var bV5BlueMask: Int = 0
+    @JvmField var bV5AlphaMask: Int = 0
+    @JvmField var bV5CSType: Int = 0
+    @JvmField var bV5Endpoints: CIEXYZTRIPLE = CIEXYZTRIPLE()
+    @JvmField var bV5GammaRed: Int = 0
+    @JvmField var bV5GammaGreen: Int = 0
+    @JvmField var bV5GammaBlue: Int = 0
+    // V5
+    @JvmField var bV5Intent: Int = 0
+    @JvmField var bV5ProfileData: Int = 0
+    @JvmField var bV5ProfileSize: Int = 0
+    @JvmField var bV5Reserved: Int = 0
 }
 
 interface MyOpenGL32 : OpenGL32 {
