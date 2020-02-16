@@ -268,17 +268,13 @@ data class DropFileEvent(var type: Type = Type.ENTER, var files: List<VfsFile>? 
 }
 
 class MouseEvents(val ed: EventDispatcher) : Closeable {
-	fun click(callback: () -> Unit) =
-		ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.CLICK) callback() }
-
-	fun up(callback: () -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.UP) callback() }
-	fun down(callback: () -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.DOWN) callback() }
-	fun move(callback: () -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.MOVE) callback() }
-	fun drag(callback: () -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.DRAG) callback() }
-	fun enter(callback: () -> Unit) =
-		ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.ENTER) callback() }
-
-	fun exit(callback: () -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.EXIT) callback() }
+	fun click(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.CLICK) callback(it) }
+	fun up(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.UP) callback(it) }
+	fun down(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.DOWN) callback(it) }
+	fun move(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.MOVE) callback(it) }
+	fun drag(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.DRAG) callback(it) }
+	fun enter(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.ENTER) callback(it) }
+	fun exit(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.EXIT) callback(it) }
 	override fun close() {
 	}
 }
