@@ -412,6 +412,7 @@ internal val AwtKeyMap = mapOf(
     KeyEvent.VK_DOWN to Key.DOWN,
     KeyEvent.VK_COMMA to Key.COMMA,
     KeyEvent.VK_MINUS to Key.MINUS,
+    KeyEvent.VK_PLUS to Key.PLUS,
     KeyEvent.VK_PERIOD to Key.PERIOD,
     KeyEvent.VK_SLASH to Key.SLASH,
     KeyEvent.VK_0 to Key.N0,
