@@ -5,7 +5,7 @@ import com.soywiz.korma.geom.Point
 import kotlin.math.*
 
 enum class MouseButton(val id: Int) {
-	LEFT(0), RIGHT(1), MIDDLE(2), BUTTON3(3), BUTTON4(4), BUTTON5(5), BUTTON_UNKNOWN(6);
+	LEFT(0), MIDDLE(1), RIGHT(2), BUTTON3(3), BUTTON4(4), BUTTON5(5), BUTTON_UNKNOWN(6);
 
 	companion object {
 		val BUTTONS = values()
