@@ -11,25 +11,20 @@ import com.soywiz.korgw.GameWindowCoroutineDispatcher
 import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korgw.platform.INativeGL
 import com.soywiz.korgw.platform.NativeKgl
-import com.soywiz.korgw.win32.*
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
+import com.soywiz.korma.geom.*
 import com.sun.jna.*
 import com.sun.jna.Function
-import com.sun.jna.Structure.FieldOrder
 import com.sun.jna.platform.win32.*
 import com.sun.jna.platform.win32.WinDef.*
-import com.sun.jna.platform.win32.WinGDI.DIB_RGB_COLORS
 import com.sun.jna.platform.win32.WinUser.*
 import com.sun.jna.ptr.PointerByReference
-import com.sun.jna.win32.StdCallLibrary
-import com.sun.jna.win32.W32APIOptions
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
-import java.nio.IntBuffer
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.max
 import kotlin.math.min
@@ -217,8 +212,9 @@ class Win32GameWindow : GameWindow() {
 
         if (hWnd != null) {
             val rect = WinDef.RECT()
+            val borderSize = getBorderSize()
             Win32.GetWindowRect(hWnd, rect)
-            Win32.MoveWindow(hWnd, rect.left, rect.top, width, height + getTitleHeight(), true)
+            Win32.MoveWindow(hWnd, rect.left, rect.top, width + borderSize.width, height + borderSize.height, true)
         }
     }
 
@@ -297,8 +293,9 @@ class Win32GameWindow : GameWindow() {
         val rect = RECT()
         Win32.GetWindowRect(hWnd, rect)
         Win32.GetCursorPos(point)
-        point.x -= rect.left
-        point.y -= rect.top + getTitleHeight()
+        val borderSize = getBorderSize()
+        point.x -= rect.left + borderSize.width
+        point.y -= rect.top + borderSize.height
         return point
     }
 
@@ -340,8 +337,9 @@ class Win32GameWindow : GameWindow() {
                     val result = Win32.GetWindowRect(hWnd, rect)
                     rect.read()
                     //println("rect: $rect ${rect.pointer}")
-                    width = rect.width
-                    height = rect.height - getTitleHeight()
+                    val borderSize = getBorderSize()
+                    width = rect.width - borderSize.width
+                    height = rect.height - borderSize.height
                     //println("WM_SIZE: $result, $width, $height")
                     Win32.wglMakeCurrent(hDC, hRC)
                     Win32.glViewport(0, 0, width, height)
@@ -427,18 +425,21 @@ class Win32GameWindow : GameWindow() {
 
     private val hasMenu = false
     private val winStyle = WS_OVERLAPPEDWINDOW
+    private val winExStyle = WS_EX_CLIENTEDGE
 
-    fun adjustRect(rect: WinDef.RECT) {
-        Win32.AdjustWindowRect(rect, WinDef.DWORD(winStyle.toLong() and 0xFFFFFFFFL), WinDef.BOOL(hasMenu))
+    fun getBorderSize(): SizeInt {
+        val w = 1000
+        val h = 1000
+        val out = getRealSize(w, h)
+        return SizeInt(out.width - w, out.height - h)
     }
 
-    fun getTitleHeight(): Int {
-        val rheight = 1000
+    fun getRealSize(width: Int, height: Int): SizeInt {
         val rect = WinDef.RECT()
-        rect.width = 1000
-        rect.height = rheight
-        adjustRect(rect)
-        return rect.height - rheight
+        rect.width = width
+        rect.height = height
+        Win32.AdjustWindowRectEx(rect, WinDef.DWORD(winStyle.toLong()), WinDef.BOOL(false), WinDef.DWORD(winExStyle.toLong()))
+        return SizeInt(rect.width, rect.height)
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
@@ -462,16 +463,18 @@ class Win32GameWindow : GameWindow() {
             val screenWidth = GetSystemMetrics(SM_CXSCREEN)
             val screenHeight = GetSystemMetrics(SM_CYSCREEN)
 
+            val realSize = getRealSize(windowWidth, windowHeight)
+            val realWidth = realSize.width
+            val realHeight = realSize.height
+
             println("Initial window size: $windowWidth, $windowHeight")
 
-            val realWidth = windowWidth
-            val realHeight = windowHeight + getTitleHeight()
-
             hWnd = CreateWindowEx(
-                WS_EX_CLIENTEDGE,
+                winExStyle,
+                //winExStyle or WS_EX_TOPMOST,
                 windowClass,
                 title,
-                winStyle or WS_EX_TOPMOST,
+                winStyle,
                 min(max(0, (screenWidth - realWidth) / 2), screenWidth - 16),
                 min(max(0, (screenHeight - realHeight) / 2), screenHeight - 16),
                 realWidth,
@@ -494,7 +497,7 @@ class Win32GameWindow : GameWindow() {
             //ShowWindow(hWnd, SW_SHOWNORMAL)
             //ShowWindow(hWnd, SW_SHOW)
             ShowWindow(hWnd, SW_RESTORE)
-            putWindowsToTop()
+            //putWindowsToTop()
             //putWindowsToTop()
             val lastError = Native.getLastError()
 
