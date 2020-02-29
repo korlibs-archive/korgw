@@ -1,5 +1,6 @@
 package com.soywiz.korgw
 
+import com.soywiz.kgl.*
 import com.soywiz.klock.DateTime
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGConfig
@@ -9,6 +10,7 @@ import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korim.bitmap.Bitmap32
 import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.net.URL
+import com.soywiz.korma.geom.*
 import kotlinx.cinterop.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -96,20 +98,17 @@ class WindowsGameWindow : GameWindow() {
         set(value) {
             SetWindowTextW(hwnd, value)
         }
-    override val width: Int
-        get() = memScoped {
-            alloc<RECT>().let {
-                GetWindowRect(hwnd, it.ptr)
-                it.right - it.left
-            }
+    override val width: Int get() = getClientDim(height = false)
+    override val height: Int get() = getClientDim(height = true)
+
+    private fun getClientDim(height: Boolean): Int {
+        return memScoped {
+            val rect = alloc<RECT>()
+            GetClientRect(hwnd, rect.ptr)
+            if (height) rect.height else rect.width
         }
-    override val height: Int
-        get() = memScoped {
-            alloc<RECT>().let {
-                GetWindowRect(hwnd, it.ptr)
-                it.bottom - it.top
-            }
-        }
+    }
+
     override var icon: Bitmap? = null
         set(value) {
             field = value
@@ -137,27 +136,19 @@ class WindowsGameWindow : GameWindow() {
         get() = super.quality
         set(value) {}
 
-    val RECT.width get() = right - left
-    val RECT.height get() = bottom - top
+    var RECT.width
+        set(value) = run { right = left + value }
+        get() = right - left
+    var RECT.height
+        set(value) = run { bottom = top + value }
+        get() = bottom - top
 
     override fun setSize(width: Int, height: Int): Unit = memScoped {
-        alloc<RECT> {
-            val rect: RECT = this
-
-            val screenWidth = GetSystemMetrics(SM_CXSCREEN)
-            val screenHeight = GetSystemMetrics(SM_CYSCREEN)
-            val x = (screenWidth - width) / 2
-            val y = (screenHeight - height) / 2
-            rect.left = x
-            rect.top = y
-            rect.right = x + width
-            rect.bottom = y + height
-            val style = GetWindowLongA(hwnd, GWL_STYLE)
-            val exstyle = GetWindowLongA(hwnd, GWL_EXSTYLE)
-            val menu = false
-            AdjustWindowRectEx(rect.ptr, (style and WS_OVERLAPPED.inv()).convert(), if (menu) 1 else 0, exstyle.convert())
-            println("SetWindowPos: ($width, $height) -> (${rect.width}, ${rect.height})")
-            SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.width, rect.height, 0.convert())
+        if (hwnd != null) {
+            val rect = alloc<RECT>()
+            val borderSize = getBorderSize()
+            GetWindowRect(hwnd, rect.ptr)
+            MoveWindow(hwnd, rect.left, rect.top, width + borderSize.width, height + borderSize.height, true.toInt().convert())
         }
         Unit
     }
@@ -218,14 +209,20 @@ class WindowsGameWindow : GameWindow() {
 
             val screenWidth = GetSystemMetrics(SM_CXSCREEN)
             val screenHeight = GetSystemMetrics(SM_CYSCREEN)
+
+            val realSize = getRealSize(windowWidth, windowHeight)
+            val realWidth = realSize.width
+            val realHeight = realSize.height
+
+            //println("Initial window size: $windowWidth, $windowHeight")
+
             hwnd = CreateWindowExW(
-                WS_EX_CLIENTEDGE.convert(),
+                winExStyle.convert(),
                 clazzName,
                 windowTitle,
-                //(WS_OVERLAPPEDWINDOW or WS_VISIBLE).convert(),
-                (WS_OVERLAPPEDWINDOW).convert(),
-                min(max(0, (screenWidth - windowWidth) / 2), screenWidth - 16).convert(),
-                min(max(0, (screenHeight - windowHeight) / 2), screenHeight - 16).convert(),
+                winStyle.convert(),
+                min(max(0, (screenWidth - realWidth) / 2), screenWidth - 16).convert(),
+                min(max(0, (screenHeight - realHeight) / 2), screenHeight - 16).convert(),
                 windowWidth.convert(),
                 windowHeight.convert(),
                 null, null, null, null
@@ -285,6 +282,27 @@ class WindowsGameWindow : GameWindow() {
                     tryRender()
                 }
             }
+        }
+    }
+
+    private val hasMenu = false
+    private val winStyle = WS_OVERLAPPEDWINDOW
+    private val winExStyle = WS_EX_CLIENTEDGE
+
+    fun getBorderSize(): SizeInt {
+        val w = 1000
+        val h = 1000
+        val out = getRealSize(w, h)
+        return SizeInt(out.width - w, out.height - h)
+    }
+
+    fun getRealSize(width: Int, height: Int): SizeInt {
+        return memScoped {
+            val rect = alloc<RECT>()
+            rect.width = width
+            rect.height = height
+            AdjustWindowRectEx(rect.ptr, winStyle.convert(), hasMenu.toInt().convert(), winExStyle.convert())
+            SizeInt(rect.width, rect.height)
         }
     }
 
