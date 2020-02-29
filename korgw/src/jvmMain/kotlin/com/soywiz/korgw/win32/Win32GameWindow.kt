@@ -289,16 +289,6 @@ class Win32GameWindow : GameWindow() {
     }
     */
 
-    fun getCursorInWindow(point: POINT = POINT()): POINT {
-        val rect = RECT()
-        Win32.GetWindowRect(hWnd, rect)
-        Win32.GetCursorPos(point)
-        val borderSize = getBorderSize()
-        point.x -= rect.left + borderSize.width
-        point.y -= rect.top + borderSize.height
-        return point
-    }
-
     val windProc = object : WinUser.WindowProc {
         override fun callback(
             hwnd: HWND,
@@ -373,7 +363,6 @@ class Win32GameWindow : GameWindow() {
                     , WM_MBUTTONDOWN, WM_MBUTTONUP
                     , WM_RBUTTONDOWN, WM_RBUTTONUP
                 -> {
-                    val point = getCursorInWindow()
                     val xPos: Int = (lParam.toInt() ushr 0) and 0xFFFF
                     val yPos: Int = (lParam.toInt() ushr 16) and 0xFFFF
                     //println("WM_MOUSEMOVE: $hwnd, $uMsg, $wParam, $lParam, $point ($xPos, $yPos)")
@@ -438,7 +427,7 @@ class Win32GameWindow : GameWindow() {
         val rect = WinDef.RECT()
         rect.width = width
         rect.height = height
-        Win32.AdjustWindowRectEx(rect, WinDef.DWORD(winStyle.toLong()), WinDef.BOOL(false), WinDef.DWORD(winExStyle.toLong()))
+        Win32.AdjustWindowRectEx(rect, WinDef.DWORD(winStyle.toLong()), WinDef.BOOL(hasMenu), WinDef.DWORD(winExStyle.toLong()))
         return SizeInt(rect.width, rect.height)
     }
 
@@ -471,7 +460,6 @@ class Win32GameWindow : GameWindow() {
 
             hWnd = CreateWindowEx(
                 winExStyle,
-                //winExStyle or WS_EX_TOPMOST,
                 windowClass,
                 title,
                 winStyle,
