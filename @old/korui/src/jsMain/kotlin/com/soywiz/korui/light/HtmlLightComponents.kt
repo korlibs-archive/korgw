@@ -315,6 +315,7 @@ class HtmlLightComponents : LightComponents() {
 					ed.dispatch(event.apply {
 						this.id = 0
 						this.keyCode = me.keyCode
+                        // https://keycode.info/
 						this.key = when (me.key) {
 							"0" -> Key.N0; "1" -> Key.N1; "2" -> Key.N2; "3" -> Key.N3
 							"4" -> Key.N4; "5" -> Key.N5; "6" -> Key.N6; "7" -> Key.N7
@@ -333,6 +334,8 @@ class HtmlLightComponents : LightComponents() {
 							"F17" -> Key.F17; "F18" -> Key.F18; "F19" -> Key.F19; "F20" -> Key.F20
 							"F21" -> Key.F21; "F22" -> Key.F22; "F23" -> Key.F23; "F24" -> Key.F24
 							"F25" -> Key.F25
+                            "+" -> Key.PLUS
+                            "-" -> Key.MINUS
 							else -> when (me.code) {
 								"MetaLeft" -> Key.LEFT_SUPER
 								"MetaRight" -> Key.RIGHT_SUPER

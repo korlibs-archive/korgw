@@ -377,7 +377,7 @@ class AwtLightComponents : LightComponents() {
 							//KeyEvent.VK_INVERTED_EXCLAMATION_MARK -> Key.INVERTED_EXCLAMATION_MARK
 							//KeyEvent.VK_LEFT_PARENTHESIS         -> Key.LEFT_PARENTHESIS
 							//KeyEvent.VK_NUMBER_SIGN              -> Key.NUMBER_SIGN
-							//KeyEvent.VK_PLUS                     -> Key.PLUS
+							KeyEvent.VK_PLUS                     -> Key.PLUS
 							//KeyEvent.VK_RIGHT_PARENTHESIS        -> Key.RIGHT_PARENTHESIS
 							//KeyEvent.VK_UNDERSCORE               -> Key.UNDERSCORE
 							//KeyEvent.VK_WINDOWS                  -> Key.WINDOWS
