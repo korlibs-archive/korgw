@@ -4,8 +4,22 @@ import com.soywiz.korag.shader.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 
-class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean = true, val version: Int = 100) :
-	Program.Visitor<String>("") {
+class GlslGenerator(
+    val kind: ShaderType,
+    @Suppress("unused") val gles: Boolean = true,
+    val version: Int = DEFAULT_VERSION
+) : Program.Visitor<String>("") {
+    val newGlSlVersion: Boolean = version > 120
+
+    companion object {
+        val DEFAULT_VERSION = 100
+    }
+
+    val IN = if (newGlSlVersion) "in" else "attribute"
+    val OUT = if (newGlSlVersion) "out" else "varying"
+    val UNIFORM = "uniform"
+    val gl_FragColor = if (newGlSlVersion) "fragColor" else "gl_FragColor"
+
 	private val temps = hashSetOf<Temp>()
 	private val attributes = hashSetOf<Attribute>()
 	private val varyings = hashSetOf<Varying>()
@@ -71,9 +85,12 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 				line("#endif")
 			}
 
-			for (it in attributes) line("attribute ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-			for (it in uniforms) line("uniform ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-			for (it in varyings) line("varying ${typeToString(it.type)} ${it.name};")
+            if (newGlSlVersion) {
+                line("layout(location = 0) $OUT vec4 $gl_FragColor;")
+            }
+			for (it in attributes) line("$IN ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+			for (it in uniforms) line("$UNIFORM ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+			for (it in varyings) line("$OUT ${typeToString(it.type)} ${it.name};")
 
 			line("void main()") {
 				for (temp in temps) {
@@ -125,7 +142,7 @@ class GlslGenerator(val kind: ShaderType, @Suppress("unused") val gles: Boolean 
 		return when (operand) {
 			is Output -> when (kind) {
 				ShaderType.VERTEX -> "gl_Position"
-				ShaderType.FRAGMENT -> "gl_FragColor"
+				ShaderType.FRAGMENT -> gl_FragColor
 			}
 			else -> operand.name
 		}
