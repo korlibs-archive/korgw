@@ -98,8 +98,12 @@ class GlslGenerator(
 				}
 				line(programIndenter)
 			}
-		}.toString()
-
+		}.toString().also {
+            if (Environment["DEBUG_GLSL"] == "true") {
+                println("GlSlGenerator.version: $version")
+                println("GlSlGenerator:\n$it")
+            }
+        }
 	}
 
 	override fun visit(stms: Program.Stm.Stms) {
