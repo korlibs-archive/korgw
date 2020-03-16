@@ -129,10 +129,15 @@ class BrowserGameWindow : GameWindow() {
             }
         }
 
+    @PublishedApi
+    internal var canvasRatio = 1.0
+
     private fun onResized() {
         isTouchDeviceCache = null
-        canvas.width = (window.innerWidth * scaledViewport).toInt()
-        canvas.height = (window.innerHeight * scaledViewport).toInt()
+        val scale = quality.computeTargetScale(window.innerWidth, window.innerHeight, ag.devicePixelRatio)
+        canvasRatio = scale
+        canvas.width = (window.innerWidth * scale).toInt()
+        canvas.height = (window.innerHeight * scale).toInt()
         canvas.style.position = "absolute"
         canvas.style.left = "0"
         canvas.style.right = "0"
@@ -148,11 +153,8 @@ class BrowserGameWindow : GameWindow() {
         dispatch(renderEvent)
     }
 
-    val doQuality get() = quality == GameWindow.Quality.QUALITY
-    val scaledViewport get() = if (doQuality) ag.devicePixelRatio else 1.0
-
-    inline fun transformEventX(x: Number): Double = x.toDouble() * scaledViewport
-    inline fun transformEventY(y: Number): Double = y.toDouble() * scaledViewport
+    inline fun transformEventX(x: Number): Double = x.toDouble() * canvasRatio
+    inline fun transformEventY(y: Number): Double = y.toDouble() * canvasRatio
 
     private fun keyEvent(me: KeyboardEvent) {
         dispatch(keyEvent {

@@ -151,11 +151,35 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 
     val timePerFrame: TimeSpan get() = (1000.0 / (if (fps > 0) fps else 60)).milliseconds
 
+    /**
+     * Describes if the rendering should focus on performance or quality.
+     * [PERFORMANCE] will use lower resolutions, while [QUALITY] will use the devicePixelRatio
+     * to render high quality images.
+     */
     enum class Quality {
+        /** Will render to lower resolutions, ignoring devicePixelRatio on retina-like screens */
         PERFORMANCE,
+        /** Will render to higher resolutions, using devicePixelRatio on retina-like screens */
         QUALITY,
-        //AUTO // @TODO: FAILS ON NATIVE! Because converted into .auto that is a C/C++/Objective-C keyword
-        AUTOMATIC
+        /** Will choose [PERFORMANCE] or [QUALITY] based on some heuristics */
+        AUTOMATIC;
+
+        private val UPPER_BOUND_RENDERED_PIXELS = 4_000_000
+
+        fun computeTargetScale(
+            width: Int,
+            height: Int,
+            devicePixelRatio: Double,
+            targetPixels: Int = UPPER_BOUND_RENDERED_PIXELS
+        ): Double = when (this) {
+            PERFORMANCE -> 1.0
+            QUALITY -> devicePixelRatio
+            AUTOMATIC -> {
+                listOf(devicePixelRatio, 2.0, 1.0)
+                    .firstOrNull { width * height * it <= targetPixels }
+                    ?: 1.0
+            }
+        }
     }
 
     open fun setSize(width: Int, height: Int): Unit = Unit
