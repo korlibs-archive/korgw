@@ -72,55 +72,6 @@ class BrowserGameWindow : GameWindow() {
         }
     }
 
-    init {
-        window.asDynamic().canvas = canvas
-        window.asDynamic().ag = ag
-        window.asDynamic().gl = ag.gl
-        document.body?.appendChild(canvas)
-        document.body?.style?.margin = "0px"
-        document.body?.style?.padding = "0px"
-        document.body?.style?.overflowX = "hidden"
-        document.body?.style?.overflowY = "hidden"
-        canvas.addEventListener("mouseenter", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.ENTER) })
-        canvas.addEventListener("mouseleave", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
-        canvas.addEventListener("mouseover", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
-        canvas.addEventListener("mousemove", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
-        canvas.addEventListener("mouseout", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
-        canvas.addEventListener("mouseup", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.UP) })
-        canvas.addEventListener("mousedown", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.DOWN) })
-        canvas.addEventListener("click", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.CLICK) })
-
-        canvas.addEventListener("touchstart", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.START) })
-        canvas.addEventListener("touchmove", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.MOVE) })
-        canvas.addEventListener("touchend", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.END) })
-        //canvas.addEventListener("touchcancel", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.CANCEL) })
-
-        window.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
-        window.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
-        window.addEventListener("keyup", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
-
-        window.addEventListener("gamepadconnected", { e ->
-            //console.log("gamepadconnected")
-            val e = e.unsafeCast<JsGamepadEvent>()
-            dispatch(gamePadConnectionEvent.apply {
-                this.type = GamePadConnectionEvent.Type.CONNECTED
-                this.gamepad = e.gamepad.index
-            })
-        })
-        window.addEventListener("gamepaddisconnected", { e ->
-            //console.log("gamepaddisconnected")
-            val e = e.unsafeCast<JsGamepadEvent>()
-            dispatch(gamePadConnectionEvent.apply {
-                this.type = GamePadConnectionEvent.Type.DISCONNECTED
-                this.gamepad = e.gamepad.index
-            })
-        })
-
-
-        window.addEventListener("resize", { onResized() })
-        onResized()
-    }
-
     override var quality: Quality = Quality.AUTOMATIC
         set(value) {
             if (field != value) {
@@ -328,7 +279,54 @@ class BrowserGameWindow : GameWindow() {
     }
 
     private lateinit var jsFrame: (Double) -> Unit
+
     init {
+        window.asDynamic().canvas = canvas
+        window.asDynamic().ag = ag
+        window.asDynamic().gl = ag.gl
+        document.body?.appendChild(canvas)
+        document.body?.style?.margin = "0px"
+        document.body?.style?.padding = "0px"
+        document.body?.style?.overflowX = "hidden"
+        document.body?.style?.overflowY = "hidden"
+        canvas.addEventListener("mouseenter", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.ENTER) })
+        canvas.addEventListener("mouseleave", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
+        canvas.addEventListener("mouseover", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
+        canvas.addEventListener("mousemove", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
+        canvas.addEventListener("mouseout", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
+        canvas.addEventListener("mouseup", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.UP) })
+        canvas.addEventListener("mousedown", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.DOWN) })
+        canvas.addEventListener("click", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.CLICK) })
+
+        canvas.addEventListener("touchstart", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.START) })
+        canvas.addEventListener("touchmove", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.MOVE) })
+        canvas.addEventListener("touchend", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.END) })
+        //canvas.addEventListener("touchcancel", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.CANCEL) })
+
+        window.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+        window.addEventListener("keydown", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+        window.addEventListener("keyup", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
+
+        window.addEventListener("gamepadconnected", { e ->
+            //console.log("gamepadconnected")
+            val e = e.unsafeCast<JsGamepadEvent>()
+            dispatch(gamePadConnectionEvent.apply {
+                this.type = GamePadConnectionEvent.Type.CONNECTED
+                this.gamepad = e.gamepad.index
+            })
+        })
+        window.addEventListener("gamepaddisconnected", { e ->
+            //console.log("gamepaddisconnected")
+            val e = e.unsafeCast<JsGamepadEvent>()
+            dispatch(gamePadConnectionEvent.apply {
+                this.type = GamePadConnectionEvent.Type.DISCONNECTED
+                this.gamepad = e.gamepad.index
+            })
+        })
+
+
+        window.addEventListener("resize", { onResized() })
+        onResized()
         jsFrame = { step: Double ->
             updateGamepad()
             coroutineDispatcher.executePending()
