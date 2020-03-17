@@ -439,18 +439,19 @@ abstract class AGOpengl : AG() {
 
                 //println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
 
-                val usedGlSlVersion = GlslGenerator.FORCE_GLSL_VERSION?.toIntOrNull() ?: when (glSlVersion) {
+                val guessedGlSlVersion = glSlVersion ?: gl.versionInt
+                val usedGlSlVersion = GlslGenerator.FORCE_GLSL_VERSION?.toIntOrNull() ?: when (guessedGlSlVersion) {
                     460 -> 460
                     in 300..450 -> 100
-                    else -> glSlVersion
+                    else -> guessedGlSlVersion
                 }
 
                 if (GlslGenerator.DEBUG_GLSL) {
-                    println("GLSL version: requested=$glSlVersion, forced=${GlslGenerator.FORCE_GLSL_VERSION}. decided=$usedGlSlVersion")
+                    println("GLSL version: requested=$glSlVersion, guessed=$guessedGlSlVersion, forced=${GlslGenerator.FORCE_GLSL_VERSION}. used=$usedGlSlVersion")
                 }
 
-                val fragResult = program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion ?: gl.versionInt)
-                val vertResult = program.vertex.toNewGlslStringResult(gles = gles, version = usedGlSlVersion ?: gl.versionInt)
+                val fragResult = program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion)
+                val vertResult = program.vertex.toNewGlslStringResult(gles = gles, version = usedGlSlVersion)
 
                 fragmentShaderId = createShader(gl.FRAGMENT_SHADER, fragResult.result)
                 vertexShaderId = createShader(gl.VERTEX_SHADER, vertResult.result)
