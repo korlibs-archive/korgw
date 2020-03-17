@@ -446,7 +446,7 @@ abstract class AGOpengl : AG() {
                 }
 
                 if (GlslGenerator.DEBUG_GLSL) {
-                    println("Requested GLSL: $glSlVersion, but decided to use: $usedGlSlVersion")
+                    println("GLSL version: requested=$glSlVersion, forced=${GlslGenerator.FORCE_GLSL_VERSION}. decided=$usedGlSlVersion")
                 }
 
                 val fragResult = program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion ?: gl.versionInt)
