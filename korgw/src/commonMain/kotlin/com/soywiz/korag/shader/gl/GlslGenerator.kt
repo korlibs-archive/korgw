@@ -9,21 +9,26 @@ class GlslGenerator(
     @Suppress("unused") val gles: Boolean = true,
     val version: Int = DEFAULT_VERSION
 ) : Program.Visitor<String>("") {
-    val newGlSlVersion: Boolean = version > 120
+    //val newGlSlVersion: Boolean = version > 120
+    val newGlSlVersion: Boolean = false
 
     companion object {
         val DEFAULT_VERSION = 100
+        val FRAGCOLOR = "fragColor"
+        val GL_FRAGCOLOR = "gl_FragColor"
+        val FORCE_GLSL_VERSION get() = Environment["FORCE_GLSL_VERSION"]
+        val DEBUG_GLSL get() = Environment["DEBUG_GLSL"] == "true"
     }
 
     val IN = if (newGlSlVersion) "in" else "attribute"
     val OUT = if (newGlSlVersion) "out" else "varying"
     val UNIFORM = "uniform"
-    val gl_FragColor = if (newGlSlVersion) "fragColor" else "gl_FragColor"
+    val gl_FragColor = if (newGlSlVersion) FRAGCOLOR else GL_FRAGCOLOR
 
-	private val temps = hashSetOf<Temp>()
-	private val attributes = hashSetOf<Attribute>()
-	private val varyings = hashSetOf<Varying>()
-	private val uniforms = hashSetOf<Uniform>()
+	private val temps = LinkedHashSet<Temp>()
+	private val attributes = LinkedHashSet<Attribute>()
+	private val varyings = LinkedHashSet<Varying>()
+	private val uniforms = LinkedHashSet<Uniform>()
 	private var programIndenter = Indenter()
 
 	private fun errorType(type: VarType): Nothing = invalidOp("Don't know how to serialize type $type")
@@ -60,51 +65,68 @@ class GlslGenerator(
 
     val Variable.arrayDecl get() = if (arrayCount != 1) "[$arrayCount]" else ""
 
-	fun generate(root: Program.Stm): String {
-		temps.clear()
-		attributes.clear()
-		varyings.clear()
-		uniforms.clear()
-		programIndenter = Indenter()
-		visit(root)
+    data class Result(
+        val generator: GlslGenerator,
+        val result: String,
+        val attributes: List<Attribute>,
+        val uniforms: List<Uniform>,
+        val varyings: List<Varying>
+    )
 
-		if (kind == ShaderType.FRAGMENT && attributes.isNotEmpty()) {
-			throw RuntimeException("Can't use attributes in fragment shader")
-		}
+    fun generateResult(root: Program.Stm): Result {
+        temps.clear()
+        attributes.clear()
+        varyings.clear()
+        uniforms.clear()
+        programIndenter = Indenter()
 
-		return Indenter {
-			if (gles) {
-				line("#version $version")
-				line("#ifdef GL_ES")
-				indent {
-					line("precision mediump float;")
-					line("precision mediump int;")
-					line("precision lowp sampler2D;")
-					line("precision lowp samplerCube;")
-				}
-				line("#endif")
-			}
+        if (kind == ShaderType.FRAGMENT && newGlSlVersion) {
+            varyings.add(Varying(gl_FragColor, VarType.Float4))
+        }
+        visit(root)
 
-            if (newGlSlVersion) {
-                line("layout(location = 0) $OUT vec4 $gl_FragColor;")
+        if (kind == ShaderType.FRAGMENT && attributes.isNotEmpty()) {
+            throw RuntimeException("Can't use attributes in fragment shader")
+        }
+
+        val result = Indenter {
+            if (gles) {
+                line("#version $version")
+                line("#ifdef GL_ES")
+                indent {
+                    line("precision mediump float;")
+                    line("precision mediump int;")
+                    line("precision lowp sampler2D;")
+                    line("precision lowp samplerCube;")
+                }
+                line("#endif")
             }
-			for (it in attributes) line("$IN ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-			for (it in uniforms) line("$UNIFORM ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-			for (it in varyings) line("$OUT ${typeToString(it.type)} ${it.name};")
 
-			line("void main()") {
-				for (temp in temps) {
-					line(typeToString(temp.type) + " " + temp.name + ";")
-				}
-				line(programIndenter)
-			}
-		}.toString().also {
-            if (Environment["DEBUG_GLSL"] == "true") {
+            for (it in attributes) line("$IN ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+            for (it in uniforms) line("$UNIFORM ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+            for (it in varyings) line("$OUT ${typeToString(it.type)} ${it.name};")
+
+            line("void main()") {
+                for (temp in temps) {
+                    line(typeToString(temp.type) + " " + temp.name + ";")
+                }
+                line(programIndenter)
+            }
+        }.toString().also {
+            if (DEBUG_GLSL) {
                 println("GlSlGenerator.version: $version")
                 println("GlSlGenerator:\n$it")
             }
         }
-	}
+        return Result(
+            this, result,
+            attributes = attributes.toList(),
+            uniforms = uniforms.toList(),
+            varyings = varyings.toList()
+        )
+    }
+
+	fun generate(root: Program.Stm): String = generateResult(root).result
 
 	override fun visit(stms: Program.Stm.Stms) {
 		//programIndenter.line("") {
