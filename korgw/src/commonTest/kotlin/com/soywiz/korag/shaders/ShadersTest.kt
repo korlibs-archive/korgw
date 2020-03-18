@@ -49,10 +49,13 @@ class ShadersTest {
     @Test
     fun testGlslFragmentGenerationNew() {
         assertEqualsShader(fs, version = 330) {
-            +"layout(location = 0) out vec4 fragColor;"
-            "void main()" {
-                +"fragColor = vec4(1, 0, 0, 1);"
+            line("void main()") {
+                line("gl_FragColor = vec4(1, 0, 0, 1);")
             }
+            //+"layout(location = 0) out vec4 fragColor;"
+            //"void main()" {
+            //    +"fragColor = vec4(1, 0, 0, 1);"
+            //}
         }
     }
 
