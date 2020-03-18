@@ -33,15 +33,26 @@ private fun KmlGl.createShader(type: Int, source: String): Int {
 }
 
 // TODO: Release resources on failure
+/*
 fun KmlGl.createProgram(vertex: String, fragment: String): KmlGlProgram {
+    println("************************************************")
 	val program = createProgram()
+    val hasLayout0 = fragment.contains(GlslGenerator.LAYOUT_LOCATION_0)
+    val rfragment = when {
+        //hasLayout0 -> fragment.replace(GlslGenerator.LAYOUT_LOCATION_0, "")
+        else -> fragment
+    }
 	val shaderVertex = createShader(VERTEX_SHADER, vertex)
-	val shaderFragment = createShader(FRAGMENT_SHADER, fragment)
+	val shaderFragment = createShader(FRAGMENT_SHADER, rfragment)
 	attachShader(program, shaderVertex)
 	attachShader(program, shaderFragment)
-	linkProgramAndCheck(program)
+    if (hasLayout0) {
+        bindAttribLocation(program, 0, GlslGenerator.FRAGCOLOR)
+    }
+    linkProgramAndCheck(program)
 	return KmlGlProgram(this, program, shaderVertex, shaderFragment)
 }
+ */
 
 class KmlGlVertexLayout(val program: KmlGlProgram) {
 	data class Element(val index: Int, val size: Int, val type: Int, val pointer: Int, val normalized: Boolean)

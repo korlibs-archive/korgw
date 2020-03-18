@@ -439,16 +439,28 @@ abstract class AGOpengl : AG() {
 
                 //println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
 
-                fragmentShaderId = createShader(
-                    gl.FRAGMENT_SHADER,
-                    program.fragment.toNewGlslString(gles = gles, version = glSlVersion ?: gl.versionInt)
-                )
-                vertexShaderId = createShader(
-                    gl.VERTEX_SHADER,
-                    program.vertex.toNewGlslString(gles = gles, version = glSlVersion ?: gl.versionInt)
-                )
+                val guessedGlSlVersion = glSlVersion ?: gl.versionInt
+                val usedGlSlVersion = GlslGenerator.FORCE_GLSL_VERSION?.toIntOrNull() ?: when (guessedGlSlVersion) {
+                    460 -> 460
+                    in 300..450 -> 100
+                    else -> guessedGlSlVersion
+                }
+
+                if (GlslGenerator.DEBUG_GLSL) {
+                    println("GLSL version: requested=$glSlVersion, guessed=$guessedGlSlVersion, forced=${GlslGenerator.FORCE_GLSL_VERSION}. used=$usedGlSlVersion")
+                }
+
+                val fragResult = program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion)
+                val vertResult = program.vertex.toNewGlslStringResult(gles = gles, version = usedGlSlVersion)
+
+                fragmentShaderId = createShader(gl.FRAGMENT_SHADER, fragResult.result)
+                vertexShaderId = createShader(gl.VERTEX_SHADER, vertResult.result)
                 gl.attachShader(id, fragmentShaderId)
                 gl.attachShader(id, vertexShaderId)
+                if (fragResult.generator.newGlSlVersion) {
+                    //println("****************************")
+                    //gl.bindAttribLocation(id, 0, fragResult.generator.gl_FragColor)
+                }
                 gl.linkProgram(id)
                 tempBuffer1.setInt(0, 0)
                 gl.getProgramiv(id, gl.LINK_STATUS, tempBuffer1)
