@@ -25,9 +25,17 @@ class AndroidGameWindow() : GameWindow() {
     override var icon: Bitmap?
         get() = super.icon
         set(value) {}
-    override var fullscreen: Boolean
-        get() = true
-        set(value) {}
+    override var fullscreen: Boolean = false
+        set(value) {
+            field = value
+            activity.window.decorView.apply {
+                if (value) {
+                    systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                } else {
+                    systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                }
+            }
+        }
     override var visible: Boolean
         get() = super.visible
         set(value) {}
