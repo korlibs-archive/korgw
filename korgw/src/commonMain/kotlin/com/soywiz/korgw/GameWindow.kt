@@ -183,6 +183,8 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     }
 
     open fun setSize(width: Int, height: Int): Unit = Unit
+    // Alias for close
+    fun exit(): Unit = close()
     override suspend fun browse(url: URL): Unit = unsupported()
     override suspend fun alert(message: String): Unit = unsupported()
     override suspend fun confirm(message: String): Boolean = unsupported()

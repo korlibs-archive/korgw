@@ -1,6 +1,8 @@
 package com.soywiz.korgw.x11
 
 import com.soywiz.kgl.KmlGl
+import com.soywiz.kmem.arrayfill
+import com.soywiz.kmem.write32LE
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
@@ -10,7 +12,11 @@ import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
+import com.soywiz.korio.file.std.localCurrentDirVfs
+import com.soywiz.korio.file.std.localVfs
+import com.soywiz.korio.file.std.rootLocalVfs
 import com.soywiz.korio.net.URL
+import com.sun.jna.Memory
 import com.sun.jna.NativeLong
 import com.sun.jna.platform.unix.X11.*
 
@@ -48,33 +54,30 @@ class X11OpenglContext(val d: Display?, val w: Window?, val doubleBuffered: Bool
 
 class X11GameWindow : GameWindow() {
     override val ag: X11Ag by lazy { X11Ag(this) }
-    override var fps: Int
-        get() = super.fps
-        set(value) {}
+    override var fps: Int = 60
+    override var width: Int = 200; private set
+    override var height: Int = 200; private set
     override var title: String = "Korgw"
         set(value) {
             field = value
-            if (w != null) {
-                X.XStoreName(d, w, title)
-                X.XSetIconName(d, w, title)
-            } else {
-                println("NO WINDOW!")
-            }
+            realSetTitle(value)
         }
-    override var width: Int = 200; private set
-    override var height: Int = 200; private set
-    override var icon: Bitmap?
-        get() = super.icon
-        set(value) {}
-    override var fullscreen: Boolean
-        get() = super.fullscreen
-        set(value) {}
-    override var visible: Boolean
-        get() = super.visible
-        set(value) {}
-    override var quality: Quality
-        get() = super.quality
-        set(value) {}
+    override var icon: Bitmap? = null
+        set(value) {
+            field = value
+            realSetIcon(value)
+        }
+    override var fullscreen: Boolean = false
+        set(value) {
+            field = value
+            realSetFullscreen(value)
+        }
+    override var visible: Boolean = true
+        set(value) {
+            field = value
+            realSetVisible(value)
+        }
+    override var quality: Quality = Quality.AUTOMATIC
 
     override fun setSize(width: Int, height: Int) {
         this.width = width
@@ -82,27 +85,44 @@ class X11GameWindow : GameWindow() {
     }
 
     override suspend fun browse(url: URL) {
-        // system("open https://your.domain/uri");
-        //Shell32.ShellExecute()
-        //ShellExecute(0, 0, L"http://www.google.com", 0, 0 , SW_SHOW );
-
-        super.browse(url)
+        localCurrentDirVfs.exec(listOf("xdg-open", url.toString()))
     }
 
     override suspend fun alert(message: String) {
-        return super.alert(message)
+        localCurrentDirVfs.exec(listOf("zenity", "--warning", "--text=$message"))
     }
 
-    override suspend fun confirm(message: String): Boolean {
-        return super.confirm(message)
-    }
+    override suspend fun confirm(message: String): Boolean =
+        localCurrentDirVfs.exec(listOf("zenity", "--question", "--text=$message")) == 0
 
-    override suspend fun prompt(message: String, default: String): String {
-        return super.prompt(message, default)
+    override suspend fun prompt(message: String, default: String): String = try {
+        localCurrentDirVfs.execToString(
+            listOf(
+                "zenity",
+                "--question",
+                "--text=$message",
+                "--entry-text=$default"
+            )
+        )
+    } catch (e: Throwable) {
+        e.printStackTrace()
+        ""
     }
 
     override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
-        return super.openFileDialog(filter, write, multi)
+        return localCurrentDirVfs.execToString(com.soywiz.korio.util.buildList<String> {
+            add("zenity")
+            add("--file-selection")
+            if (multi) add("--multiple")
+            if (write) add("--save")
+            if (filter != null) {
+                //add("--file-filter=$filter")
+            }
+        })
+            .split("\n")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { localVfs(it.trim()) }
     }
 
     var exiting = false
@@ -116,6 +136,45 @@ class X11GameWindow : GameWindow() {
     var root: Window? = null
     var w: Window? = null
     var s: Int = 0
+
+    fun realSetTitle(title: String): Unit = X.run {
+        if (d == null || w == null) return@run
+        //X.XSetWMIconName(d, w, )
+        X.XStoreName(d, w, title)
+        X.XSetIconName(d, w, title)
+    }
+
+    fun realSetIcon(value: Bitmap?): Unit = X.run {
+        if (d == null || w == null || value == null) return@run
+        val property = XInternAtom(d, "_NET_WM_ICON", false)
+        val bmp = value.toBMP32()
+        val VSIZE = NativeLong.SIZE
+        val bytes = ByteArray((bmp.area + 2) * VSIZE)
+        bytes.write32LE(0, bmp.width)
+        bytes.write32LE(VSIZE, bmp.height)
+        for (n in 0 until bmp.area) {
+            val pos = VSIZE * (2 + n)
+            val c = bmp.data[n]
+            bytes[pos + 0] = c.r.toByte()
+            bytes[pos + 1] = c.g.toByte()
+            bytes[pos + 2] = c.b.toByte()
+            bytes[pos + 3] = c.a.toByte()
+        }
+        val mem = Memory((bytes.size * 8).toLong())
+        mem.write(0L, bytes, 0, bytes.size)
+        XChangeProperty(
+            d, w, property, XA_CARDINAL, 32, PropModeReplace,
+            mem, bytes.size / NativeLong.SIZE
+        )
+    }
+
+    // https://stackoverflow.com/questions/9065669/x11-glx-fullscreen-mode
+    fun realSetFullscreen(value: Boolean): Unit = X.run {
+        if (d == null || w == null) return@run
+    }
+    fun realSetVisible(value: Boolean): Unit = X.run {
+        if (d == null || w == null) return@run
+    }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         launchImmediately(coroutineDispatcher) {
@@ -142,9 +201,11 @@ class X11GameWindow : GameWindow() {
                 d, XRootWindow(d, s),
                 winX, winY,
                 width, height,
-                1,
+                2,
                 XBlackPixel(d, s), XWhitePixel(d, s)
             )
+            //val attr = XSetWindowAttributes().apply { autoWrite() }.apply { autoRead() }
+            //XChangeWindowAttributes(d, w, NativeLong(0L), attr)
 
             val eventMask = NativeLong(
                 (ExposureMask
@@ -162,9 +223,11 @@ class X11GameWindow : GameWindow() {
             )
 
             XSelectInput(d, w, eventMask)
-            XStoreName(d, w, title)
-            XSetIconName(d, w, title)
             XMapWindow(d, w)
+            realSetIcon(icon)
+            realSetVisible(fullscreen)
+            realSetVisible(visible)
+            realSetTitle(title)
 
             val doubleBuffered = false
             //val doubleBuffered = true
@@ -192,8 +255,8 @@ class X11GameWindow : GameWindow() {
                 ctx.swapBuffers()
             }
 
+            val e = XEvent()
             loop@ while (running) {
-                val e = XEvent()
                 if (XPending(d) == 0) {
                     if (elapsedSinceLastRenderTime() >= timePerFrame.nanoseconds.toLong()) {
                         render(doUpdate = true)
@@ -229,6 +292,15 @@ class X11GameWindow : GameWindow() {
                     }
                     MotionNotify, ButtonPress, ButtonRelease -> {
                         val mot = MyXMotionEvent(e.pointer)
+                        //val mot = e.xmotion
+                        val but = e.xbutton
+                        val scrollDeltaX = 0.0
+                        val scrollDeltaY = 0.0
+                        val scrollDeltaZ = 0.0
+                        val isShiftDown = false
+                        val isCtrlDown = false
+                        val isAltDown = false
+                        val isMetaDown = false
                         val ev = when (e.type) {
                             MotionNotify -> MouseEvent.Type.MOVE
                             ButtonPress -> MouseEvent.Type.DOWN

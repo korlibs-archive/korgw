@@ -7,6 +7,7 @@ import com.soywiz.korgw.platform.KStructure
 import com.soywiz.korgw.platform.NativeKgl
 import com.sun.jna.Library
 import com.sun.jna.Native
+import com.sun.jna.NativeLong
 import com.sun.jna.Pointer
 import com.sun.jna.platform.unix.X11
 
@@ -579,6 +580,16 @@ internal object X : X11Impl by Native.load("X11", X11Impl::class.java),
     GL by Native.load("GL", GL::class.java)
 
 internal interface X11Impl : X11 {
+    fun XCreateWindow(
+        display: X11.Display, parent: X11.Window,
+        x: Int, y: Int, width: Int, height: Int,
+        border_width: Int, depth: Int, clazz: Int, visual: X11.Visual,
+        valuemask: NativeLong,
+        attributes: X11.XSetWindowAttributes
+    ): X11.Window
+    //Window XCreateSimpleWindow(Display display, Window parent, int x, int y,
+    //int width, int height, int border_width,
+    //int border, int background);
     fun XDefaultGC(display: X11.Display?, scn: Int): X11.GC?
     fun XBlackPixel(display: X11.Display?, scn: Int): Int
     fun XWhitePixel(display: X11.Display?, scn: Int): Int
