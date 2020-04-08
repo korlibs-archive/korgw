@@ -212,10 +212,18 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         }
     }
 
-    open fun frame() {
+    fun frame(doUpdate: Boolean = true) {
+        frameRender()
+        if (doUpdate) {
+            frameUpdate()
+        }
+    }
+    open fun frameRender() {
         coroutineDispatcher.executePending()
         ag.onRender(ag)
         dispatchRenderEvent()
+    }
+    open fun frameUpdate() {
     }
 
     fun dispatchInitEvent() {

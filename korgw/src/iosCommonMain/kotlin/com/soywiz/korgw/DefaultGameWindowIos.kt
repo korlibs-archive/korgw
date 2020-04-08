@@ -36,7 +36,7 @@ class IosGameWindow : GameWindow() {
         }
     }
 
-    override fun frame() {
+    override fun frameRender() {
         try {
             //println("frame[0]")
             coroutineDispatcher.executePending()
