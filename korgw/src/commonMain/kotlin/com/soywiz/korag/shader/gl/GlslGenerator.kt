@@ -91,7 +91,7 @@ class GlslGenerator(
 
         val result = Indenter {
             if (gles) {
-                line("#version $version")
+                line("#version $version compatibility")
                 line("#ifdef GL_ES")
                 indent {
                     line("precision mediump float;")
@@ -104,7 +104,13 @@ class GlslGenerator(
 
             for (it in attributes) line("$IN ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
             for (it in uniforms) line("$UNIFORM ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-            for (it in varyings) line("$OUT ${typeToString(it.type)} ${it.name};")
+            for (it in varyings) {
+                if (newGlSlVersion && it.name == gl_FragColor) {
+                    line("layout(location=0) $OUT ${typeToString(it.type)} ${it.name};")
+                } else {
+                    line("$OUT ${typeToString(it.type)} ${it.name};")
+                }
+            }
 
             line("void main()") {
                 for (temp in temps) {
