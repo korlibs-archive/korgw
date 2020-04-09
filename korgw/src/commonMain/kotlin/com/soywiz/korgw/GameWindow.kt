@@ -9,6 +9,8 @@ import com.soywiz.korim.bitmap.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
+import com.soywiz.korio.file.std.localCurrentDirVfs
+import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
 import kotlinx.coroutines.*
@@ -185,11 +187,6 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open fun setSize(width: Int, height: Int): Unit = Unit
     // Alias for close
     fun exit(): Unit = close()
-    override suspend fun browse(url: URL): Unit = unsupported()
-    override suspend fun alert(message: String): Unit = unsupported()
-    override suspend fun confirm(message: String): Boolean = unsupported()
-    override suspend fun prompt(message: String, default: String): String = unsupported()
-    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> = unsupported()
 
     var running = true; protected set
     override fun close() = run {
@@ -366,6 +363,56 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             }
         })
         */
+    }
+}
+
+open class ZenityDialogs : DialogInterface {
+    open suspend fun exec(vararg args: String): String {
+        return localCurrentDirVfs.execToString(args.toList())
+    }
+
+    override suspend fun browse(url: URL) {
+        exec("xdg-open", url.toString())
+    }
+
+    override suspend fun alert(message: String) {
+        exec("zenity", "--warning", "--text=$message")
+    }
+
+    override suspend fun confirm(message: String): Boolean =
+        try {
+            exec("zenity", "--question", "--text=$message")
+            true
+        } catch (e: Throwable) {
+            false
+        }
+
+    override suspend fun prompt(message: String, default: String): String = try {
+        exec(
+            "zenity",
+            "--question",
+            "--text=$message",
+            "--entry-text=$default"
+        )
+    } catch (e: Throwable) {
+        e.printStackTrace()
+        ""
+    }
+
+    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
+        return exec(*com.soywiz.korio.util.buildList<String> {
+            add("zenity")
+            add("--file-selection")
+            if (multi) add("--multiple")
+            if (write) add("--save")
+            if (filter != null) {
+                //add("--file-filter=$filter")
+            }
+        }.toTypedArray())
+            .split("\n")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { localVfs(it.trim()) }
     }
 }
 

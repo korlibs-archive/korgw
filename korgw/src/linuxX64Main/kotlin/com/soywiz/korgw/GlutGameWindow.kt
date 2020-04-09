@@ -1,5 +1,6 @@
 package com.soywiz.korgw
 
+/*
 import GL.*
 import com.soywiz.korag.*
 import com.soywiz.korev.*
@@ -10,7 +11,7 @@ import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
-class GlutGameWindow : GameWindow() {
+class GlutGameWindow : GameWindow(), DialogInterface by ZenityDialogs {
     val agNativeComponent = Any()
     override val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 
@@ -76,26 +77,6 @@ class GlutGameWindow : GameWindow() {
         glutPositionWindow((screenWidth - width) / 2, (screenHeight - height) / 2)
     }
 
-    override suspend fun browse(url: URL) {
-        super.browse(url)
-    }
-
-    override suspend fun alert(message: String) {
-        super.alert(message)
-    }
-
-    override suspend fun confirm(message: String): Boolean {
-        return super.confirm(message)
-    }
-
-    override suspend fun prompt(message: String, default: String): String {
-        return super.prompt(message, default)
-    }
-
-    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
-        return super.openFileDialog(filter, write, multi)
-    }
-
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         memScoped {
             val argc = alloc<IntVar>().apply { value = 0 }
@@ -114,7 +95,7 @@ class GlutGameWindow : GameWindow() {
         glutPassiveMotionFunc(staticCFunction(::glutMouseMove))
         glutMouseFunc(staticCFunction(::glutMouse))
         glutKeyboardFunc(staticCFunction(::glutKeyDown))
-        glutKeyboardFunc(staticCFunction(::glutKeyUp))
+        glutKeyboardUpFunc(staticCFunction(::glutKeyUp))
 
         ag.__ready()
         var running = true
@@ -241,3 +222,4 @@ internal val KeyCodesToKeys = mapOf(
     32 to Key.ENTER,
     27 to Key.ESCAPE
 )
+*/

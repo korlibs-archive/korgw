@@ -7,7 +7,9 @@ import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korev.MouseEvent
+import com.soywiz.korgw.DialogInterface
 import com.soywiz.korgw.GameWindow
+import com.soywiz.korgw.ZenityDialogs
 import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
@@ -52,7 +54,7 @@ class X11OpenglContext(val d: Display?, val w: Window?, val doubleBuffered: Bool
     }
 }
 
-class X11GameWindow : GameWindow() {
+class X11GameWindow : GameWindow(), DialogInterface by ZenityDialogs() {
     override val ag: X11Ag by lazy { X11Ag(this) }
     override var fps: Int = 60
     override var width: Int = 200; private set
@@ -84,68 +86,21 @@ class X11GameWindow : GameWindow() {
         this.height = height
     }
 
-    override suspend fun browse(url: URL) {
-        localCurrentDirVfs.exec(listOf("xdg-open", url.toString()))
-    }
-
-    override suspend fun alert(message: String) {
-        localCurrentDirVfs.exec(listOf("zenity", "--warning", "--text=$message"))
-    }
-
-    override suspend fun confirm(message: String): Boolean =
-        localCurrentDirVfs.exec(listOf("zenity", "--question", "--text=$message")) == 0
-
-    override suspend fun prompt(message: String, default: String): String = try {
-        localCurrentDirVfs.execToString(
-            listOf(
-                "zenity",
-                "--question",
-                "--text=$message",
-                "--entry-text=$default"
-            )
-        )
-    } catch (e: Throwable) {
-        e.printStackTrace()
-        ""
-    }
-
-    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
-        return localCurrentDirVfs.execToString(com.soywiz.korio.util.buildList<String> {
-            add("zenity")
-            add("--file-selection")
-            if (multi) add("--multiple")
-            if (write) add("--save")
-            if (filter != null) {
-                //add("--file-filter=$filter")
-            }
-        })
-            .split("\n")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .map { localVfs(it.trim()) }
-    }
-
-    var exiting = false
-
-    override fun close() {
-        super.close()
-        exiting = true
-    }
-
     var d: Display? = null
     var root: Window? = null
+    val NilWin: Window? = null
     var w: Window? = null
     var s: Int = 0
 
     fun realSetTitle(title: String): Unit = X.run {
-        if (d == null || w == null) return@run
+        if (d == null || w == NilWin) return@run
         //X.XSetWMIconName(d, w, )
         X.XStoreName(d, w, title)
         X.XSetIconName(d, w, title)
     }
 
     fun realSetIcon(value: Bitmap?): Unit = X.run {
-        if (d == null || w == null || value == null) return@run
+        if (d == null || w == NilWin || value == null) return@run
         val property = XInternAtom(d, "_NET_WM_ICON", false)
         val bmp = value.toBMP32()
         val VSIZE = NativeLong.SIZE
@@ -170,18 +125,19 @@ class X11GameWindow : GameWindow() {
 
     // https://stackoverflow.com/questions/9065669/x11-glx-fullscreen-mode
     fun realSetFullscreen(value: Boolean): Unit = X.run {
-        if (d == null || w == null) return@run
+        if (d == null || w == NilWin) return@run
     }
     fun realSetVisible(value: Boolean): Unit = X.run {
-        if (d == null || w == null) return@run
+        if (d == null || w == NilWin) return@run
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        launchImmediately(coroutineDispatcher) {
-            entry()
-        }
-
         X.apply {
+            // Required here so setSize is called
+            launchImmediately(coroutineDispatcher) {
+                entry()
+            }
+
             d = XOpenDisplay(null) ?: error("Can't open main display")
             s = XDefaultScreen(d)
             root = XDefaultRootWindow(d)
@@ -195,13 +151,13 @@ class X11GameWindow : GameWindow() {
             val winX = screenWidth / 2 - width / 2
             val winY = screenHeight / 2 - height / 2
 
-            println("screenWidth: $screenWidth, screenHeight: $screenHeight, winX=$winX, winY=$winY")
+            println("screenWidth: $screenWidth, screenHeight: $screenHeight, winX=$winX, winY=$winY, width=$width, height=$height")
 
             w = XCreateSimpleWindow(
                 d, XRootWindow(d, s),
                 winX, winY,
                 width, height,
-                2,
+                1,
                 XBlackPixel(d, s), XWhitePixel(d, s)
             )
             //val attr = XSetWindowAttributes().apply { autoWrite() }.apply { autoRead() }
@@ -233,8 +189,6 @@ class X11GameWindow : GameWindow() {
             //val doubleBuffered = true
             val ctx = X11OpenglContext(d, w, doubleBuffered = doubleBuffered)
             ctx.makeCurrent()
-
-            var running = true
 
             val wmDeleteMessage = XInternAtom(d, "WM_DELETE_WINDOW", false)
             if (wmDeleteMessage != null) {
@@ -269,7 +223,7 @@ class X11GameWindow : GameWindow() {
                 XNextEvent(d, e)
                 when (e.type) {
                     Expose -> if (e.xexpose.count == 0) render(doUpdate = false)
-                    ClientMessage, DestroyNotify -> running = false
+                    ClientMessage, DestroyNotify -> close()
                     ConfigureNotify -> {
                         val conf = XConfigureEvent(e.pointer)
                         width = conf.width
@@ -284,7 +238,7 @@ class X11GameWindow : GameWindow() {
                         val pressing = e.type == KeyPress
                         val ev =
                             if (pressing) com.soywiz.korev.KeyEvent.Type.DOWN else com.soywiz.korev.KeyEvent.Type.UP
-                        val keyCode = XKeyEvent(e.pointer).keycode
+                        val keyCode = XKeyEvent(e.pointer).keycode.toInt()
                         val kkey = XK_KeyMap[XLookupKeysym(e, 0)] ?: Key.UNKNOWN
                         //println("KEY: $ev, ${keyCode.toChar()}, $kkey, $keyCode, keySym=$keySym")
                         dispatchKeyEvent(ev, 0, keyCode.toChar(), kkey, keyCode)

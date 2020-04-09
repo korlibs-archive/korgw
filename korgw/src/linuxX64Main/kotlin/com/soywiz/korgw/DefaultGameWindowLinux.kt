@@ -10,6 +10,6 @@ import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
-actual fun CreateDefaultGameWindow(): GameWindow = glutGameWindow
-//actual fun CreateDefaultGameWindow(): GameWindow = X11GameWindow()
+//actual fun CreateDefaultGameWindow(): GameWindow = glutGameWindow
+actual fun CreateDefaultGameWindow(): GameWindow = X11GameWindow()
 
