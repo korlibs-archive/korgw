@@ -267,13 +267,6 @@ class AwtGameWindow : GameWindow() {
         return super.openFileDialog(filter, write, multi)
     }
 
-    var exiting = false
-
-    override fun close() {
-        super.close()
-        exiting = true
-    }
-
     fun dispatchReshapeEvent() {
         val factor = frameScaleFactor
         dispatchReshapeEvent(
@@ -295,7 +288,7 @@ class AwtGameWindow : GameWindow() {
 
         frame.addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {
-                exiting = true
+                running = false
             }
         })
 
@@ -375,17 +368,21 @@ class AwtGameWindow : GameWindow() {
             frame.isVisible = true
         }
 
-        while (!exiting) {
+        while (running) {
             //frame.invalidate()
             EventQueue.invokeLater {
                 frame.repaint()
             }
-            Thread.sleep((1000 / fps).toLong())
+
+            Thread.sleep(timePerFrame.millisecondsLong)
         }
 
         dispatchDestroyEvent()
 
-        exitProcess(0)
+        frame.isVisible = false
+        frame.dispose()
+
+        //exitProcess(0) // Don't do this since we might continue in the e2e test
     }
 }
 
