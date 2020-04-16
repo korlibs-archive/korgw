@@ -7,7 +7,8 @@ import com.soywiz.korio.util.*
 class GlslGenerator constructor(
     val kind: ShaderType,
     @Suppress("unused") val gles: Boolean = true,
-    val version: Int = DEFAULT_VERSION
+    val version: Int = DEFAULT_VERSION,
+    val compatibility: Boolean = true
 ) : Program.Visitor<String>("") {
     //val newGlSlVersion: Boolean = version > 120
     val newGlSlVersion: Boolean = false
@@ -91,7 +92,7 @@ class GlslGenerator constructor(
 
         val result = Indenter {
             if (gles) {
-                if (version != 100) {
+                if (compatibility) {
                     line("#version $version compatibility")
                 } else {
                     line("#version $version")
