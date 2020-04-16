@@ -131,24 +131,20 @@ class AwtGameWindow : GameWindow() {
                             override fun useContext(obj: Any?, action: Runnable) {
                                 invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, action)
                             }
-
-                            override fun makeCurrent() {
-                            }
-
-                            override fun releaseCurrent() {
-                            }
-
-                            override fun swapBuffers() {
-                            }
+                            override fun makeCurrent() = Unit
+                            override fun releaseCurrent() = Unit
+                            override fun swapBuffers() = Unit
                         }
                     }
                     OS.isWindows -> Win32OpenglContext(
-                        WinDef.HWND(Native.getComponentPointer(frame)), doubleBuffered = true
+                        WinDef.HWND(Native.getComponentPointer(frame)),
+                        doubleBuffered = true
                     )
                     else -> {
                         val d = X.XOpenDisplay(null)
-                        X11.Display()
-                        X11OpenglContext(d, X11.Window(Native.getWindowID(frame)))
+                        val winId = Native.getWindowID(frame)
+                        println("winId: $winId")
+                        X11OpenglContext(d, X11.Window(winId))
                     }
                 }
             }
@@ -161,6 +157,7 @@ class AwtGameWindow : GameWindow() {
                     dispatchReshapeEvent()
                 }
 
+                //println("RENDER[1]")
 
                 //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
                 gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())

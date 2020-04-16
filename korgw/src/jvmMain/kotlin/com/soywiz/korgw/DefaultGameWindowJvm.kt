@@ -27,9 +27,13 @@ actual fun CreateDefaultGameWindow(): GameWindow {
         ?: System.getProperty("korgw.jvm.engine")
         //?: "jogl"
         //?: "jna"
-        ?: "awt"
+        ?: "default"
 
     return when (engine) {
+        "default" -> when {
+            OS.isLinux -> X11GameWindow()
+            else -> AwtGameWindow()
+        }
         "jna" -> when {
             OS.isMac -> {
                 when {

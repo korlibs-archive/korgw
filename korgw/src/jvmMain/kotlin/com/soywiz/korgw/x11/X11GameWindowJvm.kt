@@ -17,6 +17,7 @@ import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.file.std.localCurrentDirVfs
 import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.file.std.rootLocalVfs
+import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.URL
 import com.sun.jna.Memory
 import com.sun.jna.NativeLong
@@ -26,32 +27,6 @@ import com.sun.jna.platform.unix.X11.*
 class X11Ag(val window: X11GameWindow, override val gl: KmlGl = X11KmlGl) : AGOpengl() {
     override val gles: Boolean = true
     override val nativeComponent: Any = window
-}
-
-// https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
-class X11OpenglContext(val d: Display?, val w: Window?, val doubleBuffered: Boolean = true) : BaseOpenglContext {
-    val vi = X.glXChooseVisual(d, 0, intArrayOf(
-        GLX_RGBA,
-        GLX_DEPTH_SIZE, 24,
-        *(if (doubleBuffered) intArrayOf(GLX_DOUBLEBUFFER) else intArrayOf()),
-        None
-    ))
-    val glc = X.glXCreateContext(d, vi, null, true)
-
-    init {
-        println("VI: $vi, d: $d, w: $w, glc: $glc")
-        makeCurrent()
-        println("GL_VENDOR: " + X.glGetString(GL.GL_VENDOR))
-        println("GL_VERSION: " + X.glGetString(GL.GL_VERSION))
-    }
-
-    override fun makeCurrent() {
-        X.glXMakeCurrent(d, w, glc)
-    }
-
-    override fun swapBuffers() {
-        X.glXSwapBuffers(d, w)
-    }
 }
 
 class X11GameWindow : GameWindow(), DialogInterface by ZenityDialogs() {
