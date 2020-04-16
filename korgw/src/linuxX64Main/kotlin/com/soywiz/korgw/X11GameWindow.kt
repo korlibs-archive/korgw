@@ -297,8 +297,11 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
                         1 -> MouseButton.LEFT
                         2 -> MouseButton.MIDDLE
                         3 -> MouseButton.RIGHT
+                        // http://who-t.blogspot.com/2011/09/whats-new-in-xi-21-smooth-scrolling.html
                         4 -> MouseButton.BUTTON4 // WHEEL_UP!
                         5 -> MouseButton.BUTTON5 // WHEEL_DOWN!
+                        6 -> MouseButton.BUTTON6 // WHEEL_LEFT!
+                        7 -> MouseButton.BUTTON7 // WHEEL_RIGHT!
                         else -> MouseButton.BUTTON_UNKNOWN
                     }
                     //println(XMotionEvent().size())
