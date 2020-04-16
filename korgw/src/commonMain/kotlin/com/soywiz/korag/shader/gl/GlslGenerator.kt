@@ -91,7 +91,11 @@ class GlslGenerator(
 
         val result = Indenter {
             if (gles) {
+                line("#ifdef GL_compatibility_profile")
                 line("#version $version compatibility")
+                line("#else")
+                line("#version $version")
+                line("#endif")
                 line("#ifdef GL_ES")
                 indent {
                     line("precision mediump float;")
