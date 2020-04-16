@@ -273,7 +273,7 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
                         if (pressing) com.soywiz.korev.KeyEvent.Type.DOWN else com.soywiz.korev.KeyEvent.Type.UP
                     val keyCode = e.xkey.keycode.toInt()
                     val kkey = XK_KeyMap[XLookupKeysym(e.xkey.ptr, 0).toInt()] ?: Key.UNKNOWN
-                    println("KEY: $ev, ${keyCode.toChar()}, $kkey, $keyCode, keySym=$kkey")
+                    //println("KEY: $ev, ${keyCode.toChar()}, $kkey, $keyCode, keySym=$kkey")
                     dispatchKeyEvent(ev, 0, keyCode.toInt().toChar(), kkey, keyCode.toInt().convert())
                     //break@loop
                 }
