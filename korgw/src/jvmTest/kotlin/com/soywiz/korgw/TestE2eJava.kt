@@ -61,15 +61,17 @@ class TestE2eJava {
                 }
                 //println("HELLO")
             }
+
+            if (exception != null) {
+                throw exception!!
+            }
+
             assertEquals(1, step)
 
             // @TODO: Ignore colors for now. Just ensure that
 
             //assertEquals(Colors.RED, bmp[0, 63])
             //assertEquals(Colors.DARKGREY, bmp[63, 0])
-            if (exception != null) {
-                throw exception!!
-            }
         }
     }
 }
