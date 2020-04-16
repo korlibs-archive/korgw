@@ -282,6 +282,8 @@ class WindowsGameWindow : GameWindow() {
                     tryRender()
                 }
             }
+
+            //DestroyWindow(hwnd)
         }
     }
 
