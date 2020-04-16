@@ -28,6 +28,8 @@ jobs:
         shell: cmd
       - run: CALL gradlew.bat --no-daemon jvmTest
         shell: cmd
+      - run: SET NO_HEADLESS_TEST=true
+        shell: cmd
       - run: CALL gradlew.bat --no-daemon assemble check -x jsBrowserTest -x jsNodeTest
         shell: cmd
 
@@ -52,4 +54,4 @@ jobs:
       #- { uses: actions/cache@v1, with: { path: '~/.konan', key: "${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-konan-" } }
       - run: ./gradlew --no-daemon
       - run: ./gradlew --no-daemon jvmTest
-      - run: xvfb-run --auto-servernum ./gradlew --no-daemon check lint testDebugUnitTest -x jsBrowserTest -x jsNodeTest
+      - run: NO_HEADLESS_TEST=true xvfb-run --auto-servernum ./gradlew --no-daemon check lint testDebugUnitTest -x jsBrowserTest -x jsNodeTest
