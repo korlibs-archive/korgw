@@ -41,7 +41,7 @@ jobs:
       #- { uses: actions/cache@v1, with: { path: '~/.gradle/caches', key: "${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-gradle-" } }
       #- { uses: actions/cache@v1, with: { path: '~/.konan', key: "${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-konan-" } }
       - run: ./gradlew --no-daemon
-      - run: ./gradlew --no-daemon jvmTest
+      - run: NO_HEADLESS_TEST=true ./gradlew --no-daemon jvmTest
       - run: ./gradlew --no-daemon check -x jsBrowserTest -x jsNodeTest
 
   test-linux:
@@ -53,5 +53,5 @@ jobs:
       #- { uses: actions/cache@v1, with: { path: '~/.gradle/caches', key: "${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-gradle-" } }
       #- { uses: actions/cache@v1, with: { path: '~/.konan', key: "${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-konan-" } }
       - run: ./gradlew --no-daemon
-      - run: ./gradlew --no-daemon jvmTest
-      - run: NO_HEADLESS_TEST=true xvfb-run --auto-servernum ./gradlew --no-daemon check lint testDebugUnitTest -x jsBrowserTest -x jsNodeTest
+      - run: NO_HEADLESS_TEST=true xvfb-run --auto-servernum ./gradlew --no-daemon jvmTest
+      - run: ./gradlew --no-daemon check lint testDebugUnitTest -x jsBrowserTest -x jsNodeTest
