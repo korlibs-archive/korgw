@@ -76,7 +76,7 @@ class TestE2eJava {
 
         // @TODO: Ignore colors for now. Just ensure that
 
-        //assertEquals(Colors.RED, bmp[0, 63])
-        //assertEquals(Colors.DARKGREY, bmp[63, 0])
+        assertEquals(Colors.RED, bmp[0, 63])
+        assertEquals(Colors.DARKGREY, bmp[63, 0])
     }
 }
