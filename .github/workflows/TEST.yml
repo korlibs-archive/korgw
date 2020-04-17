@@ -16,6 +16,9 @@ on:
       - 'docs/**'
       - 'old/**'
 
+env:
+  NO_HEADLESS_TEST: true
+
 jobs:
   test-windows:
     runs-on: windows-latest
@@ -25,8 +28,6 @@ jobs:
       #- { uses: actions/cache@v1, with: { path: '~/.gradle/caches', key: "${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-gradle-" } }
       #- { uses: actions/cache@v1, with: { path: '~/.konan', key: "${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-konan-" } }
       - run: CALL gradlew.bat --no-daemon
-        shell: cmd
-      - run: SET NO_HEADLESS_TEST=true
         shell: cmd
       - run: CALL gradlew.bat --no-daemon jvmTest
         shell: cmd
@@ -41,8 +42,8 @@ jobs:
       #- { uses: actions/cache@v1, with: { path: '~/.gradle/caches', key: "${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-gradle-" } }
       #- { uses: actions/cache@v1, with: { path: '~/.konan', key: "${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-konan-" } }
       - run: ./gradlew --no-daemon
-      - run: NO_HEADLESS_TEST=true ./gradlew --no-daemon jvmTest
-      - run: NO_HEADLESS_TEST=true ./gradlew --no-daemon check -x jsBrowserTest -x jsNodeTest
+      - run: ./gradlew --no-daemon jvmTest
+      - run: ./gradlew --no-daemon check -x jsBrowserTest -x jsNodeTest
 
   test-linux:
     runs-on: ubuntu-latest
@@ -53,5 +54,5 @@ jobs:
       #- { uses: actions/cache@v1, with: { path: '~/.gradle/caches', key: "${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-gradle-" } }
       #- { uses: actions/cache@v1, with: { path: '~/.konan', key: "${{ runner.os }}-konan-${{ hashFiles('**/*.gradle*') }}", restore-keys: "${{ runner.os }}-konan-" } }
       - run: ./gradlew --no-daemon
-      - run: NO_HEADLESS_TEST=true xvfb-run --auto-servernum ./gradlew --no-daemon jvmTest
-      - run: NO_HEADLESS_TEST=true xvfb-run --auto-servernum ./gradlew --no-daemon check lint testDebugUnitTest -x jsBrowserTest -x jsNodeTest
+      - run: xvfb-run --auto-servernum ./gradlew --no-daemon jvmTest
+      - run: xvfb-run --auto-servernum ./gradlew --no-daemon check lint testDebugUnitTest -x jsBrowserTest -x jsNodeTest
