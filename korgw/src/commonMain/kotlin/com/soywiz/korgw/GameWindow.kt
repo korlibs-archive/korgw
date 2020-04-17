@@ -23,6 +23,7 @@ interface DialogInterface {
     suspend fun alert(message: String): Unit = unsupported()
     suspend fun confirm(message: String): Boolean = unsupported()
     suspend fun prompt(message: String, default: String = ""): String = unsupported()
+    // @TODO: Provide current directory
     suspend fun openFileDialog(filter: String? = null, write: Boolean = false, multi: Boolean = false): List<VfsFile> =
         unsupported()
 }

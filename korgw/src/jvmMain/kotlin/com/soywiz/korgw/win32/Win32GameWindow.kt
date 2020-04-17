@@ -42,14 +42,18 @@ interface Win32GL : INativeGL, Library {
         private fun OpenglLoadProxy(): Win32GL {
             val funcs = LinkedHashMap<Method, Function>()
             val classLoader = Win32KmlGl::class.java.classLoader
-            val opengl32Lib = com.sun.jna.NativeLibrary.getInstance("opengl32")
+            val opengl32Lib = NativeLibrary.getInstance("opengl32")
             return Proxy.newProxyInstance(
                 classLoader,
                 arrayOf(Win32GL::class.java)
             ) { obj: Any?, method: Method, args: Array<Any?>? ->
                 val func = funcs.getOrPut(method) {
                     OpenGL32.INSTANCE.wglGetProcAddress(method.name)?.let { Function.getFunction(it) }
-                        ?: opengl32Lib.getFunction(method.name)
+                        ?: try {
+                            opengl32Lib.getFunction(method.name)
+                        } catch (e: UnsatisfiedLinkError) {
+                            null
+                        }
                         ?: error("Can't find opengl method ${method.name}")
 
                 }

@@ -17,6 +17,7 @@ import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
+import com.soywiz.korio.file.std.*
 import com.soywiz.korio.net.URL
 import com.soywiz.korio.util.OS
 import com.sun.jna.Native
@@ -25,8 +26,10 @@ import com.sun.jna.platform.win32.WinDef
 import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
+import java.io.*
 import java.lang.reflect.Method
-import javax.swing.JFrame
+import java.net.*
+import javax.swing.*
 import kotlin.system.exitProcess
 
 
@@ -128,24 +131,20 @@ class AwtGameWindow : GameWindow() {
                             override fun useContext(obj: Any?, action: Runnable) {
                                 invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, action)
                             }
-
-                            override fun makeCurrent() {
-                            }
-
-                            override fun releaseCurrent() {
-                            }
-
-                            override fun swapBuffers() {
-                            }
+                            override fun makeCurrent() = Unit
+                            override fun releaseCurrent() = Unit
+                            override fun swapBuffers() = Unit
                         }
                     }
                     OS.isWindows -> Win32OpenglContext(
-                        WinDef.HWND(Native.getComponentPointer(frame)), doubleBuffered = true
+                        WinDef.HWND(Native.getComponentPointer(frame)),
+                        doubleBuffered = true
                     )
                     else -> {
                         val d = X.XOpenDisplay(null)
-                        X11.Display()
-                        X11OpenglContext(d, X11.Window(Native.getWindowID(frame)))
+                        val winId = Native.getWindowID(frame)
+                        println("winId: $winId")
+                        X11OpenglContext(d, X11.Window(winId))
                     }
                 }
             }
@@ -158,6 +157,7 @@ class AwtGameWindow : GameWindow() {
                     dispatchReshapeEvent()
                 }
 
+                //println("RENDER[1]")
 
                 //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
                 gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
@@ -245,33 +245,33 @@ class AwtGameWindow : GameWindow() {
     }
 
     override suspend fun browse(url: URL) {
-        //Shell32.ShellExecute()
-        //ShellExecute(0, 0, L"http://www.google.com", 0, 0 , SW_SHOW );
-
-        super.browse(url)
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            Desktop.getDesktop().browse(URI(url.toString()));
+        }
     }
 
     override suspend fun alert(message: String) {
-        return super.alert(message)
+        JOptionPane.showMessageDialog(frame, message, "Message", JOptionPane.WARNING_MESSAGE)
     }
 
     override suspend fun confirm(message: String): Boolean {
-        return super.confirm(message)
+        return JOptionPane.showConfirmDialog(frame, message, "Confirm", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION
     }
 
     override suspend fun prompt(message: String, default: String): String {
-        return super.prompt(message, default)
+        return JOptionPane.showInputDialog(frame, message, "Input", JOptionPane.PLAIN_MESSAGE, null, null, default).toString()
     }
 
     override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
-        return super.openFileDialog(filter, write, multi)
-    }
-
-    var exiting = false
-
-    override fun close() {
-        super.close()
-        exiting = true
+        val chooser = JFileChooser()
+        //chooser.fileFilter = filter // @TODO: Filters
+        chooser.isMultiSelectionEnabled = multi
+        val result = if (write) {
+            chooser.showSaveDialog(frame)
+        } else {
+            chooser.showOpenDialog(frame)
+        } == JFileChooser.APPROVE_OPTION
+        return if (result) chooser.selectedFiles.map { localVfs(it) } else listOf()
     }
 
     fun dispatchReshapeEvent() {
@@ -295,7 +295,7 @@ class AwtGameWindow : GameWindow() {
 
         frame.addWindowListener(object : WindowAdapter() {
             override fun windowClosing(e: WindowEvent?) {
-                exiting = true
+                running = false
             }
         })
 
@@ -375,17 +375,22 @@ class AwtGameWindow : GameWindow() {
             frame.isVisible = true
         }
 
-        while (!exiting) {
+        while (running) {
             //frame.invalidate()
             EventQueue.invokeLater {
+                //println("repaint!")
                 frame.repaint()
             }
-            Thread.sleep((1000 / fps).toLong())
+
+            Thread.sleep(timePerFrame.millisecondsLong)
         }
 
         dispatchDestroyEvent()
 
-        exitProcess(0)
+        frame.isVisible = false
+        frame.dispose()
+
+        //exitProcess(0) // Don't do this since we might continue in the e2e test
     }
 }
 

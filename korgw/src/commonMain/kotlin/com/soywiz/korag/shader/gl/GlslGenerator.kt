@@ -4,10 +4,11 @@ import com.soywiz.korag.shader.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 
-class GlslGenerator(
+class GlslGenerator constructor(
     val kind: ShaderType,
     @Suppress("unused") val gles: Boolean = true,
-    val version: Int = DEFAULT_VERSION
+    val version: Int = DEFAULT_VERSION,
+    val compatibility: Boolean = true
 ) : Program.Visitor<String>("") {
     //val newGlSlVersion: Boolean = version > 120
     val newGlSlVersion: Boolean = false
@@ -91,7 +92,11 @@ class GlslGenerator(
 
         val result = Indenter {
             if (gles) {
-                line("#version $version compatibility")
+                if (compatibility) {
+                    line("#version $version compatibility")
+                } else {
+                    line("#version $version")
+                }
                 line("#ifdef GL_ES")
                 indent {
                     line("precision mediump float;")

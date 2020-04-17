@@ -26,9 +26,14 @@ actual fun CreateDefaultGameWindow(): GameWindow {
         ?: System.getenv("KORGW_JVM_ENGINE")
         ?: System.getProperty("korgw.jvm.engine")
         //?: "jogl"
-        ?: "jna"
+        //?: "jna"
+        ?: "default"
 
     return when (engine) {
+        "default" -> when {
+            OS.isLinux -> X11GameWindow()
+            else -> AwtGameWindow()
+        }
         "jna" -> when {
             OS.isMac -> {
                 when {
@@ -42,7 +47,10 @@ actual fun CreateDefaultGameWindow(): GameWindow {
             OS.isWindows -> Win32GameWindow()
             else -> X11GameWindow()
         }
-        "awt" -> AwtGameWindow()
+        "awt" -> when {
+            OS.isMac && isOSXMainThread -> MacGameWindow()
+            else -> AwtGameWindow()
+        }
         //"jogl" -> {
         //    if (isOSXMainThread) {
         //        println("-XstartOnFirstThread not supported via Jogl, switching to an experimental native jna-based implementation")

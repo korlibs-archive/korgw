@@ -13,6 +13,9 @@ import com.soywiz.korma.geom.*
 import kotlin.math.min
 
 abstract class AGOpengl : AG() {
+    class ShaderException(val str: String, val error: String, val errorInt: Int, val gl: KmlGl) :
+        RuntimeException("Error Compiling Shader : $errorInt : '$error' : source='$str', gl.versionInt=${gl.versionInt}, gl.versionString='${gl.versionString}', gl=$gl")
+
     open val isGlAvailable = true
     abstract val gl: KmlGl
 
@@ -429,6 +432,14 @@ abstract class AGOpengl : AG() {
 
         private fun String.replaceVersion(version: Int) = this.replace("#version 100", "#version $version")
 
+        private inline fun createShaderCompat(type: Int, gen: (compat: Boolean) -> String): Int {
+            return try {
+                createShader(type, gen(true))
+            } catch (e: ShaderException) {
+                createShader(type, gen(false))
+            }
+        }
+
         private fun ensure() {
             if (cachedVersion != contextVersion) {
                 val oldCachedVersion = cachedVersion
@@ -450,17 +461,14 @@ abstract class AGOpengl : AG() {
                     println("GLSL version: requested=$glSlVersion, guessed=$guessedGlSlVersion, forced=${GlslGenerator.FORCE_GLSL_VERSION}. used=$usedGlSlVersion")
                 }
 
-                val fragResult = program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion)
-                val vertResult = program.vertex.toNewGlslStringResult(gles = gles, version = usedGlSlVersion)
-
-                fragmentShaderId = createShader(gl.FRAGMENT_SHADER, fragResult.result)
-                vertexShaderId = createShader(gl.VERTEX_SHADER, vertResult.result)
+                fragmentShaderId = createShaderCompat(gl.FRAGMENT_SHADER) { compatibility ->
+                    program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion, compatibility = compatibility).result
+                }
+                vertexShaderId = createShaderCompat(gl.VERTEX_SHADER) { compatibility ->
+                    program.vertex.toNewGlslStringResult(gles = gles, version = usedGlSlVersion, compatibility = compatibility).result
+                }
                 gl.attachShader(id, fragmentShaderId)
                 gl.attachShader(id, vertexShaderId)
-                if (fragResult.generator.newGlSlVersion) {
-                    //println("****************************")
-                    //gl.bindAttribLocation(id, 0, fragResult.generator.gl_FragColor)
-                }
                 gl.linkProgram(id)
                 tempBuffer1.setInt(0, 0)
                 gl.getProgramiv(id, gl.LINK_STATUS, tempBuffer1)
@@ -477,7 +485,7 @@ abstract class AGOpengl : AG() {
             val errorInt = gl.getError()
             if (out != gl.TRUE) {
                 val error = gl.getShaderInfoLog(shaderId)
-                throw RuntimeException("Error Compiling Shader : $errorInt : '$error' : source='$str', gl.versionInt=${gl.versionInt}, gl.versionString='${gl.versionString}', gl=$gl")
+                throw ShaderException(str, error, errorInt, gl)
             }
             return shaderId
         }
