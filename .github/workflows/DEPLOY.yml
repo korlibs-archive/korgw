@@ -8,6 +8,7 @@ on:
       - '*.*'
 
 env:
+  NO_HEADLESS_TEST: true
   BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
   BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
 
@@ -25,15 +26,16 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v1
-      - run: ./gradlew
-      - run: ./gradlew assemble check publish -x publishKotlinMultiplatformPublicationToMavenRepository -x jsBrowserTest -x jsNodeTest
+      - run: ./gradlew --no-daemon
+      - run: ./gradlew --no-daemon  assemble check publish -x publishKotlinMultiplatformPublicationToMavenRepository -x jsBrowserTest -x jsNodeTest
 
   publish-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - run: ./gradlew
-      - run: ./gradlew assemble check lint testDebugUnitTest publishKotlinMultiplatformPublicationToMavenRepository publishLinuxX64PublicationToMavenRepository -x jsBrowserTest -x jsNodeTest
+      - run: sudo apt-get install xvfb
+      - run: xvfb-run --auto-servernum ./gradlew --no-daemon
+      - run: xvfb-run --auto-servernum ./gradlew --no-daemon  assemble check lint testDebugUnitTest publishKotlinMultiplatformPublicationToMavenRepository publishLinuxX64PublicationToMavenRepository -x jsBrowserTest -x jsNodeTest
 
   publish-finalize:
     needs: [publish-windows, publish-mac, publish-linux]
