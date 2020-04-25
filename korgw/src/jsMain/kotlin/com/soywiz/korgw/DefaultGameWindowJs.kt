@@ -328,12 +328,15 @@ class BrowserGameWindow : GameWindow() {
         window.addEventListener("resize", { onResized() })
         onResized()
         jsFrame = { step: Double ->
+            val startTime = KorgwPerformanceCounter.now()
             window.requestAnimationFrame(jsFrame) // Execute first to prevent exceptions breaking the loop
             updateGamepad()
             try {
-                coroutineDispatcher.executePending()
-            } finally {
                 doRender()
+            } finally {
+                val elapsed = KorgwPerformanceCounter.now() - startTime
+                val available = counterTimePerFrame - elapsed
+                coroutineDispatcher.executePending(available)
             }
         }
     }

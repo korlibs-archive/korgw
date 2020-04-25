@@ -88,10 +88,9 @@ class NativeZenityDialogs : ZenityDialogs() {
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
+class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDialogs() {
     //init { println("X11GameWindow") }
     override val ag: X11Ag by lazy { X11Ag(this) }
-    override var fps: Int = 60
     override var width: Int = 200; private set
     override var height: Int = 200; private set
     override var title: String = "Korgw"
@@ -169,11 +168,7 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
         if (d == null || w == NilWin) return@run
     }
 
-    override suspend fun loop(entry: suspend GameWindow.() -> Unit): Unit = memScoped {
-        // Required here so setSize is called
-        launchImmediately(coroutineDispatcher) {
-            entry()
-        }
+    override fun doInitialize() {
 
         d = XOpenDisplay(null) ?: error("Can't open main display")
         s = XDefaultScreen(d)
@@ -208,7 +203,7 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
             or ButtonPressMask
             or ButtonReleaseMask
             or ButtonMotionMask
-        )
+            )
 
         XSelectInput(d, w, eventMask)
         XMapWindow(d, w)
@@ -217,42 +212,31 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
         realSetVisible(visible)
         realSetTitle(title)
 
-        val doubleBuffered = false
-        //val doubleBuffered = true
-        val ctx = X11OpenglContext(d, w, doubleBuffered = doubleBuffered)
+        ctx = X11OpenglContext(d, w, doubleBuffered = doubleBuffered)
         ctx.makeCurrent()
 
         val wmDeleteMessage = XInternAtom(d, "WM_DELETE_WINDOW", 0)
-        val protocolsArray = allocArray<AtomVar>(1)
-        protocolsArray[0] = wmDeleteMessage
-        XSetWMProtocols(d, w, protocolsArray, 1)
-
-        dispatchInitEvent()
-
-        var lastRenderTime = PerformanceCounter.microseconds
-        fun elapsedSinceLastRenderTime() = PerformanceCounter.microseconds - lastRenderTime
-        fun render(doUpdate: Boolean) {
-            ctx.makeCurrent()
-            glViewport(0, 0, width, height)
-            glClearColor(.3f, .6f, .3f, 1f)
-            glClear(GL_COLOR_BUFFER_BIT)
-            frame(doUpdate)
-            ctx.swapBuffers()
-            lastRenderTime = PerformanceCounter.microseconds
+        memScoped {
+            val protocolsArray = allocArray<AtomVar>(1)
+            protocolsArray[0] = wmDeleteMessage
+            XSetWMProtocols(d, w, protocolsArray, 1)
         }
+    }
 
+    lateinit var ctx: X11OpenglContext
+
+    val doubleBuffered = false
+    //val doubleBuffered = true
+
+    override fun doSmallSleep() {
+        usleep(1000.convert())
+    }
+
+    override fun doHandleEvents() = memScoped {
         val e = alloc<XEvent>()
         loop@ while (running) {
             //println("---")
-            if (XPending(d) == 0) {
-                if (elapsedSinceLastRenderTime() >= timePerFrame.microseconds) {
-                    render(doUpdate = true)
-                }
-                //println("No events!")
-                //Thread.sleep(0L, 100_000)
-                usleep(1000.convert())
-                continue
-            }
+            if (XPending(d) == 0) return
             XNextEvent(d, e.ptr)
             //println("EVENT: ${e.type}")
             when (e.type) {
@@ -316,9 +300,20 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
                 }
             }
         }
-        dispatchStopEvent()
-        dispatchDestroyEvent()
+    }
 
+    override fun doInitRender() {
+        ctx.makeCurrent()
+        glViewport(0, 0, width, height)
+        glClearColor(.3f, .6f, .3f, 1f)
+        glClear(GL_COLOR_BUFFER_BIT)
+    }
+
+    override fun doSwapBuffers() {
+        ctx.swapBuffers()
+    }
+
+    override fun doDestroy() {
         XDestroyWindow(d, w)
         XCloseDisplay(d)
     }

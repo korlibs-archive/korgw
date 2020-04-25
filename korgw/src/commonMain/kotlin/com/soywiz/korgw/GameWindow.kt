@@ -32,9 +32,7 @@ interface DialogInterface {
 open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-    class TimedTask(val time: DateTime, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
-        @Deprecated("", ReplaceWith("time"))
-        val ms: DateTime get() = time
+    class TimedTask(val time: KorgwPerformanceCounter, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
         var exception: Throwable? = null
     }
 
@@ -55,10 +53,14 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         tasks.enqueue(block)
     }
 
-    open fun now() = DateTime.now()
+    open fun now() = KorgwPerformanceCounter.now()
 
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val task = TimedTask(now() + timeMillis.milliseconds, continuation, null)
+        scheduleResumeAfterDelay(KorgwPerformanceCounter(timeMillis.milliseconds.microseconds), continuation)
+    }
+
+    fun scheduleResumeAfterDelay(time: KorgwPerformanceCounter, continuation: CancellableContinuation<Unit>) {
+        val task = TimedTask(now() + time, continuation, null)
         continuation.invokeOnCancellation {
             task.exception = it
         }
@@ -75,10 +77,15 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         }
     }
 
+    @Deprecated("")
     open fun executePending() {
+        executePending(KorgwPerformanceCounter(1.seconds))
+    }
+
+    fun executePending(availableTime: KorgwPerformanceCounter) {
         try {
-            val now = now()
-            while (timedTasks.isNotEmpty() && now >= timedTasks.head.time) {
+            val startTime = now()
+            while (timedTasks.isNotEmpty() && startTime >= timedTasks.head.time) {
                 val item = timedTasks.removeHead()
                 if (item.exception != null) {
                     item.continuation?.resumeWithException(item.exception!!)
@@ -89,11 +96,13 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
                     item.continuation?.resume(Unit)
                     item.callback?.run()
                 }
+                if ((now() - startTime) >= availableTime) break
             }
 
             while (tasks.isNotEmpty()) {
                 val task = tasks.dequeue()
                 task?.run()
+                if ((now() - startTime) >= availableTime) break
             }
         } catch (e: Throwable) {
             println("Error in GameWindowCoroutineDispatcher.executePending:")
@@ -102,7 +111,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun close() {
-        executePending()
+        executePending(KorgwPerformanceCounter(1.seconds))
         println("GameWindowCoroutineDispatcher.close")
         while (timedTasks.isNotEmpty()) {
             timedTasks.removeHead().continuation?.resume(Unit)
@@ -143,7 +152,24 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     protected val gamePadUpdateEvent = GamePadUpdateEvent()
     protected val gamePadConnectionEvent = GamePadConnectionEvent()
 
-    open var fps: Int = 60
+    protected open fun _setFps(fps: Int): Int {
+        return if (fps <= 0) 60 else fps
+    }
+
+    var counterTimePerFrame: KorgwPerformanceCounter = KorgwPerformanceCounter(0.0); private set
+    val timePerFrame: TimeSpan get() = counterTimePerFrame.timeSpan
+
+    var fps: Int = 60
+        set(value) {
+            val value = _setFps(value)
+            field = value
+            counterTimePerFrame = KorgwPerformanceCounter(1_000_000.0 / value)
+        }
+
+    init {
+        fps = 60
+    }
+
     open var title: String get() = ""; set(value) = Unit
     open val width: Int = 0
     open val height: Int = 0
@@ -151,8 +177,6 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open var fullscreen: Boolean = false
     open var visible: Boolean = false
     open var quality: Quality get() = Quality.AUTOMATIC; set(value) = Unit
-
-    val timePerFrame: TimeSpan get() = (1000.0 / (if (fps > 0) fps else 60)).milliseconds
 
     /**
      * Describes if the rendering should focus on performance or quality.
@@ -204,28 +228,28 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         launchImmediately(coroutineDispatcher) {
             entry()
         }
-        val delayTime = 1L
         while (running) {
-            val start = PerformanceCounter.microseconds
+            val start = KorgwPerformanceCounter.now()
             frame()
-            while ((PerformanceCounter.microseconds - start) < timePerFrame.microseconds - 0.9) {
-                delay(delayTime)
-            }
+            val elapsed = KorgwPerformanceCounter.now() - start
+            val available = counterTimePerFrame - elapsed
+            delay(available)
         }
     }
 
-    fun frame(doUpdate: Boolean = true) {
-        frameRender()
-        if (doUpdate) {
-            frameUpdate()
+    fun frame(doUpdate: Boolean = true, startTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()) {
+        try {
+            ag.onRender(ag)
+            dispatchRenderEvent()
+            if (doUpdate) {
+                val elapsed = KorgwPerformanceCounter.now() - startTime
+                val available = counterTimePerFrame - elapsed
+                coroutineDispatcher.executePending(available)
+            }
+        } catch (e: Throwable) {
+            println("ERROR GameWindow.frame:")
+            println(e)
         }
-    }
-    open fun frameRender() {
-        coroutineDispatcher.executePending()
-        ag.onRender(ag)
-        dispatchRenderEvent()
-    }
-    open fun frameUpdate() {
     }
 
     fun dispatchInitEvent() {
@@ -366,6 +390,65 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             }
         })
         */
+    }
+}
+
+open class EventLoopGameWindow : GameWindow() {
+    override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+        // Required here so setSize is called
+        launchImmediately(coroutineDispatcher) {
+            try {
+                entry()
+            } catch (e: Throwable) {
+                println("Error initializing application")
+                println(e)
+                running = false
+            }
+        }
+
+        doInitialize()
+        dispatchInitEvent()
+
+        while (running) {
+            doHandleEvents()
+            if (elapsedSinceLastRenderTime() >= counterTimePerFrame) {
+                render(doUpdate = true)
+            }
+            // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
+            doSmallSleep()
+        }
+        dispatchStopEvent()
+        dispatchDestroyEvent()
+
+        doDestroy()
+    }
+
+    var lastRenderTime = KorgwPerformanceCounter.now()
+    fun elapsedSinceLastRenderTime() = KorgwPerformanceCounter.now() - lastRenderTime
+    fun render(doUpdate: Boolean) {
+        lastRenderTime = KorgwPerformanceCounter.now()
+        doInitRender()
+        frame(doUpdate, lastRenderTime)
+        doSwapBuffers()
+    }
+
+    protected open fun doSmallSleep() {
+    }
+
+    protected open fun doHandleEvents() {
+    }
+
+    protected open fun doInitRender() {
+    }
+
+    protected open fun doSwapBuffers() {
+    }
+
+    protected open fun doInitialize() {
+    }
+
+    protected open fun doDestroy() {
+
     }
 }
 

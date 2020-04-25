@@ -36,21 +36,6 @@ class IosGameWindow : GameWindow() {
         }
     }
 
-    override fun frameRender() {
-        try {
-            //println("frame[0]")
-            coroutineDispatcher.executePending()
-            //println("frame[1]")
-            ag.onRender(ag)
-            //println("frame[2]")
-            dispatch(renderEvent)
-            //println("frame[3]")
-        } catch (e: Throwable) {
-            println("ERROR IosGameWindow.frame:")
-            println(e)
-        }
-    }
-
     companion object {
         fun getGameWindow() = MyIosGameWindow
     }

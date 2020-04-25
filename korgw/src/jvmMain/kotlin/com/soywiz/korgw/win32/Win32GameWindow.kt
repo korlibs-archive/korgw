@@ -180,9 +180,6 @@ class Win32GameWindow : GameWindow() {
     override val ag: Win32Ag = Win32Ag(this)
     override val coroutineDispatcher: GameWindowCoroutineDispatcher
         get() = super.coroutineDispatcher
-    override var fps: Int
-        get() = super.fps
-        set(value) {}
     override var title: String = "Korgw"
         set(value) {
             field = value

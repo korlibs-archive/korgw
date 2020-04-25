@@ -60,7 +60,7 @@ private fun Bitmap32.toWin32Icon(): HICON? {
         }
 
         // Create an empty mask bitmap.
-        val hMonoBitmap = CreateBitmap(bmp.width, bmp.height, 1, 1, NULL)
+        val hMonoBitmap = CreateBitmap(bmp.width, bmp.height, 1.convert(), 1.convert(), NULL)
 
         val ii = alloc<ICONINFO>()
         ii.fIcon = TRUE;  // Change fIcon to TRUE to create an alpha icon
@@ -70,9 +70,9 @@ private fun Bitmap32.toWin32Icon(): HICON? {
         ii.hbmColor = hBitmap
         val icon = CreateIconIndirect(ii.ptr)
 
-        DeleteDC( memdc );
-        DeleteObject( hBitmap );
-        DeleteObject(hMonoBitmap);
+        DeleteDC(memdc)
+        DeleteObject(hBitmap)
+        DeleteObject(hMonoBitmap)
 
         return icon
     }
@@ -84,13 +84,12 @@ private fun Bitmap32.scaled(width: Int, height: Int): Bitmap32 {
     return scaleLinear(scaleX, scaleY)
 }
 
-class WindowsGameWindow : GameWindow() {
+class WindowsGameWindow : EventLoopGameWindow() {
     val agNativeComponent = Any()
     var hwnd: HWND? = null
     var glRenderContext: HGLRC? = null
     override val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 
-    override var fps: Int = 60
     override var title: String
         get() = processString(4096) { ptr, len ->
             GetWindowTextW(hwnd, ptr, len)
@@ -178,7 +177,47 @@ class WindowsGameWindow : GameWindow() {
         }
     }
 
-    override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+    fun resized(width: Int, height: Int) {
+        dispatchReshapeEvent(0, 0, width, height)
+        render(doUpdate = false)
+    }
+
+    override fun doInitRender() {
+        if (hwnd == null || glRenderContext == null) return
+        val hdc = GetDC(hwnd)
+        //println("render")
+        wglMakeCurrent(hdc, glRenderContext)
+    }
+
+    override fun doSwapBuffers() {
+        if (hwnd == null || glRenderContext == null) return
+        val hdc = GetDC(hwnd)
+        SwapBuffers(hdc)
+    }
+
+    override fun doDestroy() {
+        //DestroyWindow(hwnd)
+    }
+
+    override fun doHandleEvents() {
+        memScoped {
+            val msg = alloc<MSG>()
+            while (
+                PeekMessageW(
+                    msg.ptr,
+                    null,
+                    0.convert(),
+                    0.convert(),
+                    PM_REMOVE.convert()
+                ).toInt() != 0
+            ) {
+                TranslateMessage(msg.ptr)
+                DispatchMessageW(msg.ptr)
+            }
+        }
+    }
+
+    override fun doInitialize() {
         memScoped {
             // https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)
 
@@ -233,58 +272,10 @@ class WindowsGameWindow : GameWindow() {
 
             //SetTimer(hwnd, 1, 1000 / 60, staticCFunction(::WndTimer))
         }
+    }
 
-        runBlocking {
-            var running = true
-            launch(coroutineDispatcher) {
-                try {
-                    entry()
-                } catch (e: Throwable) {
-                    println(e)
-                    running = false
-                }
-            }
-
-            memScoped {
-                val fps = 60
-                val msPerFrame = 1000 / fps
-                val msg = alloc<MSG>()
-                //var start = milliStamp()
-                var prev = DateTime.nowUnixLong()
-                while (running) {
-                    while (
-                        PeekMessageW(
-                            msg.ptr,
-                            null,
-                            0.convert(),
-                            0.convert(),
-                            PM_REMOVE.convert()
-                        ).toInt() != 0
-                    ) {
-                        TranslateMessage(msg.ptr)
-                        DispatchMessageW(msg.ptr)
-                    }
-                    //val now = milliStamp()
-                    //val elapsed = now - start
-                    //val sleepTime = kotlin.math.max(0L, (16 - elapsed)).toInt()
-                    //println("SLEEP: sleepTime=$sleepTime, start=$start, now=$now, elapsed=$elapsed")
-                    //start = now
-                    //Sleep(sleepTime)
-                    val now = DateTime.nowUnixLong()
-                    val elapsed = now - prev
-                    //println("$prev, $now, $elapsed")
-                    val sleepTime = max(0L, (msPerFrame - elapsed)).toInt()
-                    prev = now
-
-                    Sleep(sleepTime.convert())
-                    coroutineDispatcher.executePending()
-                    //println("RENDER")
-                    tryRender()
-                }
-            }
-
-            //DestroyWindow(hwnd)
-        }
+    override fun doSmallSleep() {
+        Sleep(1L.convert())
     }
 
     private val hasMenu = false
@@ -305,23 +296,6 @@ class WindowsGameWindow : GameWindow() {
             rect.height = height
             AdjustWindowRectEx(rect.ptr, winStyle.convert(), hasMenu.toInt().convert(), winExStyle.convert())
             SizeInt(rect.width, rect.height)
-        }
-    }
-
-    fun resized(width: Int, height: Int) {
-        dispatchReshapeEvent(0, 0, width, height)
-        tryRender()
-    }
-
-    fun tryRender() {
-        if (hwnd != null && glRenderContext != null) {
-            val hdc = GetDC(hwnd)
-            //println("render")
-            wglMakeCurrent(hdc, glRenderContext)
-            //renderFunction()
-            ag.onRender(ag)
-            dispatch(renderEvent)
-            SwapBuffers(hdc)
         }
     }
 
@@ -523,10 +497,7 @@ fun mouseButton(button: Int, down: Boolean, wParam: Int) {
         windowsGameWindow.mouseEvent(com.soywiz.korev.MouseEvent.Type.UP, mouseX, mouseY, button, wParam)
         windowsGameWindow.mouseEvent(
             com.soywiz.korev.MouseEvent.Type.CLICK,
-            mouseX,
-            mouseY,
-            button,
-            wParam
+            mouseX, mouseY, button, wParam
         ) // @TODO: Conditionally depending on the down x,y & time
     }
 }
@@ -542,24 +513,15 @@ fun wglGetProcAddressAny(name: String): PROC? {
 
 val USER32_DLL by lazy { LoadLibraryA("User32.dll") }
 val LoadCursorAFunc by lazy {
-    GetProcAddress(
-        USER32_DLL,
-        "LoadCursorA"
-    )!!.reinterpret<CFunction<Function2<Int, Int, HCURSOR?>>>()
+    GetProcAddress(USER32_DLL, "LoadCursorA")!!.reinterpret<CFunction<Function2<Int, Int, HCURSOR?>>>()
 }
 
 val LoadIconAFunc by lazy {
-    GetProcAddress(
-        USER32_DLL,
-        "LoadIconA"
-    )!!.reinterpret<CFunction<Function2<HMODULE?, Int, HICON?>>>()
+    GetProcAddress(USER32_DLL, "LoadIconA")!!.reinterpret<CFunction<Function2<HMODULE?, Int, HICON?>>>()
 }
 
 val FindResourceAFunc by lazy {
-    GetProcAddress(
-        USER32_DLL,
-        "FindResourceA"
-    )!!.reinterpret<CFunction<Function2<HMODULE?, Int, HICON?>>>()
+    GetProcAddress(USER32_DLL, "FindResourceA")!!.reinterpret<CFunction<Function2<HMODULE?, Int, HICON?>>>()
 }
 
 //val ARROW_CURSOR by lazy { LoadCursorA(null, 32512.reinterpret<CPointer<ByteVar>>().reinterpret()) }
