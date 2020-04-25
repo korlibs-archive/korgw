@@ -397,7 +397,13 @@ open class EventLoopGameWindow : GameWindow() {
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         // Required here so setSize is called
         launchImmediately(coroutineDispatcher) {
-            entry()
+            try {
+                entry()
+            } catch (e: Throwable) {
+                println("Error initializing application")
+                println(e)
+                running = false
+            }
         }
 
         doInitialize()
