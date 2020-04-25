@@ -1,6 +1,7 @@
 package com.soywiz.korgw
 
 import android.app.Activity
+import android.content.*
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
@@ -8,11 +9,9 @@ import android.view.MotionEvent
 import com.soywiz.kds.Pool
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.KmlGlAndroid
-import com.soywiz.klock.DateTime
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.*
 import com.soywiz.korio.Korio
-import com.soywiz.korma.geom.setTo
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -21,7 +20,11 @@ abstract class KorgwActivity : Activity() {
     private var mGLView: GLSurfaceView? = null
     lateinit var ag: AGOpengl
 
-    var fps: Int = 60
+    var fps: Int
+        get() = gameWindow?.fps ?: 60
+        set(value) {
+            gameWindow?.fps = value
+        }
 
     protected val pauseEvent = PauseEvent()
     protected val resumeEvent = ResumeEvent()
@@ -206,6 +209,30 @@ abstract class KorgwActivity : Activity() {
         gameWindow?.dispatchDestroyEvent()
         //gameWindow?.close() // Do not close, since it will be automatically closed by the destroy event
         gameWindow = null
+    }
+
+    data class ResultHandler(val request: Int) {
+        var handler: (result: Int, data: Intent?) -> Unit = { result, data -> }
+    }
+
+    val resultHandlers = Pool { ResultHandler(it) }
+    val handlers = LinkedHashMap<Int, ResultHandler>()
+
+    fun registerActivityResult(handler: (result: Int, data: Intent?) -> Unit): Int {
+        return resultHandlers.alloc().also {
+            it.handler = handler
+        }.request
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        val handler = handlers.remove(requestCode)
+        if (handler != null) {
+            val callback = handler.handler
+            resultHandlers.free(handler)
+            callback(resultCode, data)
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
     }
 
     abstract suspend fun activityMain(): Unit
