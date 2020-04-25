@@ -32,7 +32,6 @@ class X11Ag(val window: X11GameWindow, override val gl: KmlGl = X11KmlGl) : AGOp
 
 class X11GameWindow : GameWindow(), DialogInterface by ZenityDialogs() {
     override val ag: X11Ag by lazy { X11Ag(this) }
-    override var fps: Int = 60
     override var width: Int = 200; private set
     override var height: Int = 200; private set
     override var title: String = "Korgw"

@@ -6,8 +6,7 @@ import com.soywiz.korev.Key
 import com.soywiz.korev.KeyEvent
 import com.soywiz.korev.MouseButton
 import com.soywiz.korev.MouseEvent
-import com.soywiz.korgw.GameWindow
-import com.soywiz.korgw.GameWindowCoroutineDispatcher
+import com.soywiz.korgw.*
 import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korgw.platform.INativeGL
 import com.soywiz.korgw.platform.NativeKgl
@@ -212,7 +211,7 @@ class MacGameWindow : GameWindow() {
 
 
     val windowTimer: ObjcCallbackVoid = ObjcCallbackVoid { self, _sel, sender ->
-        renderOpengl()
+        renderOpengl(update = true)
     }
 
     fun windowDidResize() {
@@ -252,7 +251,8 @@ class MacGameWindow : GameWindow() {
 
     private var lastBackingScaleFactor = 0.0
 
-    fun renderOpengl() {
+    fun renderOpengl(update: Boolean = false) {
+        val startTime = KorgwPerformanceCounter.now()
         // This allows to detect a change in the scale factor of the window without having to resize (changing resolution)
         if (lastBackingScaleFactor != backingScaleFactor) {
             lastBackingScaleFactor = backingScaleFactor
@@ -269,7 +269,7 @@ class MacGameWindow : GameWindow() {
 
         //println("RENDER")
 
-        frame()
+        frame(update, startTime)
 
         glCtx?.swapBuffers()
     }
@@ -325,9 +325,6 @@ class MacGameWindow : GameWindow() {
     override val ag: MacAG = MacAG(window)
     override val coroutineDispatcher: GameWindowCoroutineDispatcher
         get() = super.coroutineDispatcher
-    override var fps: Int
-        get() = super.fps
-        set(value) {}
     override var title: String
         get() = NSString(window.msgSend("title")).toString()
         set(value) {

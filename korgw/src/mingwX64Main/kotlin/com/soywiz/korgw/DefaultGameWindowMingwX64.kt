@@ -90,7 +90,6 @@ class WindowsGameWindow : GameWindow() {
     var glRenderContext: HGLRC? = null
     override val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 
-    override var fps: Int = 60
     override var title: String
         get() = processString(4096) { ptr, len ->
             GetWindowTextW(hwnd, ptr, len)
@@ -246,40 +245,32 @@ class WindowsGameWindow : GameWindow() {
             }
 
             memScoped {
-                val fps = 60
-                val msPerFrame = 1000 / fps
                 val msg = alloc<MSG>()
                 //var start = milliStamp()
-                var prev = DateTime.nowUnixLong()
+                var prev = KorgwPerformanceCounter.now()
                 while (running) {
-                    while (
-                        PeekMessageW(
-                            msg.ptr,
-                            null,
-                            0.convert(),
-                            0.convert(),
-                            PM_REMOVE.convert()
-                        ).toInt() != 0
-                    ) {
-                        TranslateMessage(msg.ptr)
-                        DispatchMessageW(msg.ptr)
-                    }
-                    //val now = milliStamp()
-                    //val elapsed = now - start
-                    //val sleepTime = kotlin.math.max(0L, (16 - elapsed)).toInt()
-                    //println("SLEEP: sleepTime=$sleepTime, start=$start, now=$now, elapsed=$elapsed")
-                    //start = now
-                    //Sleep(sleepTime)
-                    val now = DateTime.nowUnixLong()
-                    val elapsed = now - prev
-                    //println("$prev, $now, $elapsed")
-                    val sleepTime = max(0L, (msPerFrame - elapsed)).toInt()
-                    prev = now
-
-                    Sleep(sleepTime.convert())
-                    coroutineDispatcher.executePending()
-                    //println("RENDER")
+                    val start = KorgwPerformanceCounter.now()
                     tryRender()
+
+                    while (true) {
+                        while (
+                            PeekMessageW(
+                                msg.ptr,
+                                null,
+                                0.convert(),
+                                0.convert(),
+                                PM_REMOVE.convert()
+                            ).toInt() != 0
+                        ) {
+                            TranslateMessage(msg.ptr)
+                            DispatchMessageW(msg.ptr)
+                        }
+                        val elapsed = KorgwPerformanceCounter.now() - start
+                        val available = counterTimePerFrame - elapsed
+                        coroutineDispatcher.executePending(available)
+                        Sleep(1L.convert())
+                        if (elapsed >= counterTimePerFrame) break
+                    }
                 }
             }
 

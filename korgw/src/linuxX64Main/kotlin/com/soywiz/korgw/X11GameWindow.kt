@@ -91,7 +91,6 @@ class NativeZenityDialogs : ZenityDialogs() {
 class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
     //init { println("X11GameWindow") }
     override val ag: X11Ag by lazy { X11Ag(this) }
-    override var fps: Int = 60
     override var width: Int = 200; private set
     override var height: Int = 200; private set
     override var title: String = "Korgw"
