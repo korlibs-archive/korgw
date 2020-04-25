@@ -328,10 +328,13 @@ class BrowserGameWindow : GameWindow() {
         window.addEventListener("resize", { onResized() })
         onResized()
         jsFrame = { step: Double ->
+            window.requestAnimationFrame(jsFrame) // Execute first to prevent exceptions breaking the loop
             updateGamepad()
-            coroutineDispatcher.executePending()
-            doRender()
-            window.requestAnimationFrame(jsFrame)
+            try {
+                coroutineDispatcher.executePending()
+            } finally {
+                doRender()
+            }
         }
     }
 }

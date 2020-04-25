@@ -204,11 +204,13 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         launchImmediately(coroutineDispatcher) {
             entry()
         }
+        val delayTime = 1L
         while (running) {
-            val time = measureTime {
-                frame()
+            val start = PerformanceCounter.microseconds
+            frame()
+            while ((PerformanceCounter.microseconds - start) < timePerFrame.microseconds - 0.9) {
+                delay(delayTime)
             }
-            delay((timePerFrame - time).clamp(0.milliseconds, timePerFrame))
         }
     }
 

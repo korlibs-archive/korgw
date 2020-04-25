@@ -3,6 +3,7 @@ package com.soywiz.korgw
 import GL.*
 import com.soywiz.kds.IntMap
 import com.soywiz.kgl.KmlGl
+import com.soywiz.klock.*
 import com.soywiz.kmem.FBuffer
 import com.soywiz.kmem.startAddressOf
 import com.soywiz.kmem.write32LE
@@ -228,23 +229,23 @@ class X11GameWindow : GameWindow(), DialogInterface by NativeZenityDialogs() {
 
         dispatchInitEvent()
 
-        var lastRenderTime = getTimeNanos()
-        fun elapsedSinceLastRenderTime(): Long = getTimeNanos() - lastRenderTime
+        var lastRenderTime = PerformanceCounter.microseconds
+        fun elapsedSinceLastRenderTime() = PerformanceCounter.microseconds - lastRenderTime
         fun render(doUpdate: Boolean) {
-            lastRenderTime = getTimeNanos()
             ctx.makeCurrent()
             glViewport(0, 0, width, height)
             glClearColor(.3f, .6f, .3f, 1f)
             glClear(GL_COLOR_BUFFER_BIT)
             frame(doUpdate)
             ctx.swapBuffers()
+            lastRenderTime = PerformanceCounter.microseconds
         }
 
         val e = alloc<XEvent>()
         loop@ while (running) {
             //println("---")
             if (XPending(d) == 0) {
-                if (elapsedSinceLastRenderTime() >= timePerFrame.nanoseconds.toLong()) {
+                if (elapsedSinceLastRenderTime() >= timePerFrame.microseconds) {
                     render(doUpdate = true)
                 }
                 //println("No events!")
