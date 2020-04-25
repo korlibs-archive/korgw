@@ -238,12 +238,17 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     }
 
     fun frame(doUpdate: Boolean = true, startTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()) {
-        ag.onRender(ag)
-        dispatchRenderEvent()
-        if (doUpdate) {
-            val elapsed = KorgwPerformanceCounter.now() - startTime
-            val available = counterTimePerFrame - elapsed
-            coroutineDispatcher.executePending(available)
+        try {
+            ag.onRender(ag)
+            dispatchRenderEvent()
+            if (doUpdate) {
+                val elapsed = KorgwPerformanceCounter.now() - startTime
+                val available = counterTimePerFrame - elapsed
+                coroutineDispatcher.executePending(available)
+            }
+        } catch (e: Throwable) {
+            println("ERROR GameWindow.frame:")
+            println(e)
         }
     }
 
