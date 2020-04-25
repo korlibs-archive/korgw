@@ -393,6 +393,59 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     }
 }
 
+open class EventLoopGameWindow : GameWindow() {
+    override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
+        // Required here so setSize is called
+        launchImmediately(coroutineDispatcher) {
+            entry()
+        }
+
+        doInitialize()
+        dispatchInitEvent()
+
+        while (running) {
+            doHandleEvents()
+            if (elapsedSinceLastRenderTime() >= counterTimePerFrame) {
+                render(doUpdate = true)
+            }
+            // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
+            doSmallSleep()
+        }
+        dispatchStopEvent()
+        dispatchDestroyEvent()
+
+        doDestroy()
+    }
+
+    var lastRenderTime = KorgwPerformanceCounter.now()
+    fun elapsedSinceLastRenderTime() = KorgwPerformanceCounter.now() - lastRenderTime
+    fun render(doUpdate: Boolean) {
+        lastRenderTime = KorgwPerformanceCounter.now()
+        doInitRender()
+        frame(doUpdate, lastRenderTime)
+        doSwapBuffers()
+    }
+
+    protected open fun doSmallSleep() {
+    }
+
+    protected open fun doHandleEvents() {
+    }
+
+    protected open fun doInitRender() {
+    }
+
+    protected open fun doSwapBuffers() {
+    }
+
+    protected open fun doInitialize() {
+    }
+
+    protected open fun doDestroy() {
+
+    }
+}
+
 open class ZenityDialogs : DialogInterface {
     open suspend fun exec(vararg args: String): String {
         return localCurrentDirVfs.execToString(args.toList())
