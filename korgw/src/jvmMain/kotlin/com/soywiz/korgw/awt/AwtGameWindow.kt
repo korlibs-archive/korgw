@@ -30,6 +30,7 @@ import java.io.*
 import java.lang.reflect.Method
 import java.net.*
 import javax.swing.*
+import kotlin.coroutines.*
 import kotlin.system.exitProcess
 
 
@@ -285,7 +286,7 @@ class AwtGameWindow : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        launchImmediately(coroutineDispatcher) {
+        launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
             entry()
         }
         //frame.setBounds(0, 0, width, height)

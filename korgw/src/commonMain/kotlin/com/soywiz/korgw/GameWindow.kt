@@ -131,6 +131,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     override val ag: AG = LogAG()
     open val coroutineDispatcher: GameWindowCoroutineDispatcher = GameWindowCoroutineDispatcher()
 
+    fun getCoroutineDispatcherWithCurrentContext(coroutineContext: CoroutineContext): CoroutineContext = coroutineContext + coroutineDispatcher
+    suspend fun getCoroutineDispatcherWithCurrentContext(): CoroutineContext = getCoroutineDispatcherWithCurrentContext(coroutineContext)
+
     fun queue(callback: () -> Unit) = coroutineDispatcher.queue(callback)
     fun queue(callback: Runnable) = coroutineDispatcher.queue(callback)
 
@@ -221,11 +224,17 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         coroutineDispatcher.cancelChildren()
     }
 
+    suspend fun waitClose() {
+        while (running) {
+            delay(100.milliseconds)
+        }
+    }
+
     override fun repaint() {
     }
 
     open suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        launchImmediately(coroutineDispatcher) {
+        launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
             entry()
         }
         while (running) {
@@ -349,7 +358,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 open class EventLoopGameWindow : GameWindow() {
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         // Required here so setSize is called
-        launchImmediately(coroutineDispatcher) {
+        launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
             try {
                 entry()
             } catch (e: Throwable) {

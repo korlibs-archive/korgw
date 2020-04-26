@@ -352,6 +352,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
         val agNativeComponent = Any()
         val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 
+        val ccontext = kotlin.coroutines.coroutineContext
         app.delegate = object : NSObject(), NSApplicationDelegateProtocol {
 
             //private val openglView: AppNSOpenGLView
@@ -395,7 +396,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
                     //launch(KoruiDispatcher) { // Doesn't work!
                     //println("KoruiWrap.pentry[1]")
                     //println("KoruiWrap.entry[0]")
-                    kotlinx.coroutines.GlobalScope.launch(coroutineDispatcher) {
+                    kotlinx.coroutines.GlobalScope.launch(getCoroutineDispatcherWithCurrentContext(ccontext)) {
                         entry()
                     }
                     //println("KoruiWrap.entry[1]")

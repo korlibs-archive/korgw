@@ -11,7 +11,6 @@ import com.soywiz.korgw.awt.AwtGameWindow
 import com.soywiz.korgw.osx.MacGameWindow
 import com.soywiz.korgw.osx.initializeMacOnce
 import com.soywiz.korgw.osx.isOSXMainThread
-import com.soywiz.korgw.win32.Win32GameWindow
 import com.soywiz.korgw.x11.X11GameWindow
 import com.soywiz.korim.color.RGBA
 import com.soywiz.korio.util.OS
@@ -44,7 +43,9 @@ actual fun CreateDefaultGameWindow(): GameWindow {
                     }
                 }
             }
-            OS.isWindows -> Win32GameWindow()
+            OS.isLinux -> X11GameWindow()
+            //OS.isWindows -> com.soywiz.korgw.win32.Win32GameWindow()
+            OS.isWindows -> AwtGameWindow()
             else -> X11GameWindow()
         }
         "awt" -> when {

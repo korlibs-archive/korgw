@@ -16,6 +16,7 @@ import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
 import org.w3c.dom.get
 import kotlin.browser.*
+import kotlin.coroutines.*
 
 private external val navigator: dynamic
 
@@ -272,7 +273,7 @@ class BrowserGameWindow : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        loopJob = launchImmediately(coroutineDispatcher) {
+        loopJob = launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
             entry()
         }
         jsFrame(0.0)

@@ -23,8 +23,11 @@ import kotlin.coroutines.*
 
 actual fun CreateDefaultGameWindow(): GameWindow = TODO()
 
-class AndroidGameWindow() : GameWindow() {
-    lateinit var activity: KorgwActivity
+class AndroidGameWindow(val activity: KorgwActivity) : GameWindow() {
+    init {
+        activity.gameWindow = this
+    }
+
     val androidContext get() = activity
 
     override val ag: AG get() = activity.ag
@@ -135,8 +138,7 @@ class AndroidGameWindow() : GameWindow() {
     lateinit var coroutineContext: CoroutineContext
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         this.coroutineContext = kotlin.coroutines.coroutineContext
-        activity = (androidContext() as KorgwActivity)
-        activity.gameWindow = this
+        //println("CONTEXT: ${kotlin.coroutines.coroutineContext[AndroidCoroutineContext.Key]?.context}")
         entry(this)
     }
 }

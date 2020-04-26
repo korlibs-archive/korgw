@@ -14,6 +14,7 @@ import com.soywiz.korev.*
 import com.soywiz.korio.Korio
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import com.soywiz.korio.android.withAndroidContext
 
 abstract class KorgwActivity : Activity() {
     var gameWindow: AndroidGameWindow? = null
@@ -164,12 +165,15 @@ abstract class KorgwActivity : Activity() {
 
         setContentView(mGLView)
 
-        val gameWindow = AndroidGameWindow()
+        val gameWindow = AndroidGameWindow(this)
         this.gameWindow = gameWindow
-        Korio(this) {
+        val androidContext = this
+        Korio(androidContext) {
             try {
                 kotlinx.coroutines.withContext(coroutineContext + gameWindow) {
-                    activityMain()
+                    withAndroidContext(androidContext) {
+                        activityMain()
+                    }
                 }
             } finally {
                 println("KorgwActivity.activityMain completed!")

@@ -21,7 +21,7 @@ import com.soywiz.korio.util.Once
 import com.sun.jna.Callback
 import com.sun.jna.Library
 import java.nio.ByteBuffer
-import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.*
 import kotlin.system.exitProcess
 
 class MacAG(val window: Long) : AGOpengl() {
@@ -412,7 +412,7 @@ class MacGameWindow : GameWindow() {
     }
 
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
-        launchImmediately(coroutineDispatcher) {
+        launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
             entry()
         }
 
