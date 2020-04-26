@@ -224,7 +224,9 @@ data class FullScreenEvent(var fullscreen: Boolean = false) : Event() {
 }
 
 class RenderEvent() : Event() {
+    var update: Boolean = true
     fun copyFrom(other: RenderEvent) {
+        this.update = other.update
     }
 }
 

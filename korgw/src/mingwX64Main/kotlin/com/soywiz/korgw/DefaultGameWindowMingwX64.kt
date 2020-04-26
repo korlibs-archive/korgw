@@ -91,31 +91,39 @@ class WindowsGameWindow : EventLoopGameWindow() {
     override val ag: AG = AGOpenglFactory.create(agNativeComponent).create(agNativeComponent, AGConfig())
 
     override var title: String
-        get() = processString(4096) { ptr, len ->
-            GetWindowTextW(hwnd, ptr, len)
-        }
+        get() = if (hwnd != null) processString(4096) { ptr, len -> GetWindowTextW(hwnd, ptr, len) } else lastTitle
         set(value) {
-            SetWindowTextW(hwnd, value)
+            lastTitle = value
+            if (hwnd != null) SetWindowTextW(hwnd, value)
         }
     override val width: Int get() = getClientDim(height = false)
     override val height: Int get() = getClientDim(height = true)
 
     private fun getClientDim(height: Boolean): Int {
         return memScoped {
-            val rect = alloc<RECT>()
-            GetClientRect(hwnd, rect.ptr)
-            if (height) rect.height else rect.width
+            if (hwnd != null) {
+                val rect = alloc<RECT>()
+                GetClientRect(hwnd, rect.ptr)
+                if (height) rect.height else rect.width
+            } else {
+                return if (height) lastHeight else lastWidth
+            }
         }
     }
 
     override var icon: Bitmap? = null
         set(value) {
             field = value
-            if (value != null) {
-                SendMessageA(hwnd, WM_SETICON.convert(), ICON_BIG.convert(), value.toBMP32().scaled(32, 32).toWin32Icon().toLong().convert())
-                SendMessageA(hwnd, WM_SETICON.convert(), ICON_SMALL.convert(), value.toBMP32().scaled(16, 16).toWin32Icon().toLong().convert())
-            }
+            _setIcon()
         }
+
+    private fun _setIcon(bmp: Bitmap? = this.icon) {
+        if (bmp != null && hwnd != null) {
+            SendMessageA(hwnd, WM_SETICON.convert(), ICON_BIG.convert(), bmp.toBMP32().scaled(32, 32).toWin32Icon().toLong().convert())
+            SendMessageA(hwnd, WM_SETICON.convert(), ICON_SMALL.convert(), bmp.toBMP32().scaled(16, 16).toWin32Icon().toLong().convert())
+        }
+    }
+
     override var fullscreen: Boolean
         get() = memScoped {
             val placement = alloc<WINDOWPLACEMENT>()
@@ -142,7 +150,13 @@ class WindowsGameWindow : EventLoopGameWindow() {
         set(value) = run { bottom = top + value }
         get() = bottom - top
 
+    private var lastTitle: String = ""
+    private var lastWidth: Int = 100
+    private var lastHeight: Int = 100
+
     override fun setSize(width: Int, height: Int): Unit = memScoped {
+        lastWidth = width
+        lastHeight = height
         if (hwnd != null) {
             val rect = alloc<RECT>()
             val borderSize = getBorderSize()
@@ -213,6 +227,7 @@ class WindowsGameWindow : EventLoopGameWindow() {
             ) {
                 TranslateMessage(msg.ptr)
                 DispatchMessageW(msg.ptr)
+                if (mustPerformRender()) break
             }
         }
     }
@@ -221,13 +236,12 @@ class WindowsGameWindow : EventLoopGameWindow() {
         memScoped {
             // https://www.khronos.org/opengl/wiki/Creating_an_OpenGL_Context_(WGL)
 
-            val windowTitle = ""
-            val windowWidth = 0
-            val windowHeight = 0
+            val windowWidth = this@WindowsGameWindow.width
+            val windowHeight = this@WindowsGameWindow.height
 
             val wc = alloc<WNDCLASSW>()
 
-            val clazzName = "oglkotlinnative"
+            val clazzName = "ogl_korge_kotlin_native"
             val clazzNamePtr = clazzName.wcstr.getPointer(this@memScoped)
             wc.lpfnWndProc = staticCFunction(::WndProc)
             wc.hInstance = null
@@ -258,7 +272,7 @@ class WindowsGameWindow : EventLoopGameWindow() {
             hwnd = CreateWindowExW(
                 winExStyle.convert(),
                 clazzName,
-                windowTitle,
+                title,
                 winStyle.convert(),
                 min(max(0, (screenWidth - realWidth) / 2), screenWidth - 16).convert(),
                 min(max(0, (screenHeight - realHeight) / 2), screenHeight - 16).convert(),
@@ -268,6 +282,7 @@ class WindowsGameWindow : EventLoopGameWindow() {
             )
             println("ERROR: " + GetLastError())
 
+            _setIcon()
             ShowWindow(hwnd, SW_SHOWNORMAL.convert())
 
             //SetTimer(hwnd, 1, 1000 / 60, staticCFunction(::WndTimer))

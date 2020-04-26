@@ -240,7 +240,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     fun frame(doUpdate: Boolean = true, startTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()) {
         try {
             ag.onRender(ag)
-            dispatchRenderEvent()
+            dispatchRenderEvent(update = doUpdate)
             if (doUpdate) {
                 val elapsed = KorgwPerformanceCounter.now() - startTime
                 val available = counterTimePerFrame - elapsed
@@ -252,46 +252,16 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         }
     }
 
-    fun dispatchInitEvent() {
-        dispatch(initEvent)
-    }
-
-    fun dispatchPauseEvent() {
-        dispatch(pauseEvent)
-    }
-
-    fun dispatchResumeEvent() {
-        dispatch(resumeEvent)
-    }
-
-    fun dispatchStopEvent() {
-        dispatch(stopEvent)
-    }
-
-    fun dispatchDestroyEvent() {
-        dispatch(destroyEvent)
-    }
-
-    fun dispatchDisposeEvent() {
-        dispatch(disposeEvent)
-    }
-
-    fun dispatchRenderEvent() {
-        dispatch(renderEvent)
-    }
-
-    fun dispatchDropfileEvent(type: DropFileEvent.Type, files: List<VfsFile>?) {
-        dispatch(dropFileEvent.apply {
-            this.type = type
-            this.files = files
-        })
-    }
-
-    fun dispatchFullscreenEvent(fullscreen: Boolean) {
-        dispatch(fullScreenEvent.apply {
-            this.fullscreen = fullscreen
-        })
-    }
+    fun dispatchInitEvent() = dispatch(initEvent)
+    fun dispatchPauseEvent() = dispatch(pauseEvent)
+    fun dispatchResumeEvent() = dispatch(resumeEvent)
+    fun dispatchStopEvent() = dispatch(stopEvent)
+    fun dispatchDestroyEvent() = dispatch(destroyEvent)
+    fun dispatchDisposeEvent() = dispatch(disposeEvent)
+    fun dispatchRenderEvent() = dispatchRenderEvent(true)
+    fun dispatchRenderEvent(update: Boolean) = dispatch(renderEvent.also { it.update = update })
+    fun dispatchDropfileEvent(type: DropFileEvent.Type, files: List<VfsFile>?) = dispatch(dropFileEvent.also { it.type = type }.also { it.files = files })
+    fun dispatchFullscreenEvent(fullscreen: Boolean) = dispatch(fullScreenEvent.also { it.fullscreen = fullscreen })
 
     fun dispatchReshapeEvent(x: Int, y: Int, width: Int, height: Int) {
         ag.resized(width, height)
@@ -317,13 +287,13 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         type: MouseEvent.Type, id: Int, x: Int, y: Int, button: MouseButton, simulateClickOnUp: Boolean = false
     ) {
         val buttons = 0
-        val scrollDeltaX: Double = 0.0
-        val scrollDeltaY: Double = 0.0
-        val scrollDeltaZ: Double = 0.0
-        val isShiftDown: Boolean = false
-        val isCtrlDown: Boolean = false
-        val isAltDown: Boolean = false
-        val isMetaDown: Boolean = false
+        val scrollDeltaX = 0.0
+        val scrollDeltaY = 0.0
+        val scrollDeltaZ = 0.0
+        val isShiftDown = false
+        val isCtrlDown = false
+        val isAltDown = false
+        val isMetaDown = false
         val scaleCoords = false
         dispatchMouseEvent(type, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
         if (simulateClickOnUp && type == MouseEvent.Type.UP) {
@@ -358,19 +328,11 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     fun dispatchTouchEventStartStart() = dispatchTouchEventStart(TouchEvent.Type.START)
     fun dispatchTouchEventStartMove() = dispatchTouchEventStart(TouchEvent.Type.MOVE)
     fun dispatchTouchEventStartEnd() = dispatchTouchEventStart(TouchEvent.Type.END)
+    fun dispatchTouchEventStart(type: TouchEvent.Type) = touchEvent.startFrame(type)
+    fun dispatchTouchEventAddTouch(id: Int, x: Double, y: Double) = touchEvent.touch(id, x, y)
+    fun dispatchTouchEventEnd() = dispatch(touchEvent)
 
-    fun dispatchTouchEventStart(type: TouchEvent.Type) {
-        touchEvent.startFrame(type)
-    }
-
-    fun dispatchTouchEventAddTouch(id: Int, x: Double, y: Double) {
-        touchEvent.touch(id, x, y)
-    }
-
-    fun dispatchTouchEventEnd() {
-        dispatch(touchEvent)
-    }
-
+    // @TODO: Is this used?
     fun entry(callback: suspend () -> Unit) {
         launch(coroutineDispatcher) {
             try {
@@ -378,18 +340,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             } catch (e: Throwable) {
                 println("ERROR GameWindow.entry:")
                 e.printStackTrace()
+                running = false
             }
         }
-        /*
-        callback.startCoroutine(object : Continuation<Unit> {
-            override val context: CoroutineContext get() = coroutineDispatcher
-            override fun resumeWith(result: Result<Unit>) {
-                if (result.isFailure) {
-                    result.exceptionOrNull()?.printStackTrace()
-                }
-            }
-        })
-        */
     }
 }
 
@@ -411,7 +364,7 @@ open class EventLoopGameWindow : GameWindow() {
 
         while (running) {
             doHandleEvents()
-            if (elapsedSinceLastRenderTime() >= counterTimePerFrame) {
+            if (mustPerformRender()) {
                 render(doUpdate = true)
             }
             // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
@@ -423,6 +376,8 @@ open class EventLoopGameWindow : GameWindow() {
         doDestroy()
     }
 
+    fun mustPerformRender(): Boolean = elapsedSinceLastRenderTime() >= counterTimePerFrame
+
     var lastRenderTime = KorgwPerformanceCounter.now()
     fun elapsedSinceLastRenderTime() = KorgwPerformanceCounter.now() - lastRenderTime
     fun render(doUpdate: Boolean) {
@@ -432,39 +387,18 @@ open class EventLoopGameWindow : GameWindow() {
         doSwapBuffers()
     }
 
-    protected open fun doSmallSleep() {
-    }
-
-    protected open fun doHandleEvents() {
-    }
-
-    protected open fun doInitRender() {
-    }
-
-    protected open fun doSwapBuffers() {
-    }
-
-    protected open fun doInitialize() {
-    }
-
-    protected open fun doDestroy() {
-
-    }
+    protected open fun doSmallSleep() = Unit
+    protected open fun doHandleEvents() = Unit
+    protected open fun doInitRender() = Unit
+    protected open fun doSwapBuffers() = Unit
+    protected open fun doInitialize() = Unit
+    protected open fun doDestroy() = Unit
 }
 
 open class ZenityDialogs : DialogInterface {
-    open suspend fun exec(vararg args: String): String {
-        return localCurrentDirVfs.execToString(args.toList())
-    }
-
-    override suspend fun browse(url: URL) {
-        exec("xdg-open", url.toString())
-    }
-
-    override suspend fun alert(message: String) {
-        exec("zenity", "--warning", "--text=$message")
-    }
-
+    open suspend fun exec(vararg args: String): String = localCurrentDirVfs.execToString(args.toList())
+    override suspend fun browse(url: URL): Unit = run { exec("xdg-open", url.toString()) }
+    override suspend fun alert(message: String): Unit = run { exec("zenity", "--warning", "--text=$message") }
     override suspend fun confirm(message: String): Boolean =
         try {
             exec("zenity", "--question", "--text=$message")
