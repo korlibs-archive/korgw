@@ -96,7 +96,7 @@ enum class ShaderType {
 	VERTEX, FRAGMENT
 }
 
-open class Operand(val type: VarType) {
+open class Operand(open val type: VarType) {
 }
 
 open class Variable(val name: String, type: VarType, val arrayCount: Int) : Operand(type) {
@@ -117,11 +117,26 @@ open class Attribute(
 
 	fun inactived() = Attribute(name, type, normalized, offset = null, active = false)
 	override fun toString(): String = "Attribute($name)"
+    override fun equals(other: Any?): Boolean = (other is Attribute)
+        && (this.name == other.name) && (this.type == other.type)
+        && (this.arrayCount == other.arrayCount) && (this.normalized == other.normalized)
+        && (this.offset == other.offset)&& (this.active == other.active)
+    override fun hashCode(): Int {
+        var out = 0
+        out *= 7; out += name.hashCode()
+        out *= 7; out += type.hashCode()
+        out *= 7; out += normalized.hashCode()
+        out *= 7; out += offset.hashCode()
+        out *= 7; out += active.hashCode()
+        return out
+    }
 }
 
 open class Varying(name: String, type: VarType, arrayCount: Int) : Variable(name, type, arrayCount) {
     constructor(name: String, type: VarType) : this(name, type, 1)
 	override fun toString(): String = "Varying($name)"
+    override fun equals(other: Any?): Boolean = (other is Varying) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount)
+    override fun hashCode(): Int = (id.hashCode() * 11) + (type.hashCode() * 7) + (arrayCount.hashCode())
 }
 
 open class Uniform(name: String, type: VarType, arrayCount: Int) : Variable(name, type, arrayCount) {
@@ -132,11 +147,15 @@ open class Uniform(name: String, type: VarType, arrayCount: Int) : Variable(name
 	//
 	//val uid = lastUid++
 	override fun toString(): String = "Uniform($name)"
+    override fun equals(other: Any?): Boolean = (other is Uniform) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount)
+    override fun hashCode(): Int = (id.hashCode() * 11) + (type.hashCode() * 7) + (arrayCount.hashCode())
 }
 
 open class Temp(id: Int, type: VarType, arrayCount: Int) : Variable("temp$id", type, arrayCount) {
     constructor(id: Int, type: VarType) : this(id, type, 1)
 	override fun toString(): String = "Temp($name)"
+    override fun equals(other: Any?): Boolean = (other is Temp) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount)
+    override fun hashCode(): Int = (id.hashCode() * 11) + (type.hashCode() * 7) + (arrayCount.hashCode())
 }
 
 object Output : Variable("out", VarType.Float4) {
@@ -146,30 +165,39 @@ object Output : Variable("out", VarType.Float4) {
 class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
 	val uniforms = vertex.uniforms + fragment.uniforms
 	val attributes = vertex.attributes + fragment.attributes
+    override fun hashCode(): Int = (vertex.hashCode() * 11) + (fragment.hashCode() * 7) + name.hashCode()
+    override fun equals(other: Any?): Boolean = (other is Program) && (this.vertex == other.vertex)
+        && (this.fragment == other.fragment) && (this.name == other.name)
 
-	override fun close() {
+    override fun close() {
 	}
 
 	override fun toString(): String =
 		"Program(name=$name, attributes=${attributes.map { it.name }}, uniforms=${uniforms.map { it.name }})"
 
-	class Binop(val left: Operand, val op: String, val right: Operand) : Operand(left.type)
-	class IntLiteral(val value: Int) : Operand(VarType.Int1)
-	class FloatLiteral(val value: Float) : Operand(VarType.Float1)
-	class BoolLiteral(val value: Boolean) : Operand(VarType.Bool1)
-	class Vector(type: VarType, val ops: Array<Operand>) : Operand(type)
-	class Swizzle(val left: Operand, val swizzle: String) : Operand(left.type)
-	class ArrayAccess(val left: Operand, val index: Operand) : Operand(left.type)
+    data class Binop(val left: Operand, val op: String, val right: Operand) : Operand(left.type)
+    data class IntLiteral(val value: Int) : Operand(VarType.Int1)
+    data class FloatLiteral(val value: Float) : Operand(VarType.Float1)
+    data class BoolLiteral(val value: Boolean) : Operand(VarType.Bool1)
+    data class Vector(override val type: VarType, val ops: Array<Operand>) : Operand(type) {
+        override fun equals(other: Any?): Boolean = (other is Vector) && (this.type == other.type) && (this.ops.contentEquals(other.ops))
+        override fun hashCode(): Int = (type.hashCode() * 7) + (ops.contentHashCode())
+    }
+    data class Swizzle(val left: Operand, val swizzle: String) : Operand(left.type)
+	data class ArrayAccess(val left: Operand, val index: Operand) : Operand(left.type)
 
-	class Func(val name: String, val ops: List<Operand>) : Operand(VarType.Float1) {
+    data class Func(val name: String, val ops: List<Operand>) : Operand(VarType.Float1) {
 		constructor(name: String, vararg ops: Operand) : this(name, ops.toList())
 	}
 
 	sealed class Stm {
-		class Stms(val stms: List<Stm>) : Stm()
-		class Set(val to: Operand, val from: Operand) : Stm()
-		class Discard : Stm()
-		class If(val cond: Operand, val tbody: Stm, var fbody: Stm? = null) : Stm()
+		data class Stms(val stms: List<Stm>) : Stm()
+        data class Set(val to: Operand, val from: Operand) : Stm()
+        class Discard : Stm() {
+            override fun equals(other: Any?): Boolean = other is Discard
+            override fun hashCode(): Int = 1
+        }
+        data class If(val cond: Operand, val tbody: Stm, var fbody: Stm? = null) : Stm()
 	}
 
 	// http://mew.cx/glsl_quickref.pdf
@@ -206,32 +234,17 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 			return stmIf
 		}
 
-		fun SET(target: Operand, expr: Operand) {
-			outputStms += Stm.Set(target, expr)
-		}
-
-		fun DISCARD() {
-			outputStms += Stm.Discard()
-		}
+		fun SET(target: Operand, expr: Operand) = run { outputStms += Stm.Set(target, expr) }
+		fun DISCARD() = run { outputStms += Stm.Discard() }
 
 		private var tempLastId = 3
         fun createTemp(type: VarType, arrayCount: Int) = Temp(tempLastId++, type, arrayCount)
 		fun createTemp(type: VarType) = Temp(tempLastId++, type, 1)
 
-		infix fun Operand.set(from: Operand) = run { outputStms += Stm.Set(
-            this,
-            from
-        )
-        }
-		infix fun Operand.setTo(from: Operand) = run { outputStms += Stm.Set(
-            this,
-            from
-        )
-        }
+		infix fun Operand.set(from: Operand) = run { outputStms += Stm.Set(this, from) }
+		infix fun Operand.setTo(from: Operand) = run { outputStms += Stm.Set(this, from) }
 
-		fun Operand.assign(from: Operand) {
-			outputStms += Stm.Set(this, from)
-		}
+		fun Operand.assign(from: Operand) = run { outputStms += Stm.Set(this, from) }
 
 		//infix fun Operand.set(to: Operand) = Stm.Set(this, to)
 		val out: Output = Output
@@ -429,6 +442,8 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 }
 
 open class Shader(val type: ShaderType, val stm: Program.Stm) {
+    private val stmHashCode = stm.hashCode()
+
 	val uniforms = LinkedHashSet<Uniform>().also { out ->
         object : Program.Visitor<Unit>(Unit) {
             override fun visit(uniform: Uniform) = run { out += uniform }
@@ -440,6 +455,9 @@ open class Shader(val type: ShaderType, val stm: Program.Stm) {
             override fun visit(attribute: Attribute) = run { out += attribute }
         }.visit(stm)
     }.toSet()
+
+    override fun equals(other: Any?): Boolean = other is Shader && (this.type == other.type) && (this.stmHashCode == other.stmHashCode) && (this.stm == other.stm)
+    override fun hashCode(): Int = (type.hashCode() * 17) + stmHashCode
 }
 
 open class VertexShader(stm: Program.Stm) : Shader(ShaderType.VERTEX, stm)

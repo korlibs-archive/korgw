@@ -67,4 +67,37 @@ class ShadersTest {
             shader.toNewGlslString(gles = gles, version = version)
         )
     }
+
+    @Test
+    fun testGlslEquality() {
+        fun genFragment(sub: Int) = FragmentShader {
+            DefaultShaders {
+                out setTo vec4(0f.lit, 0f.lit, 0f.lit, 0f.lit)
+
+                for (y in 0 until 3) {
+                    for (x in 0 until 3) {
+                        out setTo out + (tex(
+                            fragmentCoords + vec2(
+                                (x - sub).toFloat().lit,
+                                (y - sub).toFloat().lit
+                            )
+                        )) * u_Weights[x][y]
+                    }
+                }
+            }
+        }
+
+        assertEquals(genFragment(1), genFragment(1))
+        assertNotEquals(genFragment(1), genFragment(0))
+        assertEquals(1, LinkedHashSet<FragmentShader>().apply {
+            add(genFragment(1))
+            add(genFragment(1))
+        }.size)
+    }
+
+    private val u_Weights = Uniform("weights", VarType.Mat3)
+    val u_TextureSize = Uniform("effectTextureSize", VarType.Float2)
+    val Program.Builder.fragmentCoords01 get() = DefaultShaders.v_Tex["xy"]
+    val Program.Builder.fragmentCoords get() = fragmentCoords01 * u_TextureSize
+    fun Program.Builder.tex(coords: Operand) = texture2D(DefaultShaders.u_Tex, coords / u_TextureSize)
 }
