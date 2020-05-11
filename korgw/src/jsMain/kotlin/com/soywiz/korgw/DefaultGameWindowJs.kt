@@ -207,6 +207,9 @@ class BrowserGameWindow : GameWindow() {
         set(value) { document.title = value }
     override val width: Int get() = canvas.clientWidth
     override val height: Int get() = canvas.clientHeight
+    override val bufferWidth: Int get() = canvas.width
+    override val bufferHeight: Int get() = canvas.height
+
     override var icon: Bitmap? = null
         set(value) {
             field = value

@@ -176,6 +176,11 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open var title: String get() = ""; set(value) = Unit
     open val width: Int = 0
     open val height: Int = 0
+
+    // Might be different than width and height for example on high dpi screens
+    open val bufferWidth: Int get() = width
+    open val bufferHeight: Int get() = height
+
     open var icon: Bitmap? = null
     open var fullscreen: Boolean = false
     open var visible: Boolean = false
