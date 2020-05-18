@@ -95,6 +95,12 @@ class ShadersTest {
         }.size)
     }
 
+    @Test
+    fun testRegression() {
+        assertEquals(Uniform("test1", VarType.Float1), Uniform("test1", VarType.Float1))
+        assertNotEquals(Uniform("test1", VarType.Float1), Uniform("test2", VarType.Float1))
+    }
+
     private val u_Weights = Uniform("weights", VarType.Mat3)
     val u_TextureSize = Uniform("effectTextureSize", VarType.Float2)
     val Program.Builder.fragmentCoords01 get() = DefaultShaders.v_Tex["xy"]
