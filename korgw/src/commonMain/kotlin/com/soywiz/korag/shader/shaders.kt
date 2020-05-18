@@ -104,6 +104,10 @@ open class Variable(val name: String, type: VarType, val arrayCount: Int) : Oper
     val indexNames = Array(arrayCount) { "$name[$it]" }
     var id: Int = 0
 	var data: Any? = null
+    inline fun <reified T : Variable> mequals(other: Any?) = (other is T) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount) && (this.name == other.name)
+    inline fun mhashcode() = id.hashCode() + (type.hashCode() * 7) + (name.hashCode() * 11)
+    override fun equals(other: Any?): Boolean = mequals<Variable>(other)
+    override fun hashCode(): Int = mhashcode()
 }
 
 open class Attribute(
@@ -117,14 +121,9 @@ open class Attribute(
 
 	fun inactived() = Attribute(name, type, normalized, offset = null, active = false)
 	override fun toString(): String = "Attribute($name)"
-    override fun equals(other: Any?): Boolean = (other is Attribute)
-        && (this.name == other.name) && (this.type == other.type)
-        && (this.arrayCount == other.arrayCount) && (this.normalized == other.normalized)
-        && (this.offset == other.offset)&& (this.active == other.active)
+    override fun equals(other: Any?): Boolean = mequals<Attribute>(other) && this.normalized == (other as Attribute).normalized && this.offset == other.offset && this.active == other.active
     override fun hashCode(): Int {
-        var out = 0
-        out *= 7; out += name.hashCode()
-        out *= 7; out += type.hashCode()
+        var out = mhashcode()
         out *= 7; out += normalized.hashCode()
         out *= 7; out += offset.hashCode()
         out *= 7; out += active.hashCode()
@@ -135,31 +134,28 @@ open class Attribute(
 open class Varying(name: String, type: VarType, arrayCount: Int) : Variable(name, type, arrayCount) {
     constructor(name: String, type: VarType) : this(name, type, 1)
 	override fun toString(): String = "Varying($name)"
-    override fun equals(other: Any?): Boolean = (other is Varying) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount)
-    override fun hashCode(): Int = (id.hashCode() * 11) + (type.hashCode() * 7) + (arrayCount.hashCode())
+    override fun equals(other: Any?): Boolean = mequals<Varying>(other)
+    override fun hashCode(): Int = mhashcode()
 }
 
 open class Uniform(name: String, type: VarType, arrayCount: Int) : Variable(name, type, arrayCount) {
     constructor(name: String, type: VarType) : this(name, type, 1)
-	//companion object {
-	//	var lastUid = 0
-	//}
-	//
-	//val uid = lastUid++
 	override fun toString(): String = "Uniform($name)"
-    override fun equals(other: Any?): Boolean = (other is Uniform) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount)
-    override fun hashCode(): Int = (id.hashCode() * 11) + (type.hashCode() * 7) + (arrayCount.hashCode())
+    override fun equals(other: Any?): Boolean = mequals<Uniform>(other)
+    override fun hashCode(): Int = mhashcode()
 }
 
 open class Temp(id: Int, type: VarType, arrayCount: Int) : Variable("temp$id", type, arrayCount) {
     constructor(id: Int, type: VarType) : this(id, type, 1)
 	override fun toString(): String = "Temp($name)"
-    override fun equals(other: Any?): Boolean = (other is Temp) && (this.id == other.id) && (this.type == other.type) && (this.arrayCount == other.arrayCount)
-    override fun hashCode(): Int = (id.hashCode() * 11) + (type.hashCode() * 7) + (arrayCount.hashCode())
+    override fun equals(other: Any?): Boolean = mequals<Temp>(other)
+    override fun hashCode(): Int = mhashcode()
 }
 
 object Output : Variable("out", VarType.Float4) {
 	override fun toString(): String = "Output"
+    override fun equals(other: Any?): Boolean = mequals<Output>(other)
+    override fun hashCode(): Int = mhashcode()
 }
 
 class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
