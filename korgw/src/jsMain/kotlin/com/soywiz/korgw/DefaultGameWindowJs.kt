@@ -11,6 +11,7 @@ import com.soywiz.korio.util.*
 import com.soywiz.korio.util.encoding.toBase64
 import kotlinx.coroutines.*
 import org.w3c.dom.HTMLLinkElement
+import org.w3c.dom.TouchEvent
 import org.w3c.dom.events.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.MouseEvent
@@ -105,8 +106,8 @@ class BrowserGameWindow : GameWindow() {
         dispatch(renderEvent)
     }
 
-    inline fun transformEventX(x: Number): Double = x.toDouble() * canvasRatio
-    inline fun transformEventY(y: Number): Double = y.toDouble() * canvasRatio
+    inline fun transformEventX(x: Double): Double = x * canvasRatio
+    inline fun transformEventY(y: Double): Double = y * canvasRatio
 
     private fun keyEvent(me: KeyboardEvent) {
         dispatch(keyEvent {
@@ -167,15 +168,15 @@ class BrowserGameWindow : GameWindow() {
         })
     }
 
-    private fun touchEvent(e: dynamic, type: com.soywiz.korev.TouchEvent.Type) {
+    private fun touchEvent(e: TouchEvent, type: com.soywiz.korev.TouchEvent.Type) {
         touchEvent.scaleCoords = false
         touchEvent.startFrame(type)
         for (n in 0 until e.touches.length) {
-            val touch = e.touches.item(n)
+            val touch = e.touches.item(n) ?: continue
             touchEvent.touch(
                 touch.identifier,
-                transformEventX(touch.clientX),
-                transformEventY(touch.clientY)
+                transformEventX(touch.clientX.toDouble()),
+                transformEventY(touch.clientY.toDouble())
             )
         }
         dispatch(touchEvent)
@@ -183,8 +184,8 @@ class BrowserGameWindow : GameWindow() {
 
     private fun mouseEvent(e: MouseEvent, type: com.soywiz.korev.MouseEvent.Type, pressingType: com.soywiz.korev.MouseEvent.Type = type) {
         if (!is_touch_device()) {
-            val tx = transformEventX(e.clientX).toInt()
-            val ty = transformEventY(e.clientY).toInt()
+            val tx = transformEventX(e.clientX.toDouble()).toInt()
+            val ty = transformEventY(e.clientY.toDouble()).toInt()
             //console.log("mouseEvent", type.toString(), e.clientX, e.clientY, tx, ty)
             dispatch(mouseEvent {
                 this.type = if (e.buttons.toInt() != 0) pressingType else type
@@ -302,9 +303,9 @@ class BrowserGameWindow : GameWindow() {
         canvas.addEventListener("mousedown", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.DOWN) })
         canvas.addEventListener("click", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.CLICK) })
 
-        canvas.addEventListener("touchstart", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.START) })
-        canvas.addEventListener("touchmove", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.MOVE) })
-        canvas.addEventListener("touchend", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.END) })
+        canvas.addEventListener("touchstart", { touchEvent(it.unsafeCast<TouchEvent>(), com.soywiz.korev.TouchEvent.Type.START) })
+        canvas.addEventListener("touchmove", { touchEvent(it.unsafeCast<TouchEvent>(), com.soywiz.korev.TouchEvent.Type.MOVE) })
+        canvas.addEventListener("touchend", { touchEvent(it.unsafeCast<TouchEvent>(), com.soywiz.korev.TouchEvent.Type.END) })
         //canvas.addEventListener("touchcancel", { touchEvent(it, com.soywiz.korev.TouchEvent.Type.CANCEL) })
 
         window.addEventListener("keypress", { keyEvent(it.unsafeCast<KeyboardEvent>()) })
