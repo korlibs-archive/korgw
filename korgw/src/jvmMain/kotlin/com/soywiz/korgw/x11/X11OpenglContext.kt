@@ -21,7 +21,7 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val doubleBuffer
         println("GL_VERSION: " + X.glGetString(GL.GL_VERSION))
     }
 
-    val extensions = X.glGetString(GL.GL_EXTENSIONS).split(" ").toSet()
+    val extensions = (X.glGetString(GL.GL_EXTENSIONS) ?: "").split(" ").toSet()
 
     init {
         println("GL_EXTENSIONS: " + extensions.size)
