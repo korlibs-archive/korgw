@@ -33,6 +33,9 @@ class X11Ag(val window: X11GameWindow, override val gl: KmlGl = com.soywiz.kgl.K
 
 // https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
 class X11OpenglContext(val d: CPointer<Display>?, val w: Window, val doubleBuffered: Boolean = true) {
+    init {
+        println("Creating OpenGL context")
+    }
     val vi = memScoped {
         val values = intArrayOf(
             GLX_RGBA,
@@ -43,6 +46,9 @@ class X11OpenglContext(val d: CPointer<Display>?, val w: Window, val doubleBuffe
         values.usePinned {
             glXChooseVisual(d, 0, it.addressOf(0))
         }
+    }
+    init {
+        println("VI: $vi")
     }
     val glc = glXCreateContext(d, vi, null, 1)
 

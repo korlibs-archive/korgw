@@ -109,6 +109,8 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
         s = X.XDefaultScreen(d)
         root = X.XDefaultRootWindow(d)
 
+        val vi = X11OpenglContext.chooseVisuals(d, s)
+
         //val cmap = XCreateColormap(d, root, vi->visual, AllocNone);
         val screenWidth = X.XDisplayWidth(d, s)
         val screenHeight = X.XDisplayHeight(d, s)
@@ -152,7 +154,8 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
         realSetVisible(visible)
         realSetTitle(title)
 
-        ctx = X11OpenglContext(d, w, doubleBuffered = doubleBuffered)
+
+        ctx = X11OpenglContext(d, w, s, vi, doubleBuffered = doubleBuffered)
         ctx.makeCurrent()
 
         val wmDeleteMessage = X.XInternAtom(d, "WM_DELETE_WINDOW", false)

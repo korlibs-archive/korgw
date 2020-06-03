@@ -16,6 +16,10 @@ typealias XVisualInfo = Pointer
 typealias GLXContext = Pointer
 
 internal const val GLX_RGBA = 4
+internal const val GLX_RED_SIZE	= 8
+internal const val GLX_GREEN_SIZE = 9
+internal const val GLX_BLUE_SIZE = 10
+internal const val GLX_ALPHA_SIZE = 11
 internal const val GLX_DEPTH_SIZE = 12
 internal const val GLX_DOUBLEBUFFER = 5
 
@@ -576,8 +580,9 @@ internal class MyXMotionEvent(p: Pointer? = null) : KStructure(p) {
     var same_screen by int()
 }
 
-internal object X : X11Impl by Native.load("X11", X11Impl::class.java),
-    GL by Native.load("GL", GL::class.java)
+internal object X :
+    X11Impl by Native.load(System.getenv("X11LIB_PATH") ?: "libX11", X11Impl::class.java),
+    GL by Native.load(System.getenv("GLLIB_PATH") ?: "libGL", GL::class.java)
 
 internal interface X11Impl : X11 {
     fun XCreateWindow(
@@ -598,15 +603,23 @@ internal interface X11Impl : X11 {
     fun XLookupKeysym(e: X11.XEvent?, i: Int): Int
 }
 
-internal interface GL : Library {
-    fun glClearColor(r: Float, g: Float, b: Float, a: Float)
-    fun glClear(flags: Int)
-    fun glGetString(id: Int): String
-    fun glViewport(x: Int, y: Int, width: Int, height: Int)
+internal interface GL : INativeGL, Library {
+    //fun glClearColor(r: Float, g: Float, b: Float, a: Float)
+    //fun glClear(flags: Int)
+    //fun glGetString(id: Int): String
+    //fun glViewport(x: Int, y: Int, width: Int, height: Int)
+    fun glXChooseVisual(display: X11.Display?, screen: Int, attribList: LongArray): XVisualInfo?
     fun glXChooseVisual(display: X11.Display?, screen: Int, attribList: IntArray): XVisualInfo?
+    fun glXChooseVisual(display: X11.Display?, screen: Int, attribList: Pointer): XVisualInfo?
     fun glXCreateContext(display: X11.Display?, vis: XVisualInfo?, shareList: GLXContext?, direct: Boolean): GLXContext?
     fun glXMakeCurrent(display: X11.Display?, drawable: X11.Window?, ctx: GLXContext?): Boolean
     fun glXSwapBuffers(display: X11.Display?, drawable: X11.Window?)
+
+    //fun glXChooseVisual(display: X11.Display, screen: Int, attribList: IntArray): XVisualInfo
+    //fun glXCreateContext(display: X11.Display, vis: XVisualInfo, shareList: GLXContext?, direct: Boolean): GLXContext
+    //fun glXMakeCurrent(display: X11.Display, drawable: X11.Window, ctx: GLXContext?): Boolean
+    //fun glXSwapBuffers(display: X11.Display, drawable: X11.Window)
+
 
     companion object {
         const val GL_DEPTH_BUFFER_BIT = 0x00000100
@@ -624,13 +637,5 @@ internal interface GL : Library {
     }
 }
 
-internal object X11KmlGl : NativeKgl(X11GL)
+internal object X11KmlGl : NativeKgl(X)
 
-internal interface X11GL : INativeGL, Library {
-    fun glXChooseVisual(display: X11.Display, screen: Int, attribList: IntArray): XVisualInfo
-    fun glXCreateContext(display: X11.Display, vis: XVisualInfo, shareList: GLXContext?, direct: Boolean): GLXContext
-    fun glXMakeCurrent(display: X11.Display, drawable: X11.Window, ctx: GLXContext?): Boolean
-    fun glXSwapBuffers(display: X11.Display, drawable: X11.Window)
-
-    companion object : X11GL by Native.load("GL", X11GL::class.java)
-}

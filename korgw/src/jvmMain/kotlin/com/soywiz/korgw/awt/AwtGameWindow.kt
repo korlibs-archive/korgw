@@ -143,9 +143,10 @@ class AwtGameWindow : GameWindow() {
                     )
                     else -> {
                         val d = X.XOpenDisplay(null)
+                        val src = X.XDefaultScreen(d)
                         val winId = Native.getWindowID(frame)
                         println("winId: $winId")
-                        X11OpenglContext(d, X11.Window(winId))
+                        X11OpenglContext(d, X11.Window(winId), src)
                     }
                 }
             }
