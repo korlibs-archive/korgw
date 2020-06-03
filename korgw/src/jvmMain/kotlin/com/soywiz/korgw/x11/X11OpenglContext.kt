@@ -10,7 +10,7 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, va
         fun chooseVisuals(d: X11.Display?, scr: Int = X.XDefaultScreen(d)): XVisualInfo? {
             val attrs = intArrayOf(
                 GLX_RGBA,
-                //GLX_DOUBLEBUFFER,
+                GLX_DOUBLEBUFFER,
                 //GLX_RED_SIZE, 8,
                 //GLX_GREEN_SIZE, 8,
                 //GLX_BLUE_SIZE, 8,
