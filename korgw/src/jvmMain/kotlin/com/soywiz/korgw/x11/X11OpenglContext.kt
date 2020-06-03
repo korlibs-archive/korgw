@@ -8,20 +8,23 @@ import com.sun.jna.platform.unix.*
 class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, val vi: XVisualInfo? = chooseVisuals(d, scr), val doubleBuffered: Boolean = true) : BaseOpenglContext {
     companion object {
         fun chooseVisuals(d: X11.Display?, scr: Int = X.XDefaultScreen(d)): XVisualInfo? {
-            val attrs = intArrayOf(
-                GLX_RGBA,
-                GLX_DOUBLEBUFFER,
-                //GLX_RED_SIZE, 8,
-                //GLX_GREEN_SIZE, 8,
-                //GLX_BLUE_SIZE, 8,
-                //GLX_DEPTH_SIZE, 16,
-                GLX_DEPTH_SIZE, 24,
-                // *(if (doubleBuffered) intArrayOf(GLX_DOUBLEBUFFER) else intArrayOf()),
-                X11.None
-            )//.map { it.toLong() }.toLongArray()
-            return X.glXChooseVisual(d, scr, attrs).also {
-                println("VI: $it")
+            val attrsList = listOf(
+                intArrayOf(GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 24, X11.None),
+                intArrayOf(GLX_RGBA, GLX_DEPTH_SIZE, 24, X11.None),
+                intArrayOf(GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 16, X11.None),
+                intArrayOf(GLX_RGBA, GLX_DEPTH_SIZE, 16, X11.None),
+                intArrayOf(GLX_RGBA, GLX_DOUBLEBUFFER, X11.None),
+                intArrayOf(GLX_RGBA, X11.None),
+                intArrayOf(X11.None)
+            )
+            for (attrs in attrsList) {
+                val vi = X.glXChooseVisual(d, scr, attrs)
+                if (vi != null) {
+                    println("VI: $vi")
+                    return vi
+                }
             }
+            println("VI: null")
         }
     }
     init {
