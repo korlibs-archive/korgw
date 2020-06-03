@@ -25,6 +25,7 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, va
                 }
             }
             println("VI: null")
+            return null
         }
     }
     init {
