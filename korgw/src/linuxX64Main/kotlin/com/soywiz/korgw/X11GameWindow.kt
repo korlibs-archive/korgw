@@ -33,20 +33,30 @@ class X11Ag(val window: X11GameWindow, override val gl: KmlGl = com.soywiz.kgl.K
 
 // https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
 class X11OpenglContext(val d: CPointer<Display>?, val w: Window, val doubleBuffered: Boolean = true) {
+    companion object {
+        fun chooseVisuals(d: CPointer<Display>?, scr: Int = XDefaultScreen(d)): CPointer<XVisualInfo>? {
+            val attrsList = listOf(
+                intArrayOf(GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 24, None.toInt()),
+                intArrayOf(GLX_RGBA, GLX_DEPTH_SIZE, 24, None.toInt()),
+                intArrayOf(GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 16, None.toInt()),
+                intArrayOf(GLX_RGBA, GLX_DEPTH_SIZE, 16, None.toInt()),
+                intArrayOf(GLX_RGBA, GLX_DOUBLEBUFFER, None.toInt()),
+                intArrayOf(GLX_RGBA, None.toInt()),
+                intArrayOf(None.toInt())
+            )
+            for (attrs in attrsList) {
+                attrs.usePinned {
+                    return glXChooseVisual(d, scr, it.addressOf(0))
+                }
+            }
+            println("VI: null")
+            return null
+        }
+    }
     init {
         println("Creating OpenGL context")
     }
-    val vi = memScoped {
-        val values = intArrayOf(
-            GLX_RGBA,
-            GLX_DEPTH_SIZE, 24,
-            *(if (doubleBuffered) intArrayOf(GLX_DOUBLEBUFFER) else intArrayOf()),
-            None.toInt()
-        )
-        values.usePinned {
-            glXChooseVisual(d, 0, it.addressOf(0))
-        }
-    }
+    val vi = chooseVisuals(d, 0)
     init {
         println("VI: $vi")
     }
