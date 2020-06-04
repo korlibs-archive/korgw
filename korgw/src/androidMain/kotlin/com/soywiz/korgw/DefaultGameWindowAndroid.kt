@@ -23,14 +23,20 @@ import kotlin.coroutines.*
 
 actual fun CreateDefaultGameWindow(): GameWindow = TODO()
 
-class AndroidGameWindow(val activity: KorgwActivity) : GameWindow() {
+class AndroidGameWindow(
+    val activity: KorgwActivity,
+    val view: KorgwView?
+) : GameWindow() {
+
+    val androidContext get() = view.context ?: activity
+
+    constructor(activity: KorgwActivity) : this(activity, null)
+
     init {
         activity.gameWindow = this
     }
 
-    val androidContext get() = activity
-
-    override val ag: AG get() = activity.ag
+    override val ag: AG get() = view.agOpenGl ?: activity.ag
 
     override var title: String; get() = activity.title.toString(); set(value) = run { activity.title = value }
     override val width: Int get() = activity.window.decorView.width
@@ -76,7 +82,7 @@ class AndroidGameWindow(val activity: KorgwActivity) : GameWindow() {
         val listener = DialogInterface.OnClickListener { dialog, which ->
             deferred.complete(which)
         }
-        val dialog = AlertDialog.Builder(activity)
+        val dialog = AlertDialog.Builder(androidContext)
             .setIcon(android.R.drawable.ic_dialog_alert)
             .setTitle(title)
             .setMessage(message)
@@ -138,6 +144,7 @@ class AndroidGameWindow(val activity: KorgwActivity) : GameWindow() {
     lateinit var coroutineContext: CoroutineContext
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         this.coroutineContext = kotlin.coroutines.coroutineContext
+        view?.gameWindow = this
         //println("CONTEXT: ${kotlin.coroutines.coroutineContext[AndroidCoroutineContext.Key]?.context}")
         entry(this)
     }
