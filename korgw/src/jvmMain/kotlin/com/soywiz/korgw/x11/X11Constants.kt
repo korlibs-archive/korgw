@@ -5,10 +5,7 @@ import com.soywiz.korev.Key
 import com.soywiz.korgw.platform.INativeGL
 import com.soywiz.korgw.platform.KStructure
 import com.soywiz.korgw.platform.NativeKgl
-import com.sun.jna.Library
-import com.sun.jna.Native
-import com.sun.jna.NativeLong
-import com.sun.jna.Pointer
+import com.sun.jna.*
 import com.sun.jna.platform.unix.X11
 
 
@@ -614,7 +611,9 @@ internal interface GL : INativeGL, Library {
     fun glXCreateContext(display: X11.Display?, vis: XVisualInfo?, shareList: GLXContext?, direct: Boolean): GLXContext?
     fun glXMakeCurrent(display: X11.Display?, drawable: X11.Window?, ctx: GLXContext?): Boolean
     fun glXSwapBuffers(display: X11.Display?, drawable: X11.Window?)
-    fun glXSwapIntervalEXT(value: Int)
+    fun glXGetProcAddress(name: String): Pointer
+    fun glXGetCurrentDrawable(): Pointer
+    fun glXGetCurrentDisplay(): X11.Display?
 
     //fun glXChooseVisual(display: X11.Display, screen: Int, attribList: IntArray): XVisualInfo
     //fun glXCreateContext(display: X11.Display, vis: XVisualInfo, shareList: GLXContext?, direct: Boolean): GLXContext

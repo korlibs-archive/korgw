@@ -199,7 +199,7 @@ class WindowsGameWindow : EventLoopGameWindow() {
     @ThreadLocal
     var setSwapInterval = false
     @ThreadLocal
-    var wglSwapIntervalEXT: CPointer<CFunction<(Int) -> Unit>>? = null
+    var swapIntervalEXT: CPointer<CFunction<(Int) -> Unit>>? = null
 
     override fun doInitRender() {
         if (hwnd == null || glRenderContext == null) return
@@ -210,13 +210,13 @@ class WindowsGameWindow : EventLoopGameWindow() {
         // https://github.com/spurious/SDL-mirror/blob/4c1c6d03ddaa3095b3c63c38ddd0a6cfad58b752/src/video/windows/SDL_windowsopengl.c#L439-L447
         if (!setSwapInterval) {
             setSwapInterval = true
-            wglSwapIntervalEXT = wglGetProcAddress("wglSwapIntervalEXT")?.reinterpret()
-            println("wglSwapIntervalEXT: $wglSwapIntervalEXT")
+            swapIntervalEXT = wglGetProcAddress("wglSwapIntervalEXT")?.reinterpret()
+            println("swapIntervalEXT: $swapIntervalEXT")
         }
         if (vsync) {
-            wglSwapIntervalEXT?.invoke(1)
+            swapIntervalEXT?.invoke(1)
         } else {
-            wglSwapIntervalEXT?.invoke(0)
+            swapIntervalEXT?.invoke(0)
         }
     }
 
