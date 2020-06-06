@@ -104,6 +104,7 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
         if (d == null || w == NilWin) return@run
     }
 
+    // https://github.com/AlexeyAB/SDL-OculusRift/blob/master/src/video/x11/SDL_x11opengl.c
     override fun doInitialize() {
         d = X.XOpenDisplay(null) ?: error("Can't open main display")
         s = X.XDefaultScreen(d)
@@ -169,6 +170,7 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
     lateinit var ctx: X11OpenglContext
 
     override fun doSwapBuffers() {
+        //println("doSwapBuffers")
         ctx.swapBuffers()
     }
 
@@ -187,7 +189,9 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
     override fun doSmallSleep() {
         //println("No events!")
         //Thread.sleep(0L, 100_000)
-        Thread.sleep(1L)
+        if (!vsync) {
+            Thread.sleep(0L, 100_000)
+        }
     }
 
     val e = XEvent()

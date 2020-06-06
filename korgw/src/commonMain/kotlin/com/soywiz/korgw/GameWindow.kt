@@ -176,6 +176,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open var title: String get() = ""; set(value) = Unit
     open val width: Int = 0
     open val height: Int = 0
+    open var vsync: Boolean = true
 
     // Might be different than width and height for example on high dpi screens
     open val bufferWidth: Int get() = width
@@ -390,7 +391,7 @@ open class EventLoopGameWindow : GameWindow() {
         doDestroy()
     }
 
-    fun mustPerformRender(): Boolean = elapsedSinceLastRenderTime() >= counterTimePerFrame
+    fun mustPerformRender(): Boolean = if (vsync) true else elapsedSinceLastRenderTime() >= counterTimePerFrame
 
     var lastRenderTime = KorgwPerformanceCounter.now()
     fun elapsedSinceLastRenderTime() = KorgwPerformanceCounter.now() - lastRenderTime

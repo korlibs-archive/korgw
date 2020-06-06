@@ -614,6 +614,7 @@ internal interface GL : INativeGL, Library {
     fun glXCreateContext(display: X11.Display?, vis: XVisualInfo?, shareList: GLXContext?, direct: Boolean): GLXContext?
     fun glXMakeCurrent(display: X11.Display?, drawable: X11.Window?, ctx: GLXContext?): Boolean
     fun glXSwapBuffers(display: X11.Display?, drawable: X11.Window?)
+    fun glXSwapIntervalEXT(value: Int)
 
     //fun glXChooseVisual(display: X11.Display, screen: Int, attribList: IntArray): XVisualInfo
     //fun glXCreateContext(display: X11.Display, vis: XVisualInfo, shareList: GLXContext?, direct: Boolean): GLXContext
