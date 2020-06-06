@@ -28,6 +28,11 @@ interface DialogInterface {
         unsupported()
 }
 
+open class GameWindowCoroutineDispatcherSetNow : GameWindowCoroutineDispatcher() {
+    var currentTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()
+    override fun now() = currentTime
+}
+
 @UseExperimental(InternalCoroutinesApi::class)
 open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
@@ -362,6 +367,8 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 }
 
 open class EventLoopGameWindow : GameWindow() {
+    override val coroutineDispatcher: GameWindowCoroutineDispatcherSetNow = GameWindowCoroutineDispatcherSetNow()
+
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         // Required here so setSize is called
         launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
@@ -380,6 +387,7 @@ open class EventLoopGameWindow : GameWindow() {
         while (running) {
             doHandleEvents()
             if (mustPerformRender()) {
+                coroutineDispatcher.currentTime = KorgwPerformanceCounter.now()
                 render(doUpdate = true)
             }
             // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
