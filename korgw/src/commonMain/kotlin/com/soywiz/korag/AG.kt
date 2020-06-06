@@ -492,7 +492,7 @@ abstract class AG : Extra by Extra.Mixin() {
 	private val dummyStencilState = StencilState()
 	private val dummyColorMaskState = ColorMaskState()
 
-	// @TODO: Keep for compatibility
+    @Deprecated("")
 	fun draw(
 		vertices: Buffer,
 		program: Program,
@@ -507,41 +507,64 @@ abstract class AG : Extra by Extra.Mixin() {
 		colorMask: ColorMaskState = dummyColorMaskState,
 		scissor: Scissor? = null
 	) = draw(
-		vertices,
-		program,
-		type,
-		vertexLayout,
-		vertexCount,
-		indices,
-		offset,
-		blending,
-		uniforms,
-		stencil,
-		colorMask,
-		dummyRenderState,
-		scissor
-	)
+        vertices, program, type, vertexLayout, vertexCount, indices, offset, blending,
+		uniforms, stencil, colorMask, dummyRenderState, scissor
+    )
 
-	open fun draw(
-		vertices: Buffer,
-		program: Program,
-		type: DrawType,
-		vertexLayout: VertexLayout,
-		vertexCount: Int,
-		indices: Buffer? = null,
-		offset: Int = 0,
-		blending: Blending = Blending.NORMAL,
-		uniforms: UniformValues = UniformValues.EMPTY,
-		stencil: StencilState = dummyStencilState,
-		colorMask: ColorMaskState = dummyColorMaskState,
-		renderState: RenderState = dummyRenderState,
-		scissor: Scissor? = null
-	) {
-	}
+    fun draw(
+        vertices: Buffer,
+        program: Program,
+        type: DrawType,
+        vertexLayout: VertexLayout,
+        vertexCount: Int,
+        indices: Buffer? = null,
+        offset: Int = 0,
+        blending: Blending = Blending.NORMAL,
+        uniforms: UniformValues = UniformValues.EMPTY,
+        stencil: StencilState = dummyStencilState,
+        colorMask: ColorMaskState = dummyColorMaskState,
+        renderState: RenderState = dummyRenderState,
+        scissor: Scissor? = null
+    ) = draw(batch.also { batch ->
+        batch.vertices = vertices
+        batch.program = program
+        batch.type = type
+        batch.vertexLayout = vertexLayout
+        batch.vertexCount = vertexCount
+        batch.indices = indices
+        batch.offset = offset
+        batch.blending = blending
+        batch.uniforms = uniforms
+        batch.stencil = stencil
+        batch.colorMask = colorMask
+        batch.renderState = renderState
+        batch.scissor = scissor
+    })
+
+    class Batch {
+        var vertices: Buffer = Buffer(Buffer.Kind.VERTEX)
+        var program: Program = DefaultShaders.PROGRAM_DEBUG
+        var type: DrawType = DrawType.TRIANGLES
+        var vertexLayout: VertexLayout = VertexLayout()
+        var vertexCount: Int = 0
+        var indices: Buffer? = null
+        var offset: Int = 0
+        var blending: Blending = Blending.NORMAL
+        var uniforms: UniformValues = UniformValues.EMPTY
+        var stencil: StencilState = StencilState()
+        var colorMask: ColorMaskState = ColorMaskState()
+        var renderState: RenderState = RenderState()
+        var scissor: Scissor? = null
+    }
+
+    private val batch = Batch()
+
+    open fun draw(batch: Batch) {
+    }
 
 	protected fun checkBuffers(vertices: AG.Buffer, indices: AG.Buffer?) {
 		if (vertices.kind != AG.Buffer.Kind.VERTEX) invalidOp("Not a VertexBuffer")
-		if (indices != null && indices.kind != AG.Buffer.Kind.INDEX) invalidOp("Not a IndexBuffer")
+		if (indices != null && indices.kind != Buffer.Kind.INDEX) invalidOp("Not a IndexBuffer")
 	}
 
 	open fun disposeTemporalPerFrameStuff() = Unit

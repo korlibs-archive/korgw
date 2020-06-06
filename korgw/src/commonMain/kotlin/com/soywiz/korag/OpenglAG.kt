@@ -163,21 +163,21 @@ abstract class AGOpengl : AG() {
     private val tempFloats = FloatArray(16 * TEMP_MAX_MATRICES)
     private val mat3dArray = arrayOf(Matrix3D())
 
-    override fun draw(
-        vertices: Buffer,
-        program: Program,
-        type: DrawType,
-        vertexLayout: VertexLayout,
-        vertexCount: Int,
-        indices: Buffer?,
-        offset: Int,
-        blending: Blending,
-        uniforms: UniformValues,
-        stencil: StencilState,
-        colorMask: ColorMaskState,
-        renderState: RenderState,
-        scissor: Scissor?
-    ) {
+    override fun draw(batch: Batch) {
+        val vertices = batch.vertices
+        val program = batch.program
+        val type = batch.type
+        val vertexLayout = batch.vertexLayout
+        val vertexCount = batch.vertexCount
+        val indices = batch.indices
+        val offset = batch.offset
+        val blending = batch.blending
+        val uniforms = batch.uniforms
+        val stencil = batch.stencil
+        val colorMask = batch.colorMask
+        val renderState = batch.renderState
+        val scissor = batch.scissor
+
         val vattrs = vertexLayout.attributes
         val vattrspos = vertexLayout.attributePositions
 
