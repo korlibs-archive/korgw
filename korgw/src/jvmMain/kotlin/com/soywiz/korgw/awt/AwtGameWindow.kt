@@ -170,6 +170,14 @@ class AwtGameWindow : GameWindow() {
                 //println(gl.versionString)
                 frame()
             })
+
+            if (vsync) {
+                EventQueue.invokeLater {
+                    //println("repaint!")
+                    frame.repaint()
+                }
+            }
+
             //println("FRAME!")
         }
     }
@@ -377,14 +385,22 @@ class AwtGameWindow : GameWindow() {
             frame.isVisible = true
         }
 
+        EventQueue.invokeLater {
+            //println("repaint!")
+            frame.repaint()
+        }
         while (running) {
             //frame.invalidate()
-            EventQueue.invokeLater {
-                //println("repaint!")
-                frame.repaint()
-            }
+            if (vsync) {
+                Thread.sleep(1L)
+            } else {
+                EventQueue.invokeLater {
+                    //println("repaint!")
+                    frame.repaint()
+                }
 
-            Thread.sleep(timePerFrame.millisecondsLong)
+                Thread.sleep(timePerFrame.millisecondsLong)
+            }
         }
 
         dispatchDestroyEvent()
