@@ -16,8 +16,10 @@ import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import platform.AppKit.*
 import platform.CoreGraphics.*
+import platform.CoreVideo.*
 import platform.Foundation.*
 import platform.darwin.*
+import kotlin.native.concurrent.AtomicInt
 
 private fun ByteArray.toNsData(): NSData {
     val array = this
@@ -28,7 +30,11 @@ private fun ByteArray.toNsData(): NSData {
     }
 }
 
-actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
+val frameRequestNumber = AtomicInt(0)
+
+actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRenderizable {
+    val gameWindow = this
+    val gameWindowStableRef = StableRef.create(gameWindow)
     val app = NSApplication.sharedApplication()
     val controller = WinController()
 
@@ -237,10 +243,18 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     private val backingScaleFactor: Double get() = window.backingScaleFactor.toDouble()
     private var lastBackingScaleFactor = 0.0
 
-    private fun doRender() {
+    override fun doRenderRequest() {
+        //dispatch_async(dispatch_get_main_queue(), ::doRender)
+        frameRequestNumber.increment()
+    }
+
+    fun doRender() {
+        //println("doRender[0]")
         val startTime = KorgwPerformanceCounter.now()
         //macTrace("render")
         val context = openglView.openGLContext
+
+        //println("doRender[1]")
 
         if (lastBackingScaleFactor != backingScaleFactor) {
             lastBackingScaleFactor = backingScaleFactor
@@ -248,15 +262,22 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
             return
         }
 
+        //println("doRender[2]")
+
         //context?.flushBuffer()
         context?.makeCurrentContext()
+
+        //println("doRender[3] : $context")
         ag.clear(Colors.BLACK)
         ag.onRender(ag)
         dispatch(renderEvent)
         context?.flushBuffer()
+
+        //println("doRender[3]")
         val elapsed = KorgwPerformanceCounter.now() - startTime
         val available = counterTimePerFrame - elapsed
         coroutineDispatcher.executePending(available)
+        //println("doRender[4]")
     }
 
     override val ag: AG = AGNative()
@@ -404,12 +425,51 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
                     //println("KoruiWrap.pentry[2]")
 
                     doRender()
-                    timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 60.0, true, ::timer)
+                    val useDisplayLink = Environment["MACOS_USE_DISPLAY_LINK"] != "false"
+                    when {
+                        useDisplayLink -> {
+                            createDisplayLink()
+                            timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 480.0, true, ::timerDisplayLink)
+                        }
+                        else -> {
+                            timer = NSTimer.scheduledTimerWithTimeInterval(1.0 / 60.0, true, ::timer)
+                        }
+                    }
+
                 } catch (e: Throwable) {
                     e.printStackTrace()
                     window.close()
                 }
             }
+
+            val arena = Arena()
+            val displayLink = arena.alloc<CVDisplayLinkRefVar>()
+
+            fun createDisplayLink() {
+                //println("createDisplayLink[1]")
+                val displayID = CGMainDisplayID()
+                val error = CVDisplayLinkCreateWithCGDisplay(displayID, displayLink.ptr)
+                //println("createDisplayLink[2]")
+                if (error == kCVReturnSuccess) {
+                    //println("createDisplayLink[3]")
+
+                    CVDisplayLinkSetOutputCallback(displayLink.value, staticCFunction(::displayCallback), gameWindowStableRef.asCPointer())
+                    CVDisplayLinkStart(displayLink.value)
+                    //println("createDisplayLink[4]")
+                }
+                //println("createDisplayLink[5]")
+            }
+
+            var displayedFrame = -1
+            fun timerDisplayLink(timer: NSTimer?) {
+                val frameRequest = frameRequestNumber.value
+                if (displayedFrame != frameRequest) {
+                    displayedFrame = frameRequest
+                    doRender()
+                }
+            }
+
+            // public typealias CVDisplayLinkOutputCallback = CPointer<CFunction<(CVDisplayLinkRef?, CPointer<CVTimeStamp>?, CPointer<CVTimeStamp>?, CVOptionFlags, CPointer<CVOptionFlagsVar>?, COpaquePointer?) -> platform.CoreVideo.CVReturn>>
 
             private fun timer(timer: NSTimer?) {
                 //println("TIMER")
@@ -427,6 +487,26 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow() {
     }
 }
 
+interface DoRenderizable {
+    fun doRenderRequest()
+}
+
+fun displayCallback(displayLink: CVDisplayLinkRef?, inNow: CPointer<CVTimeStamp>?, inOutputTime: CPointer<CVTimeStamp>?, flagsIn: CVOptionFlags, flagsOut: CPointer<CVOptionFlagsVar>?, displayLinkContext: COpaquePointer?): CVReturn {
+    initRuntimeIfNeeded()
+    frameRequestNumber.increment()
+    /*
+    //frameRequestNumber.increment()
+    //val doRenderizable = displayLinkContext!!.asStableRef<DoRenderizable>().get()
+    autoreleasepool {
+        val doRenderizable = displayLinkContext!!.asStableRef<DoRenderizable>().get()
+        doRenderizable.doRenderRequest()
+        //println("displayCallback[0]")
+        //doRenderizable.doRenderRequest()
+        //println("displayCallback[1]")
+    }
+     */
+    return kCVReturnSuccess
+}
 
 class WinController : NSObject() {
     @ObjCAction
