@@ -4,6 +4,7 @@ import android.app.*
 import android.content.*
 import android.content.DialogInterface
 import android.net.*
+import android.os.Build
 import android.support.v4.app.ActivityCompat.startActivityForResult
 import android.support.v4.content.ContextCompat.*
 import android.support.v7.app.*
@@ -24,34 +25,44 @@ import kotlin.coroutines.*
 actual fun CreateDefaultGameWindow(): GameWindow = TODO()
 
 class AndroidGameWindow(
-    val activity: KorgwActivity,
-    val view: KorgwView?
+    val activity: KorgwActivity?,
+    val view: KorgwView? = null
 ) : GameWindow() {
+    init {
+        check(activity != null || view != null) { "Either activity or view must be non-null" }
+    }
 
-    val androidContext get() = view.context ?: activity
+    val registerActivityResult: KorgwRegisterActivityResult = view ?: activity!!
+    val realActivity: Activity get() = view?.activity ?: activity!!
+    val androidContext: Context get() = realActivity
+    val decorView get() = view ?: realActivity.window?.decorView!!
 
     constructor(activity: KorgwActivity) : this(activity, null)
 
     init {
-        activity.gameWindow = this
+        activity?.gameWindow = this
     }
 
-    override val ag: AG get() = view.agOpenGl ?: activity.ag
+    override val ag: AG get() = view?.agOpenGl ?: activity!!.ag
 
-    override var title: String; get() = activity.title.toString(); set(value) = run { activity.title = value }
-    override val width: Int get() = activity.window.decorView.width
-    override val height: Int get() = activity.window.decorView.height
+    override var title: String; get() = realActivity.title.toString(); set(value) = run { realActivity.title = value }
+    override val width: Int get() = view?.width ?: decorView.width
+    override val height: Int get() = view?.height ?: decorView.height
     override var icon: Bitmap?
         get() = super.icon
         set(value) {}
     override var fullscreen: Boolean = false
         set(value) {
             field = value
-            activity.window.decorView.apply {
-                if (value) {
-                    systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                } else {
-                    systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            decorView.apply {
+                systemUiVisibility = when {
+                    value -> {
+                        when {
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT -> View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            else -> View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN
+                        }
+                    }
+                    else -> View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 }
             }
         }
@@ -66,7 +77,7 @@ class AndroidGameWindow(
     }
 
     override suspend fun browse(url: URL) {
-        startActivity(activity, Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())), null)
+        startActivity(realActivity, Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())), null)
     }
 
     override suspend fun alert(message: String) {
@@ -99,7 +110,7 @@ class AndroidGameWindow(
 
     override suspend fun prompt(message: String, default: String): String {
         val deferred = CompletableDeferred<String>()
-        val builder = AlertDialog.Builder(activity)
+        val builder = AlertDialog.Builder(realActivity)
         builder.setTitle(message)
         val input = EditText(androidContext)
         input.inputType = InputType.TYPE_CLASS_TEXT // InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -123,7 +134,7 @@ class AndroidGameWindow(
             .setType("*/*")
             .setAction(Intent.ACTION_GET_CONTENT)
 
-        val requestCode = activity.registerActivityResult { result, data ->
+        val requestCode = registerActivityResult.registerActivityResult { result, data ->
             if (result == Activity.RESULT_OK) {
                 val uri = data?.data
                 if (uri != null) {
@@ -136,7 +147,7 @@ class AndroidGameWindow(
             }
         }
 
-        startActivityForResult(activity, Intent.createChooser(intent, "Select a file"), requestCode, null)
+        startActivityForResult(realActivity, Intent.createChooser(intent, "Select a file"), requestCode, null)
 
         return deferred.await()
     }

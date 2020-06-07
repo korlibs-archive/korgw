@@ -16,7 +16,7 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import com.soywiz.korio.android.withAndroidContext
 
-abstract class KorgwActivity : Activity() {
+abstract class KorgwActivity : Activity(), KorgwRegisterActivityResult {
     var gameWindow: AndroidGameWindow? = null
     private var mGLView: GLSurfaceView? = null
     lateinit var ag: AGOpengl
@@ -165,7 +165,7 @@ abstract class KorgwActivity : Activity() {
 
         setContentView(mGLView)
 
-        val gameWindow = AndroidGameWindow(this)
+        val gameWindow = AndroidGameWindow(this, null)
         this.gameWindow = gameWindow
         val androidContext = this
         Korio(androidContext) {
@@ -222,7 +222,7 @@ abstract class KorgwActivity : Activity() {
     val resultHandlers = Pool { ResultHandler(it) }
     val handlers = LinkedHashMap<Int, ResultHandler>()
 
-    fun registerActivityResult(handler: (result: Int, data: Intent?) -> Unit): Int {
+    override fun registerActivityResult(handler: (result: Int, data: Intent?) -> Unit): Int {
         return resultHandlers.alloc().also {
             it.handler = handler
         }.request

@@ -2,45 +2,37 @@ package com.soywiz.korgw
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.res.AssetFileDescriptor
-import android.content.res.AssetManager
-import android.media.MediaPlayer
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
-import com.google.gson.Gson
+import android.view.ViewGroup
 import com.soywiz.kds.Pool
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.KmlGlAndroid
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.*
-import com.soywiz.korge.Korge
 import com.soywiz.korio.Korio
 import com.soywiz.korio.android.withAndroidContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 @Suppress("unused")
 @SuppressLint("ViewConstructor")
-open class KorgwView(
-    private val activity: Activity,
+abstract class KorgwView(
+    val activity: Activity,
     private val playTutorial: Boolean,
     private val fastToolStart: Boolean,
     private val themeId: Int,
     private val widthParam: Int? = null,
-    private val heightParam: Int? = null,
-    private val callback: KorgwCallbackProtocol?
-) : AbstractToolParentView(activity), ToolManager {
+    private val heightParam: Int? = null
+) : ViewGroup(activity), KorgwRegisterActivityResult {
+
+    //val context: Context get() = activity
 
     var gameWindow: AndroidGameWindow? = null
 
     private var mGLView: GLSurfaceView? = null
     lateinit var agOpenGl: AGOpengl
-
-    private lateinit var settings: KorgwSetting
 
     private val pauseEvent = PauseEvent()
     private val resumeEvent = ResumeEvent()
@@ -158,54 +150,13 @@ open class KorgwView(
 
         addView(mGLView)
 
-        val gameWindow = AndroidGameWindow(activity, this)
+        val gameWindow = AndroidGameWindow(null, this)
         this.gameWindow = gameWindow
         Korio(context) {
             try {
-
-                val settingsJson = Gson().toJson(settings)
-
                 withAndroidContext(activity) {
                     withContext(coroutineContext + gameWindow) {
-                        Korge(
-                                Korge.Config(
-                                        module = ToolModule(
-                                                ToolModule.DEFAULT_WIDTH,
-                                                ToolModule.DEFAULT_HEIGHT,
-                                                ToolExecutor(
-                                                        type = CommandType.Start,
-                                                        params = settingsJson,
-                                                        countdown = !fastToolStart,
-                                                        playTutorial = playTutorial,
-                                                        themeId = themeId,
-                                                        toolManager = this@KorgwView,
-                                                        callback = { result ->
-
-                                                            toolStatusCallback?.invoke(result)
-
-                                                            when (result.type) {
-                                                                ToolCallbackType.GAME_FINISHED -> {
-                                                                    println("------------> RESULT TOOL $result")
-                                                                    val statistics = ToolResult.parseSplitAttention((result as GameFinishedToolCallback).statistics)
-                                                                    callback?.toolDidFinishWithResult(statistics)
-                                                                }
-                                                                ToolCallbackType.TUTORIAL_FINISHED -> {
-                                                                    callback?.tutorialFinish()
-                                                                }
-                                                                ToolCallbackType.TUTORIAL_CANCELLED -> {
-                                                                    callback?.tutorialCancelled()
-                                                                }
-                                                                ToolCallbackType.INVALID_GAME_TYPE -> {
-                                                                    callback?.invalidGameType()
-                                                                }
-                                                                else -> {
-                                                                }
-                                                            }
-                                                        }
-                                                )
-                                        )
-                                )
-                        )
+                        viewMain()
                     }
                 }
             } finally {
@@ -214,44 +165,5 @@ open class KorgwView(
         }
     }
 
-    override fun cleanUpResources() {
-
-    }
-
-    override fun updateFromSetting(korgwSetting: KorgwSetting?) {
-        korgwSetting?.let {
-            this.settings = korgwSetting
-        }
-    }
-
-    override fun updateBluetoothUI() {
-
-    }
-
-    override fun updateBluetoothUI(checkScan: Boolean) {
-
-    }
-
-    @Suppress("BlockingMethodInNonBlockingContext")
-    override fun playSound(assetName: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-
-            val player = MediaPlayer()
-
-            val descriptor: AssetFileDescriptor
-            val assetManager: AssetManager = context.assets
-
-            descriptor = assetManager.openFd(assetName)
-            player.setDataSource(descriptor.fileDescriptor, descriptor.startOffset, descriptor.length);
-
-            player.setOnCompletionListener {
-                player.reset()
-                player.release()
-                descriptor.close()
-            }
-
-            player.prepare()
-            player.start()
-        }
-    }
+    abstract fun viewMain()
 }
