@@ -79,69 +79,68 @@ open class LogAG(
 	override fun createBuffer(kind: Buffer.Kind): Buffer =
 		LogBuffer(bufferId++, kind).apply { log("createBuffer($kind):$id") }
 
-	override fun draw(
-		vertices: Buffer,
-		program: Program,
-		type: DrawType,
-		vertexLayout: VertexLayout,
-		vertexCount: Int,
-		indices: Buffer?,
-		offset: Int,
-		blending: Blending,
-		uniforms: UniformValues,
-		stencil: StencilState,
-		colorMask: ColorMaskState,
-		renderState: RenderState,
-		scissor: Scissor?
-	) {
-		try {
-			log("draw(vertices=$vertices, indices=$indices, program=$program, type=$type, vertexLayout=$vertexLayout, vertexCount=$vertexCount, offset=$offset, blending=$blending, uniforms=$uniforms, stencil=$stencil, colorMask=$colorMask)")
+    override fun draw(batch: Batch) {
+        val vertices = batch.vertices
+        val program = batch.program
+        val type = batch.type
+        val vertexLayout = batch.vertexLayout
+        val vertexCount = batch.vertexCount
+        val indices = batch.indices
+        val offset = batch.offset
+        val blending = batch.blending
+        val uniforms = batch.uniforms
+        val stencil = batch.stencil
+        val colorMask = batch.colorMask
+        val renderState = batch.renderState
+        val scissor = batch.scissor
+        try {
+            log("draw(vertices=$vertices, indices=$indices, program=$program, type=$type, vertexLayout=$vertexLayout, vertexCount=$vertexCount, offset=$offset, blending=$blending, uniforms=$uniforms, stencil=$stencil, colorMask=$colorMask)")
 
-			val missingUniforms = program.uniforms - uniforms.keys
-			val extraUniforms = uniforms.keys - program.uniforms
-			val missingAttributes = vertexLayout.attributes.toSet() - program.attributes
-			val extraAttributes = program.attributes - vertexLayout.attributes.toSet()
+            val missingUniforms = program.uniforms - uniforms.keys
+            val extraUniforms = uniforms.keys - program.uniforms
+            val missingAttributes = vertexLayout.attributes.toSet() - program.attributes
+            val extraAttributes = program.attributes - vertexLayout.attributes.toSet()
 
-			if (missingUniforms.isNotEmpty()) log("::draw.ERROR.Missing:$missingUniforms")
-			if (extraUniforms.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraUniforms")
+            if (missingUniforms.isNotEmpty()) log("::draw.ERROR.Missing:$missingUniforms")
+            if (extraUniforms.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraUniforms")
 
-			if (missingAttributes.isNotEmpty()) log("::draw.ERROR.Missing:$missingAttributes")
-			if (extraAttributes.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraAttributes")
+            if (missingAttributes.isNotEmpty()) log("::draw.ERROR.Missing:$missingAttributes")
+            if (extraAttributes.isNotEmpty()) log("::draw.ERROR.Unexpected:$extraAttributes")
 
-			val vertexBuffer = vertices as LogBuffer
-			val vertexMem = vertexBuffer.logmem!!
-			val vertexMemOffset = vertexBuffer.logmemOffset
-			val indexMem = (indices as LogBuffer).logmem
-			val _indices = (offset until offset + vertexCount).map { indexMem!!.getAlignedInt16(it) }
-			log("::draw.indices=$_indices")
-			for (index in _indices.sorted().distinct()) {
-				val os = index * vertexLayout.totalSize
-				val attributes = arrayListOf<String>()
-				for ((attribute, pos) in vertexLayout.attributes.zip(vertexLayout.attributePositions)) {
-					val o = os + pos + vertexMemOffset
+            val vertexBuffer = vertices as LogBuffer
+            val vertexMem = vertexBuffer.logmem!!
+            val vertexMemOffset = vertexBuffer.logmemOffset
+            val indexMem = (indices as LogBuffer).logmem
+            val _indices = (offset until offset + vertexCount).map { indexMem!!.getAlignedInt16(it) }
+            log("::draw.indices=$_indices")
+            for (index in _indices.sorted().distinct()) {
+                val os = index * vertexLayout.totalSize
+                val attributes = arrayListOf<String>()
+                for ((attribute, pos) in vertexLayout.attributes.zip(vertexLayout.attributePositions)) {
+                    val o = os + pos + vertexMemOffset
 
-					val info = when (attribute.type) {
-						VarType.Int1 -> "int(" + vertexMem.getUnalignedInt32(o + 0) + ")"
-						VarType.Float1 -> "float(" + vertexMem.getUnalignedFloat32(o + 0) + ")"
-						VarType.Float2 -> "vec2(" + vertexMem.getUnalignedFloat32(o + 0) + "," + vertexMem.getUnalignedFloat32(o + 4) + ")"
-						VarType.Float3 -> "vec3(" + vertexMem.getUnalignedFloat32(o + 0) + "," + vertexMem.getUnalignedFloat32(o + 4) + "," + vertexMem.getUnalignedFloat32(
-							o + 8
-						) + ")"
-						VarType.Byte4 -> "byte4(" + vertexMem.getUnalignedInt32(o + 0) + ")"
-						else -> "Unsupported(${attribute.type})"
-					}
+                    val info = when (attribute.type) {
+                        VarType.Int1 -> "int(" + vertexMem.getUnalignedInt32(o + 0) + ")"
+                        VarType.Float1 -> "float(" + vertexMem.getUnalignedFloat32(o + 0) + ")"
+                        VarType.Float2 -> "vec2(" + vertexMem.getUnalignedFloat32(o + 0) + "," + vertexMem.getUnalignedFloat32(o + 4) + ")"
+                        VarType.Float3 -> "vec3(" + vertexMem.getUnalignedFloat32(o + 0) + "," + vertexMem.getUnalignedFloat32(o + 4) + "," + vertexMem.getUnalignedFloat32(
+                            o + 8
+                        ) + ")"
+                        VarType.Byte4 -> "byte4(" + vertexMem.getUnalignedInt32(o + 0) + ")"
+                        else -> "Unsupported(${attribute.type})"
+                    }
 
-					attributes += attribute.name + "[" + info + "]"
-				}
-				log("::draw.vertex[$index]: " + attributes.joinToString(", "))
-			}
-		} catch (e: Throwable) {
-			log("ERROR: ${e.message}")
-			e.printStackTrace()
-		}
-	}
+                    attributes += attribute.name + "[" + info + "]"
+                }
+                log("::draw.vertex[$index]: " + attributes.joinToString(", "))
+            }
+        } catch (e: Throwable) {
+            log("ERROR: ${e.message}")
+            e.printStackTrace()
+        }
+    }
 
-	override fun disposeTemporalPerFrameStuff() = log("disposeTemporalPerFrameStuff()")
+    override fun disposeTemporalPerFrameStuff() = log("disposeTemporalPerFrameStuff()")
 	override fun createRenderBuffer(): RenderBuffer =
 		LogRenderBuffer(renderBufferId++).apply { log("createRenderBuffer():$id") }
 

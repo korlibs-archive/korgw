@@ -2,6 +2,7 @@ package com.soywiz.korgw
 
 import com.soywiz.kds.*
 import com.soywiz.klock.*
+import com.soywiz.klock.hr.*
 import com.soywiz.korag.*
 import com.soywiz.korag.log.*
 import com.soywiz.korev.*
@@ -15,6 +16,7 @@ import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
+import kotlin.time.milliseconds
 
 expect fun CreateDefaultGameWindow(): GameWindow
 
@@ -28,11 +30,16 @@ interface DialogInterface {
         unsupported()
 }
 
+open class GameWindowCoroutineDispatcherSetNow : GameWindowCoroutineDispatcher() {
+    var currentTime: HRTimeSpan = PerformanceCounter.hr
+    override fun now() = currentTime
+}
+
 @UseExperimental(InternalCoroutinesApi::class)
 open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-    class TimedTask(val time: KorgwPerformanceCounter, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
+    class TimedTask(val time: HRTimeSpan, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
         var exception: Throwable? = null
     }
 
@@ -53,13 +60,13 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         tasks.enqueue(block)
     }
 
-    open fun now() = KorgwPerformanceCounter.now()
+    open fun now() = PerformanceCounter.hr
 
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        scheduleResumeAfterDelay(KorgwPerformanceCounter(timeMillis.milliseconds.microseconds), continuation)
+        scheduleResumeAfterDelay(timeMillis.toDouble().hrMilliseconds, continuation)
     }
 
-    fun scheduleResumeAfterDelay(time: KorgwPerformanceCounter, continuation: CancellableContinuation<Unit>) {
+    fun scheduleResumeAfterDelay(time: HRTimeSpan, continuation: CancellableContinuation<Unit>) {
         val task = TimedTask(now() + time, continuation, null)
         continuation.invokeOnCancellation {
             task.exception = it
@@ -68,7 +75,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
-        val task = TimedTask(now() + timeMillis.milliseconds, null, block)
+        val task = TimedTask(now() + timeMillis.toDouble().hrMilliseconds, null, block)
         timedTasks.add(task)
         return object : DisposableHandle {
             override fun dispose() {
@@ -79,10 +86,10 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
 
     @Deprecated("")
     open fun executePending() {
-        executePending(KorgwPerformanceCounter(1.seconds))
+        executePending(1.hrSeconds)
     }
 
-    fun executePending(availableTime: KorgwPerformanceCounter) {
+    fun executePending(availableTime: HRTimeSpan) {
         try {
             val startTime = now()
             while (timedTasks.isNotEmpty() && startTime >= timedTasks.head.time) {
@@ -111,7 +118,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun close() {
-        executePending(KorgwPerformanceCounter(1.seconds))
+        executePending(1.hrSeconds)
         println("GameWindowCoroutineDispatcher.close")
         while (timedTasks.isNotEmpty()) {
             timedTasks.removeHead().continuation?.resume(Unit)
@@ -159,14 +166,14 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         return if (fps <= 0) 60 else fps
     }
 
-    var counterTimePerFrame: KorgwPerformanceCounter = KorgwPerformanceCounter(0.0); private set
+    var counterTimePerFrame: HRTimeSpan = 0.0.hrNanoseconds; private set
     val timePerFrame: TimeSpan get() = counterTimePerFrame.timeSpan
 
     var fps: Int = 60
         set(value) {
             val value = _setFps(value)
             field = value
-            counterTimePerFrame = KorgwPerformanceCounter(1_000_000.0 / value)
+            counterTimePerFrame = (1_000_000.0 / value).hrMicroseconds
         }
 
     init {
@@ -176,6 +183,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open var title: String get() = ""; set(value) = Unit
     open val width: Int = 0
     open val height: Int = 0
+    open var vsync: Boolean = true
 
     // Might be different than width and height for example on high dpi screens
     open val bufferWidth: Int get() = width
@@ -231,7 +239,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 
     suspend fun waitClose() {
         while (running) {
-            delay(100.milliseconds)
+            delay(100.hrMilliseconds)
         }
     }
 
@@ -243,20 +251,25 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             entry()
         }
         while (running) {
-            val start = KorgwPerformanceCounter.now()
+            val start = PerformanceCounter.hr
             frame()
-            val elapsed = KorgwPerformanceCounter.now() - start
+            val elapsed = PerformanceCounter.hr - start
             val available = counterTimePerFrame - elapsed
             delay(available)
         }
     }
 
-    fun frame(doUpdate: Boolean = true, startTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()) {
+    // Referenced from korge-plugins repo
+    fun frame() {
+        frame(true)
+    }
+
+    fun frame(doUpdate: Boolean, startTime: HRTimeSpan = PerformanceCounter.hr) {
         try {
             ag.onRender(ag)
             dispatchRenderEvent(update = doUpdate)
             if (doUpdate) {
-                val elapsed = KorgwPerformanceCounter.now() - startTime
+                val elapsed = PerformanceCounter.hr - startTime
                 val available = counterTimePerFrame - elapsed
                 coroutineDispatcher.executePending(available)
             }
@@ -361,6 +374,8 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 }
 
 open class EventLoopGameWindow : GameWindow() {
+    override val coroutineDispatcher: GameWindowCoroutineDispatcherSetNow = GameWindowCoroutineDispatcherSetNow()
+
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         // Required here so setSize is called
         launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
@@ -379,10 +394,13 @@ open class EventLoopGameWindow : GameWindow() {
         while (running) {
             doHandleEvents()
             if (mustPerformRender()) {
+                coroutineDispatcher.currentTime = PerformanceCounter.hr
                 render(doUpdate = true)
             }
             // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
-            doSmallSleep()
+            if (!vsync) {
+                doSmallSleep()
+            }
         }
         dispatchStopEvent()
         dispatchDestroyEvent()
@@ -390,12 +408,12 @@ open class EventLoopGameWindow : GameWindow() {
         doDestroy()
     }
 
-    fun mustPerformRender(): Boolean = elapsedSinceLastRenderTime() >= counterTimePerFrame
+    fun mustPerformRender(): Boolean = if (vsync) true else elapsedSinceLastRenderTime() >= counterTimePerFrame
 
-    var lastRenderTime = KorgwPerformanceCounter.now()
-    fun elapsedSinceLastRenderTime() = KorgwPerformanceCounter.now() - lastRenderTime
+    var lastRenderTime = PerformanceCounter.hr
+    fun elapsedSinceLastRenderTime() = PerformanceCounter.hr - lastRenderTime
     fun render(doUpdate: Boolean) {
-        lastRenderTime = KorgwPerformanceCounter.now()
+        lastRenderTime = PerformanceCounter.hr
         doInitRender()
         frame(doUpdate, lastRenderTime)
         doSwapBuffers()

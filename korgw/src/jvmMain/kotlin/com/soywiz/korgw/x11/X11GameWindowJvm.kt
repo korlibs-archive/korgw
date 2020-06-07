@@ -1,25 +1,17 @@
 package com.soywiz.korgw.x11
 
 import com.soywiz.kgl.KmlGl
-import com.soywiz.klock.*
-import com.soywiz.kmem.arrayfill
+import com.soywiz.kmem.toInt
 import com.soywiz.kmem.write32LE
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korev.MouseEvent
-import com.soywiz.korgw.*
-import com.soywiz.korgw.platform.BaseOpenglContext
+import com.soywiz.korgw.DialogInterface
+import com.soywiz.korgw.EventLoopGameWindow
+import com.soywiz.korgw.ZenityDialogs
 import com.soywiz.korim.bitmap.Bitmap
-import com.soywiz.korio.async.launchImmediately
-import com.soywiz.korio.file.VfsFile
-import com.soywiz.korio.file.std.localCurrentDirVfs
-import com.soywiz.korio.file.std.localVfs
-import com.soywiz.korio.file.std.rootLocalVfs
-import com.soywiz.korio.lang.*
-import com.soywiz.korio.net.URL
-import com.sun.jna.Memory
-import com.sun.jna.NativeLong
+import com.sun.jna.*
 import com.sun.jna.platform.unix.X11.*
 
 //class X11Ag(val window: X11GameWindow, override val gl: KmlGl = LogKmlGlProxy(X11KmlGl())) : AGOpengl() {
@@ -104,6 +96,7 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
         if (d == null || w == NilWin) return@run
     }
 
+    // https://github.com/AlexeyAB/SDL-OculusRift/blob/master/src/video/x11/SDL_x11opengl.c
     override fun doInitialize() {
         d = X.XOpenDisplay(null) ?: error("Can't open main display")
         s = X.XDefaultScreen(d)
@@ -154,7 +147,6 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
         realSetVisible(visible)
         realSetTitle(title)
 
-
         ctx = X11OpenglContext(d, w, s, vi, doubleBuffered = doubleBuffered)
         ctx.makeCurrent()
 
@@ -169,11 +161,37 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
     lateinit var ctx: X11OpenglContext
 
     override fun doSwapBuffers() {
+        //println("doSwapBuffers")
         ctx.swapBuffers()
     }
 
+    interface glXSwapIntervalEXTCallback : Callback {
+        fun callback(dpy: Display?, draw: Pointer, value: Int)
+    }
+
+    private var glXSwapIntervalEXTSet: Boolean = false
+    private var swapIntervalEXT: glXSwapIntervalEXTCallback? = null
+    private var swapIntervalEXTPointer: Pointer? = null
+
     override fun doInitRender() {
         ctx.makeCurrent()
+
+        if (!glXSwapIntervalEXTSet) {
+            glXSwapIntervalEXTSet = true
+            swapIntervalEXTPointer = X.glXGetProcAddress("glXSwapIntervalEXT")
+
+            swapIntervalEXT = when {
+                swapIntervalEXTPointer != Pointer.NULL -> CallbackReference.getCallback(glXSwapIntervalEXTCallback::class.java, swapIntervalEXTPointer) as? glXSwapIntervalEXTCallback?
+                else -> null
+            }
+            println("swapIntervalEXT: $swapIntervalEXT")
+        }
+
+        val dpy = X.glXGetCurrentDisplay()
+        val drawable = X.glXGetCurrentDrawable()
+        swapIntervalEXT?.callback(dpy, drawable, vsync.toInt())
+        //glXSwapIntervalEXT?.callback(dpy, drawable, 0)
+
         X.glViewport(0, 0, width, height)
         X.glClearColor(.3f, .6f, .3f, 1f)
         X.glClear(GL.GL_COLOR_BUFFER_BIT)
@@ -187,7 +205,9 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
     override fun doSmallSleep() {
         //println("No events!")
         //Thread.sleep(0L, 100_000)
-        Thread.sleep(1L)
+        if (!vsync) {
+            Thread.sleep(0L, 100_000)
+        }
     }
 
     val e = XEvent()

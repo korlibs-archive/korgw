@@ -196,11 +196,28 @@ class WindowsGameWindow : EventLoopGameWindow() {
         render(doUpdate = false)
     }
 
+    @ThreadLocal
+    var setSwapInterval = false
+    @ThreadLocal
+    var swapIntervalEXT: CPointer<CFunction<(Int) -> Unit>>? = null
+
     override fun doInitRender() {
         if (hwnd == null || glRenderContext == null) return
         val hdc = GetDC(hwnd)
         //println("render")
         wglMakeCurrent(hdc, glRenderContext)
+
+        // https://github.com/spurious/SDL-mirror/blob/4c1c6d03ddaa3095b3c63c38ddd0a6cfad58b752/src/video/windows/SDL_windowsopengl.c#L439-L447
+        if (!setSwapInterval) {
+            setSwapInterval = true
+            swapIntervalEXT = wglGetProcAddress("wglSwapIntervalEXT")?.reinterpret()
+            println("swapIntervalEXT: $swapIntervalEXT")
+        }
+        if (vsync) {
+            swapIntervalEXT?.invoke(1)
+        } else {
+            swapIntervalEXT?.invoke(0)
+        }
     }
 
     override fun doSwapBuffers() {
@@ -290,7 +307,9 @@ class WindowsGameWindow : EventLoopGameWindow() {
     }
 
     override fun doSmallSleep() {
-        Sleep(1L.convert())
+        if (!vsync) {
+            Sleep(1L.convert())
+        }
     }
 
     private val hasMenu = false

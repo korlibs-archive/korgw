@@ -65,6 +65,7 @@ class AwtGameWindow : GameWindow() {
     val classLoader = this.javaClass.classLoader
 
     //private var currentInFullScreen = false
+    var frameCount = 0
 
     val frame: JFrame = object : JFrame("Korgw") {
         val frame = this
@@ -113,9 +114,7 @@ class AwtGameWindow : GameWindow() {
 
         private var lastFactor = 0.0
 
-        override fun paint(g: Graphics) {
-            val frame = this
-
+        private fun ensureContext() {
             if (ctx == null) {
                 ctx = when {
                     OS.isMac -> {
@@ -150,6 +149,18 @@ class AwtGameWindow : GameWindow() {
                     }
                 }
             }
+        }
+
+        override fun paint(g: Graphics) {
+            if (vsync) {
+                EventQueue.invokeLater {
+                    //println("repaint!")
+                    frame.repaint()
+                }
+            }
+            val frame = this
+
+            ensureContext()
 
             ctx?.useContext(g, Runnable {
                 val gl = ag.gl
@@ -170,6 +181,8 @@ class AwtGameWindow : GameWindow() {
                 //println(gl.versionString)
                 frame()
             })
+
+            frameCount++
             //println("FRAME!")
         }
     }
@@ -377,14 +390,30 @@ class AwtGameWindow : GameWindow() {
             frame.isVisible = true
         }
 
+        EventQueue.invokeLater {
+            //println("repaint!")
+            frame.repaint()
+        }
         while (running) {
             //frame.invalidate()
-            EventQueue.invokeLater {
-                //println("repaint!")
-                frame.repaint()
-            }
+            if (vsync) {
+                //val startFrameCount = frameCount
+                //EventQueue.invokeLater {
+                //    //println("repaint!")
+                //    frame.repaint()
+                //}
+                //while (frameCount == startFrameCount) {
+                //    Thread.sleep(0L, 100_000)
+                //}
+                Thread.sleep(1L)
+            } else {
+                EventQueue.invokeLater {
+                    //println("repaint!")
+                    frame.repaint()
+                }
 
-            Thread.sleep(timePerFrame.millisecondsLong)
+                Thread.sleep(timePerFrame.millisecondsLong)
+            }
         }
 
         dispatchDestroyEvent()

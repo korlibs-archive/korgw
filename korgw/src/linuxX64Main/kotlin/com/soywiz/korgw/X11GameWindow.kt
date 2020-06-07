@@ -3,26 +3,20 @@ package com.soywiz.korgw
 import GL.*
 import com.soywiz.kds.IntMap
 import com.soywiz.kgl.KmlGl
-import com.soywiz.klock.*
-import com.soywiz.kmem.FBuffer
+import com.soywiz.kgl.toInt
 import com.soywiz.kmem.startAddressOf
 import com.soywiz.kmem.write32LE
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korev.MouseEvent
-import com.soywiz.korgw.*
 import com.soywiz.korim.bitmap.Bitmap
-import com.soywiz.korio.async.launchImmediately
-import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.lang.Charsets
 import com.soywiz.korio.lang.toString
-import com.soywiz.korio.net.URL
 import com.soywiz.korio.stream.MemorySyncStream
 import com.soywiz.korio.stream.toByteArray
 import kotlinx.cinterop.*
 import platform.posix.*
-import kotlin.system.getTimeNanos
 
 
 //class X11Ag(val window: X11GameWindow, override val gl: KmlGl = LogKmlGlProxy(X11KmlGl())) : AGOpengl() {
@@ -185,7 +179,6 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
     }
 
     override fun doInitialize() {
-
         d = XOpenDisplay(null) ?: error("Can't open main display")
         s = XDefaultScreen(d)
         root = XDefaultRootWindow(d)
@@ -245,7 +238,9 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
     //val doubleBuffered = true
 
     override fun doSmallSleep() {
-        usleep(1000.convert())
+        if (vsync) {
+            usleep(100.convert())
+        }
     }
 
     override fun doHandleEvents() = memScoped {
@@ -318,11 +313,27 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
         }
     }
 
+    // https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_swap_control.txt
+    @ThreadLocal
+    var setSwapInterval = false
+    @ThreadLocal
+    var swapIntervalEXT: CPointer<CFunction<(CPointer<Display>?, GLXDrawable, Int) -> Unit>>? = null
+
     override fun doInitRender() {
         ctx.makeCurrent()
         glViewport(0, 0, width, height)
         glClearColor(.3f, .6f, .3f, 1f)
         glClear(GL_COLOR_BUFFER_BIT)
+
+        // https://github.com/spurious/SDL-mirror/blob/4c1c6d03ddaa3095b3c63c38ddd0a6cfad58b752/src/video/windows/SDL_windowsopengl.c#L439-L447
+        if (!setSwapInterval) {
+            setSwapInterval = true
+            swapIntervalEXT = com.soywiz.kgl.wglGetProcAddressAny("glXSwapIntervalEXT")?.reinterpret()
+            println("swapIntervalEXT: $swapIntervalEXT")
+        }
+        val dpy = glXGetCurrentDisplay()
+        val drawable = glXGetCurrentDrawable()
+        swapIntervalEXT?.invoke(dpy, drawable, vsync.toInt())
     }
 
     override fun doSwapBuffers() {
