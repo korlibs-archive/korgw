@@ -1,6 +1,7 @@
 package com.soywiz.korgw
 
 import com.soywiz.klock.*
+import com.soywiz.klock.hr.*
 import com.soywiz.kmem.startAddressOf
 import com.soywiz.korag.*
 import com.soywiz.korev.*
@@ -250,7 +251,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRend
 
     fun doRender() {
         //println("doRender[0]")
-        val startTime = KorgwPerformanceCounter.now()
+        val startTime = PerformanceCounter.hr
         //macTrace("render")
         val context = openglView.openGLContext
 
@@ -274,7 +275,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRend
         context?.flushBuffer()
 
         //println("doRender[3]")
-        val elapsed = KorgwPerformanceCounter.now() - startTime
+        val elapsed = PerformanceCounter.hr - startTime
         val available = counterTimePerFrame - elapsed
         coroutineDispatcher.executePending(available)
         //println("doRender[4]")
@@ -482,7 +483,7 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRend
             }
         }
 
-        coroutineDispatcher.executePending(KorgwPerformanceCounter(1.seconds))
+        coroutineDispatcher.executePending(1.seconds.hr)
         app.run()
     }
 }
