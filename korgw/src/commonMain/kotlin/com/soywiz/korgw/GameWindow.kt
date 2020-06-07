@@ -257,7 +257,12 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         }
     }
 
-    fun frame(doUpdate: Boolean = true, startTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()) {
+    // Referenced from korge-plugins repo
+    fun frame() {
+        frame(true)
+    }
+
+    fun frame(doUpdate: Boolean, startTime: KorgwPerformanceCounter = KorgwPerformanceCounter.now()) {
         try {
             ag.onRender(ag)
             dispatchRenderEvent(update = doUpdate)
