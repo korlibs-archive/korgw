@@ -238,20 +238,6 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
     val doubleBuffered = false
     //val doubleBuffered = true
 
-    override fun doSmallSleep() {
-        if (vsync) {
-            usleep(100.convert())
-        }
-    }
-
-    override fun sleep(time: HRTimeSpan) {
-        val micros = time.microsecondsDouble.toLong()
-        val s = micros / 1_000_000
-        val u = micros % 1_000_000
-        if (s > 0) platform.posix.sleep(s.convert())
-        if (u > 0) platform.posix.usleep(u.convert())
-    }
-
     override fun doHandleEvents() = memScoped {
         val e = alloc<XEvent>()
         loop@ while (running) {

@@ -205,19 +205,6 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
         X.XCloseDisplay(d)
     }
 
-    override fun sleep(time: HRTimeSpan) {
-        val nanos = time.nanosecondsDouble.toLong()
-        Thread.sleep(nanos / 1_000_000, (nanos % 1_000_000).toInt())
-    }
-
-    override fun doSmallSleep() {
-        //println("No events!")
-        //Thread.sleep(0L, 100_000)
-        if (!vsync) {
-            Thread.sleep(0L, 100_000)
-        }
-    }
-
     val e = XEvent()
     override fun doHandleEvents() {
         loop@ while (running) {

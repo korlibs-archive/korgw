@@ -307,16 +307,6 @@ class WindowsGameWindow : EventLoopGameWindow() {
         }
     }
 
-    override fun sleep(time: HRTimeSpan) {
-        usleep(time.microsecondsDouble.toLong().convert())
-    }
-
-    override fun doSmallSleep() {
-        if (!vsync) {
-            Sleep(1L.convert())
-        }
-    }
-
     private val hasMenu = false
     private val winStyle = WS_OVERLAPPEDWINDOW
     private val winExStyle = WS_EX_CLIENTEDGE

@@ -425,11 +425,11 @@ open class EventLoopGameWindow : GameWindow() {
         val delay = frameTime - (now % frameTime)
         if (delay > 0.hrNanoseconds) {
             //println(delayNanos / 1_000_000)
-            sleep(delay)
+            blockingSleep(delay)
         }
     }
 
-    open fun sleep(time: HRTimeSpan) {
+    protected fun sleep(time: HRTimeSpan) {
         // Reimplement: Spinlock!
         val start = PerformanceCounter.hr
         while ((PerformanceCounter.hr - start) < time) {
@@ -437,7 +437,11 @@ open class EventLoopGameWindow : GameWindow() {
         }
     }
 
-    protected open fun doSmallSleep() = Unit
+    protected fun doSmallSleep() {
+        if (!vsync) {
+            blockingSleep(0.1.hrMilliseconds)
+        }
+    }
     protected open fun doHandleEvents() = Unit
     protected open fun doInitRender() = Unit
     protected open fun doSwapBuffers() = Unit
