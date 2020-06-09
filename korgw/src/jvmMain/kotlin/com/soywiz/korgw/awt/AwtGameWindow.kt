@@ -1,11 +1,14 @@
 package com.soywiz.korgw.awt
 
 import com.soywiz.kgl.KmlGl
+import com.soywiz.klock.hr.hrMilliseconds
+import com.soywiz.klock.hr.hrSeconds
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.internal.MicroDynamic
+import com.soywiz.korgw.osx.GL
 import com.soywiz.korgw.osx.MacKmlGL
 import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korgw.win32.Win32KmlGl
@@ -17,7 +20,7 @@ import com.soywiz.korim.awt.toAwt
 import com.soywiz.korim.bitmap.Bitmap
 import com.soywiz.korio.async.launchImmediately
 import com.soywiz.korio.file.VfsFile
-import com.soywiz.korio.file.std.*
+import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.net.URL
 import com.soywiz.korio.util.OS
 import com.sun.jna.Native
@@ -26,12 +29,11 @@ import com.sun.jna.platform.win32.WinDef
 import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
-import java.io.*
 import java.lang.reflect.Method
-import java.net.*
-import javax.swing.*
-import kotlin.coroutines.*
-import kotlin.system.exitProcess
+import java.net.URI
+import javax.swing.JFileChooser
+import javax.swing.JFrame
+import javax.swing.JOptionPane
 
 
 class AwtAg(val window: AwtGameWindow) : AGOpengl() {
@@ -65,7 +67,11 @@ class AwtGameWindow : GameWindow() {
     val classLoader = this.javaClass.classLoader
 
     //private var currentInFullScreen = false
+    @Volatile
     var frameCount = 0
+
+    //val fvsync get() = vsync
+    val fvsync get() = false
 
     val frame: JFrame = object : JFrame("Korgw") {
         val frame = this
@@ -144,46 +150,58 @@ class AwtGameWindow : GameWindow() {
                         val d = X.XOpenDisplay(null)
                         val src = X.XDefaultScreen(d)
                         val winId = Native.getWindowID(frame)
-                        println("winId: $winId")
+                        //println("winId: $winId")
                         X11OpenglContext(d, X11.Window(winId), src)
                     }
                 }
             }
         }
 
+        // https://stackoverflow.com/questions/52108178/swing-animation-still-stutter-when-i-use-toolkit-getdefaulttoolkit-sync
+        // https://www.oracle.com/java/technologies/painting.html
+        // https://docs.oracle.com/javase/tutorial/extra/fullscreen/rendering.html
+        // https://docs.oracle.com/javase/tutorial/extra/fullscreen/doublebuf.html
         override fun paint(g: Graphics) {
-            if (vsync) {
-                EventQueue.invokeLater {
-                    //println("repaint!")
-                    frame.repaint()
+            try {
+                if (fvsync) {
+                    EventQueue.invokeLater {
+                        //println("repaint!")
+                        frame.repaint()
+                    }
                 }
+                val frame = this
+
+                ensureContext()
+
+                //GL.glClearColor(1f, 0f, 0f, 1f)
+                //GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+                ctx?.useContext(g, Runnable {
+                    val gl = ag.gl
+                    val factor = frameScaleFactor
+                    if (lastFactor != factor) {
+                        lastFactor = factor
+                        dispatchReshapeEvent()
+                    }
+
+                    //println("RENDER[1]")
+
+                    //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
+                    gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
+                    //gl.clearColor(.2f, .4f, .9f, 1f)
+                    gl.clearColor(.3f, .3f, .3f, 1f)
+                    gl.clear(gl.COLOR_BUFFER_BIT)
+                    //println(gl.getString(gl.VERSION))
+                    //println(gl.versionString)
+                    frame()
+                })
+                //Toolkit.getDefaultToolkit().sync();
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            } finally {
+                frameCount++
+                //println("FRAME!")
             }
-            val frame = this
-
-            ensureContext()
-
-            ctx?.useContext(g, Runnable {
-                val gl = ag.gl
-                val factor = frameScaleFactor
-                if (lastFactor != factor) {
-                    lastFactor = factor
-                    dispatchReshapeEvent()
-                }
-
-                //println("RENDER[1]")
-
-                //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
-                gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
-                //gl.clearColor(.2f, .4f, .9f, 1f)
-                gl.clearColor(.3f, .3f, .3f, 1f)
-                gl.clear(gl.COLOR_BUFFER_BIT)
-                //println(gl.getString(gl.VERSION))
-                //println(gl.versionString)
-                frame()
-            })
-
-            frameCount++
-            //println("FRAME!")
         }
     }
 
@@ -394,9 +412,14 @@ class AwtGameWindow : GameWindow() {
             //println("repaint!")
             frame.repaint()
         }
+        //val timer = Timer(1000 / 60, ActionListener { frame.repaint() })
+        //timer.start()
+
+        //val toolkit = Toolkit.getDefaultToolkit()
+        //val events = toolkit.systemEventQueue
         while (running) {
             //frame.invalidate()
-            if (vsync) {
+            if (fvsync) {
                 //val startFrameCount = frameCount
                 //EventQueue.invokeLater {
                 //    //println("repaint!")
@@ -407,14 +430,52 @@ class AwtGameWindow : GameWindow() {
                 //}
                 Thread.sleep(1L)
             } else {
-                EventQueue.invokeLater {
-                    //println("repaint!")
+
+                /*
+                val startTime = PerformanceCounter.hr
+                val endTime = startTime + (1000.toDouble() / fps.toDouble()).hrSeconds
+                //Toolkit.getEventQueue()
+                //EventQueue.isDispatchThread()
+                val currentFrameCount = frameCount
+                events.postEvent(PeerEvent(toolkit, Runnable {
                     frame.repaint()
+                }, PeerEvent.ULTIMATE_PRIORITY_EVENT))
+                //EventQueue.invokeLater { frame.repaint() }
+                //timer.delay = fps
+
+                while (currentFrameCount == frameCount) {
+                    Thread.sleep(0L, 100_000)
                 }
 
-                Thread.sleep(timePerFrame.millisecondsLong)
+                val delay = endTime - PerformanceCounter.hr
+                if (delay > 0.hrNanoseconds) {
+                    Thread.sleep(0L, delay.nanosecondsInt)
+                }
+
+                //Thread.sleep(timePerFrame.millisecondsLong)
+                 */
+
+                //events.postEvent(PeerEvent(toolkit, Runnable { frame.repaint() }, PeerEvent.ULTIMATE_PRIORITY_EVENT))
+                //println("---")
+                EventQueue.invokeLater { frame.repaint() }
+
+                val currentFrameCount = frameCount
+                while (running && currentFrameCount == frameCount) {
+                    Thread.sleep(0L, 100_000)
+                }
+
+                val nanos = System.nanoTime()
+                val frameTimeNanos = (1000.toDouble() / fps.toDouble()).hrMilliseconds.nanosecondsInt
+                val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
+                if (delayNanos > 0) {
+                    //println(delayNanos / 1_000_000)
+                    Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
+                }
+                //println(System.nanoTime())
+
             }
         }
+        //timer.stop()
 
         dispatchDestroyEvent()
 

@@ -4,6 +4,7 @@ import GL.*
 import com.soywiz.kds.IntMap
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.toInt
+import com.soywiz.klock.hr.HRTimeSpan
 import com.soywiz.kmem.startAddressOf
 import com.soywiz.kmem.write32LE
 import com.soywiz.korag.AGOpengl
@@ -241,6 +242,14 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
         if (vsync) {
             usleep(100.convert())
         }
+    }
+
+    override fun sleep(time: HRTimeSpan) {
+        val micros = time.microsecondsDouble.toLong()
+        val s = micros / 1_000_000
+        val u = micros % 1_000_000
+        if (s > 0) platform.posix.sleep(s.convert())
+        if (u > 0) platform.posix.usleep(u.convert())
     }
 
     override fun doHandleEvents() = memScoped {

@@ -2,6 +2,7 @@ package com.soywiz.korgw
 
 import com.soywiz.kgl.*
 import com.soywiz.klock.DateTime
+import com.soywiz.klock.hr.HRTimeSpan
 import com.soywiz.korag.AG
 import com.soywiz.korag.AGConfig
 import com.soywiz.korag.AGOpenglFactory
@@ -304,6 +305,10 @@ class WindowsGameWindow : EventLoopGameWindow() {
 
             //SetTimer(hwnd, 1, 1000 / 60, staticCFunction(::WndTimer))
         }
+    }
+
+    override fun sleep(time: HRTimeSpan) {
+        usleep(time.microsecondsDouble.toLong().convert())
     }
 
     override fun doSmallSleep() {

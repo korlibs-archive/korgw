@@ -1,6 +1,8 @@
 package com.soywiz.korgw.x11
 
 import com.soywiz.kgl.KmlGl
+import com.soywiz.klock.PerformanceCounter
+import com.soywiz.klock.hr.HRTimeSpan
 import com.soywiz.kmem.toInt
 import com.soywiz.kmem.write32LE
 import com.soywiz.korag.AGOpengl
@@ -189,7 +191,8 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
 
         val dpy = X.glXGetCurrentDisplay()
         val drawable = X.glXGetCurrentDrawable()
-        swapIntervalEXT?.callback(dpy, drawable, vsync.toInt())
+        //swapIntervalEXT?.callback(dpy, drawable, vsync.toInt())
+        swapIntervalEXT?.callback(dpy, drawable, 0)
         //glXSwapIntervalEXT?.callback(dpy, drawable, 0)
 
         X.glViewport(0, 0, width, height)
@@ -200,6 +203,11 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
     override fun doDestroy() {
         X.XDestroyWindow(d, w)
         X.XCloseDisplay(d)
+    }
+
+    override fun sleep(time: HRTimeSpan) {
+        val nanos = time.nanosecondsDouble.toLong()
+        Thread.sleep(nanos / 1_000_000, (nanos % 1_000_000).toInt())
     }
 
     override fun doSmallSleep() {

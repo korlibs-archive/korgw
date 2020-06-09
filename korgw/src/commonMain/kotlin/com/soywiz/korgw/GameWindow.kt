@@ -16,7 +16,6 @@ import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
-import kotlin.time.milliseconds
 
 expect fun CreateDefaultGameWindow(): GameWindow
 
@@ -399,8 +398,9 @@ open class EventLoopGameWindow : GameWindow() {
             }
             // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
             if (!vsync) {
-                doSmallSleep()
+                //doSmallSleep()
             }
+            sleepNextFrame()
         }
         dispatchStopEvent()
         dispatchDestroyEvent()
@@ -417,6 +417,24 @@ open class EventLoopGameWindow : GameWindow() {
         doInitRender()
         frame(doUpdate, lastRenderTime)
         doSwapBuffers()
+    }
+
+    fun sleepNextFrame() {
+        val now = PerformanceCounter.hr
+        val frameTime = (1.toDouble() / fps.toDouble()).hrSeconds
+        val delay = frameTime - (now % frameTime)
+        if (delay > 0.hrNanoseconds) {
+            //println(delayNanos / 1_000_000)
+            sleep(delay)
+        }
+    }
+
+    open fun sleep(time: HRTimeSpan) {
+        // Reimplement: Spinlock!
+        val start = PerformanceCounter.hr
+        while ((PerformanceCounter.hr - start) < time) {
+            doSmallSleep()
+        }
     }
 
     protected open fun doSmallSleep() = Unit
