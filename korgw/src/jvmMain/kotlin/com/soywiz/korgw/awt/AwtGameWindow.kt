@@ -229,8 +229,8 @@ class AwtGameWindow : GameWindow() {
                 //println(gl.getString(gl.VERSION))
                 //println(gl.versionString)
                 frame()
-                GL.glFlush()
-                GL.glFinish()
+                gl.flush()
+                gl.finish()
             })
             //Toolkit.getDefaultToolkit().sync();
         }
