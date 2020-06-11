@@ -139,7 +139,15 @@ class AwtGameWindow : GameWindow() {
                             override val scaleFactor: Double get() = frameScaleFactor
 
                             override fun useContext(obj: Any?, action: Runnable) {
-                                invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, action)
+                                invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, Runnable {
+                                    makeCurrent()
+                                    try {
+                                        action.run()
+                                    } finally {
+                                        swapBuffers()
+                                        releaseCurrent()
+                                    }
+                                })
                             }
                             override fun makeCurrent() = Unit
                             override fun releaseCurrent() = Unit
@@ -465,6 +473,7 @@ class AwtGameWindow : GameWindow() {
 
                 EventQueue.invokeLater { frame.repaint() }
 
+                //println("[1]")
                 do {
                     val nanos = System.nanoTime()
                     val frameTimeNanos = (1000.toDouble() / fps.toDouble()).hrMilliseconds.nanosecondsInt
@@ -473,6 +482,7 @@ class AwtGameWindow : GameWindow() {
                         //println(delayNanos / 1_000_000)
                         Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
                     }
+                    //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
                 } while (running && currentFrameCount == frameCount)
 
                 //println(System.nanoTime())
