@@ -520,8 +520,8 @@ interface DisplayLinkCallback : Callback {
 interface CoreGraphics : Library {
     fun CGMainDisplayID(): Int
     fun CVDisplayLinkCreateWithCGDisplay(displayId: Int, ptr: Pointer?): Int
-    fun CVDisplayLinkSetOutputCallback(displayLinkValue: Pointer?, callback: Callback?, userInfo: Pointer?)
-    fun CVDisplayLinkStart(displayLinkValue: Pointer?)
-    fun CVDisplayLinkStop(displayLinkValue: Pointer?)
+    fun CVDisplayLinkSetOutputCallback(displayLinkValue: Pointer?, callback: Callback?, userInfo: Pointer?): Int
+    fun CVDisplayLinkStart(displayLinkValue: Pointer?): Int
+    fun CVDisplayLinkStop(displayLinkValue: Pointer?): Int
     companion object : CoreGraphics by NativeLoad("/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics")
 }

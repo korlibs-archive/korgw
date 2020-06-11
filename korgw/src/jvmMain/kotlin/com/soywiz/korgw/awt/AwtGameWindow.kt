@@ -39,6 +39,7 @@ import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
 import java.lang.reflect.Method
 import java.net.URI
+import java.util.concurrent.TimeUnit
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 import javax.swing.JOptionPane
@@ -422,7 +423,7 @@ class AwtGameWindow : GameWindow() {
         //val toolkit = Toolkit.getDefaultToolkit()
         //val events = toolkit.systemEventQueue
 
-        var displayLock: Semaphore? = null
+        var displayLock: java.util.concurrent.Semaphore? = null
         var displayLink: Pointer? = Pointer.NULL
 
         if (OS.isMac) {
@@ -431,10 +432,11 @@ class AwtGameWindow : GameWindow() {
             val res = CoreGraphics.CVDisplayLinkCreateWithCGDisplay(displayID, data)
 
             if (res == 0) {
-                displayLock = Semaphore(1, 1)
+                displayLock = java.util.concurrent.Semaphore(1)
+                displayLock.acquire()
                 displayLink = data.getPointer(0L)
 
-                CoreGraphics.CVDisplayLinkSetOutputCallback(displayLink, object : DisplayLinkCallback {
+                if (CoreGraphics.CVDisplayLinkSetOutputCallback(displayLink, object : DisplayLinkCallback {
                     override fun callback(
                         displayLink: Pointer?,
                         inNow: Pointer?,
@@ -448,9 +450,12 @@ class AwtGameWindow : GameWindow() {
                         } catch (e: IllegalStateException) {
                         }
                     }
-                }, Pointer.NULL)
-
-                CoreGraphics.CVDisplayLinkStart(displayLink)
+                }, Pointer.NULL) == 0) {
+                    CoreGraphics.CVDisplayLinkStart(displayLink)
+                } else {
+                    displayLock = null
+                    displayLink = Pointer.NULL
+                }
             }
         }
 
@@ -509,7 +514,7 @@ class AwtGameWindow : GameWindow() {
                     }
                     displayLock != null -> {
                         //displayLock.lock()
-                        displayLock.acquire()
+                        displayLock.tryAcquire(100L, TimeUnit.MILLISECONDS)
                     }
                     else -> {
                         val nanos = System.nanoTime()
