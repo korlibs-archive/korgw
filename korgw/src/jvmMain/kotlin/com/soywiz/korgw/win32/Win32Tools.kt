@@ -142,4 +142,27 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
         Win32.SwapBuffers(hDC)
         //Thread.sleep(16L)
     }
+
+
+    private var wglSwapIntervalEXTSet: Boolean = false
+    private var swapIntervalEXT: SwapIntervalCallback? = null
+    private var swapIntervalEXTPointer: Pointer? = null
+
+    interface SwapIntervalCallback : Callback {
+        fun callback(value: Int)
+    }
+
+    override fun swapInterval(value: Int) {
+        if (!wglSwapIntervalEXTSet) {
+            wglSwapIntervalEXTSet = true
+            swapIntervalEXTPointer = Win32.wglGetProcAddress("wglSwapIntervalEXT")
+
+            swapIntervalEXT = when {
+                swapIntervalEXTPointer != Pointer.NULL -> CallbackReference.getCallback(SwapIntervalCallback::class.java, swapIntervalEXTPointer) as? SwapIntervalCallback?
+                else -> null
+            }
+            println("swapIntervalEXT: $swapIntervalEXT")
+        }
+        swapIntervalEXT?.callback(value)
+    }
 }

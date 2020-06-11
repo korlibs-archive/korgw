@@ -157,8 +157,6 @@ class AwtGameWindow : GameWindow() {
                                     try {
                                         action.run()
                                     } finally {
-                                        GL.glFlush()
-                                        GL.glFinish()
                                         swapBuffers()
                                         releaseCurrent()
                                     }
@@ -212,6 +210,8 @@ class AwtGameWindow : GameWindow() {
             //GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
             ctx?.useContext(g, Runnable {
+                ctx?.swapInterval(1)
+
                 val gl = ag.gl
                 val factor = frameScaleFactor
                 if (lastFactor != factor) {
@@ -229,6 +229,8 @@ class AwtGameWindow : GameWindow() {
                 //println(gl.getString(gl.VERSION))
                 //println(gl.versionString)
                 frame()
+                GL.glFlush()
+                GL.glFinish()
             })
             //Toolkit.getDefaultToolkit().sync();
         }

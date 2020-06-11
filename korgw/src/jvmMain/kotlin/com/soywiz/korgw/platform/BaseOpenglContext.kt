@@ -16,6 +16,8 @@ interface BaseOpenglContext {
     fun releaseCurrent() {
     }
     fun swapBuffers()
+    fun swapInterval(value: Int) {
+    }
 }
 
 object DummyOpenglContext : BaseOpenglContext {

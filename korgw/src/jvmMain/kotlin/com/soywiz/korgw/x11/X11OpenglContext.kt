@@ -2,6 +2,8 @@ package com.soywiz.korgw.x11
 
 import com.soywiz.korgw.platform.*
 import com.soywiz.korio.lang.*
+import com.sun.jna.CallbackReference
+import com.sun.jna.Pointer
 import com.sun.jna.platform.unix.*
 
 // https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
@@ -65,5 +67,25 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, va
         swapCallback()
         val result = X.glXSwapBuffers(d, w)
         //println("swapBuffers: $result")
+    }
+
+    private var glXSwapIntervalEXTSet: Boolean = false
+    private var swapIntervalEXT: X11GameWindow.glXSwapIntervalEXTCallback? = null
+    private var swapIntervalEXTPointer: Pointer? = null
+
+    override fun swapInterval(value: Int) {
+        if (!glXSwapIntervalEXTSet) {
+            glXSwapIntervalEXTSet = true
+            swapIntervalEXTPointer = X.glXGetProcAddress("glXSwapIntervalEXT")
+
+            swapIntervalEXT = when {
+                swapIntervalEXTPointer != Pointer.NULL -> CallbackReference.getCallback(X11GameWindow.glXSwapIntervalEXTCallback::class.java, swapIntervalEXTPointer) as? X11GameWindow.glXSwapIntervalEXTCallback?
+                else -> null
+            }
+            println("swapIntervalEXT: $swapIntervalEXT")
+        }
+        val dpy = X.glXGetCurrentDisplay()
+        val drawable = X.glXGetCurrentDrawable()
+        swapIntervalEXT?.callback(dpy, drawable, value)
     }
 }
