@@ -75,8 +75,6 @@ class AwtGameWindow : GameWindow() {
     val classLoader = this.javaClass.classLoader
 
     //private var currentInFullScreen = false
-    //@Volatile
-    //var frameCount = 0
 
     //val fvsync get() = vsync
     val fvsync get() = false
@@ -128,10 +126,6 @@ class AwtGameWindow : GameWindow() {
 
         private var lastFactor = 0.0
 
-        fun beforeSwappingBuffers() {
-            //frameCount++
-        }
-
         private fun ensureContext() {
             if (ctx == null) {
                 ctx = when {
@@ -148,44 +142,23 @@ class AwtGameWindow : GameWindow() {
                             override val scaleFactor: Double get() = frameScaleFactor
 
                             override fun useContext(obj: Any?, action: Runnable) {
-                                invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, Runnable {
-                                    //val time = System.nanoTime()
-                                    //val elapsedMs = time - timeSinceLast
-                                    //timeSinceLast = time
-                                    //val start = PerformanceCounter.hr
-                                    makeCurrent()
-                                    try {
-                                        action.run()
-                                    } finally {
-                                        swapBuffers()
-                                        releaseCurrent()
-                                    }
-                                    //val end = PerformanceCounter.hr
-                                    //val elapsed = end - start
-                                    //if (elapsedMs < 15_002_834L || elapsedMs >= 19_602_834) println("GL: $time[$elapsedMs]: ${elapsed.timeSpan}")
-                                })
+                                invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, action)
                             }
                             override fun makeCurrent() = Unit
                             override fun releaseCurrent() = Unit
-                            override fun swapBuffers() {
-                                beforeSwappingBuffers()
-                            }
+                            override fun swapBuffers() = Unit
                         }
                     }
                     OS.isWindows -> Win32OpenglContext(
                         WinDef.HWND(Native.getComponentPointer(frame)),
                         doubleBuffered = true
-                    ) {
-                        beforeSwappingBuffers()
-                    }
+                    )
                     else -> {
                         val d = X.XOpenDisplay(null)
                         val src = X.XDefaultScreen(d)
                         val winId = Native.getWindowID(frame)
                         //println("winId: $winId")
-                        X11OpenglContext(d, X11.Window(winId), src) {
-                            beforeSwappingBuffers()
-                        }
+                        X11OpenglContext(d, X11.Window(winId), src)
                     }
                 }
             }

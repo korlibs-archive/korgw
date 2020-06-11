@@ -15,7 +15,8 @@ interface BaseOpenglContext {
     fun makeCurrent()
     fun releaseCurrent() {
     }
-    fun swapBuffers()
+    fun swapBuffers() {
+    }
     fun swapInterval(value: Int) {
     }
 }
