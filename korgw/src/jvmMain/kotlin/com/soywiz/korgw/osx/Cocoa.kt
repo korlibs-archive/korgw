@@ -22,6 +22,7 @@ internal interface GL : Library {
     fun glViewport(x: Int, y: Int, width: Int, height: Int)
     fun glClearColor(r: Float, g: Float, b: Float, a: Float)
     fun glClear(flags: Int)
+    fun glFinish()
     fun glFlush()
     fun CGLSetParameter(vararg args: Any?)
     fun CGLEnable(vararg args: Any?)

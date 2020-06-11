@@ -1,8 +1,10 @@
 package com.soywiz.korgw.awt
 
 import com.soywiz.kgl.KmlGl
+import com.soywiz.klock.PerformanceCounter
 import com.soywiz.klock.hr.hrMilliseconds
 import com.soywiz.klock.hr.hrSeconds
+import com.soywiz.klock.hr.timeSpan
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
@@ -67,8 +69,8 @@ class AwtGameWindow : GameWindow() {
     val classLoader = this.javaClass.classLoader
 
     //private var currentInFullScreen = false
-    @Volatile
-    var frameCount = 0
+    //@Volatile
+    //var frameCount = 0
 
     //val fvsync get() = vsync
     val fvsync get() = false
@@ -121,7 +123,7 @@ class AwtGameWindow : GameWindow() {
         private var lastFactor = 0.0
 
         fun beforeSwappingBuffers() {
-            frameCount++
+            //frameCount++
         }
 
         private fun ensureContext() {
@@ -135,18 +137,28 @@ class AwtGameWindow : GameWindow() {
                         )
                         invokeWithOGLContextCurrentMethod.isAccessible = true
 
+                        //var timeSinceLast = 0L
                         object : BaseOpenglContext {
                             override val scaleFactor: Double get() = frameScaleFactor
 
                             override fun useContext(obj: Any?, action: Runnable) {
                                 invokeWithOGLContextCurrentMethod.invoke(null, obj as Graphics, Runnable {
+                                    //val time = System.nanoTime()
+                                    //val elapsedMs = time - timeSinceLast
+                                    //timeSinceLast = time
+                                    //val start = PerformanceCounter.hr
                                     makeCurrent()
                                     try {
                                         action.run()
                                     } finally {
+                                        GL.glFlush()
+                                        GL.glFinish()
                                         swapBuffers()
                                         releaseCurrent()
                                     }
+                                    //val end = PerformanceCounter.hr
+                                    //val elapsed = end - start
+                                    //if (elapsedMs < 15_002_834L || elapsedMs >= 19_602_834) println("GL: $time[$elapsedMs]: ${elapsed.timeSpan}")
                                 })
                             }
                             override fun makeCurrent() = Unit
@@ -469,21 +481,16 @@ class AwtGameWindow : GameWindow() {
                 //events.postEvent(PeerEvent(toolkit, Runnable { frame.repaint() }, PeerEvent.ULTIMATE_PRIORITY_EVENT))
                 //println("---")
 
-                val currentFrameCount = frameCount
+                frame.repaint()
 
-                EventQueue.invokeLater { frame.repaint() }
-
-                //println("[1]")
-                do {
-                    val nanos = System.nanoTime()
-                    val frameTimeNanos = (1000.toDouble() / fps.toDouble()).hrMilliseconds.nanosecondsInt
-                    val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
-                    if (delayNanos > 0) {
-                        //println(delayNanos / 1_000_000)
-                        Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
-                    }
-                    //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
-                } while (running && currentFrameCount == frameCount)
+                val nanos = System.nanoTime()
+                val frameTimeNanos = (1.0 / fps.toDouble()).hrSeconds.nanosecondsInt
+                val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
+                if (delayNanos > 0) {
+                    //println(delayNanos / 1_000_000)
+                    Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
+                }
+                //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
 
                 //println(System.nanoTime())
 
