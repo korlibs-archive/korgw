@@ -503,20 +503,26 @@ class AwtGameWindow : GameWindow() {
 
                 frame.repaint()
 
-                if (displayLock != null) {
-                    //displayLock.lock()
-                    displayLock.acquire()
-                } else {
-                    val nanos = System.nanoTime()
-                    val frameTimeNanos = (1.0 / fps.toDouble()).hrSeconds.nanosecondsInt
-                    val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
-                    if (delayNanos > 0) {
-                        //println(delayNanos / 1_000_000)
-                        Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
+                when {
+                    ctx?.supportsSwapInterval() == true -> {
+                        Unit // Do nothing. Already waited for vsync
                     }
-                    //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
+                    displayLock != null -> {
+                        //displayLock.lock()
+                        displayLock.acquire()
+                    }
+                    else -> {
+                        val nanos = System.nanoTime()
+                        val frameTimeNanos = (1.0 / fps.toDouble()).hrSeconds.nanosecondsInt
+                        val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
+                        if (delayNanos > 0) {
+                            //println(delayNanos / 1_000_000)
+                            Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
+                        }
+                        //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
 
-                    //println(System.nanoTime())
+                        //println(System.nanoTime())
+                    }
                 }
 
             }

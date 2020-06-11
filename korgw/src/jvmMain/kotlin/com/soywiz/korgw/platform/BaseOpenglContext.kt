@@ -17,6 +17,7 @@ interface BaseOpenglContext {
     }
     fun swapBuffers() {
     }
+    fun supportsSwapInterval(): Boolean = false
     fun swapInterval(value: Int) {
     }
 }

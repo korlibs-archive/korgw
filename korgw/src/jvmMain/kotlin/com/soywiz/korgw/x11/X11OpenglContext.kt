@@ -72,7 +72,7 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, va
     private var swapIntervalEXT: X11GameWindow.glXSwapIntervalEXTCallback? = null
     private var swapIntervalEXTPointer: Pointer? = null
 
-    override fun swapInterval(value: Int) {
+    private fun getSwapInterval(): X11GameWindow.glXSwapIntervalEXTCallback? {
         if (!glXSwapIntervalEXTSet) {
             glXSwapIntervalEXTSet = true
             swapIntervalEXTPointer = X.glXGetProcAddress("glXSwapIntervalEXT")
@@ -83,8 +83,16 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, va
             }
             println("swapIntervalEXT: $swapIntervalEXT")
         }
+        return swapIntervalEXT
+    }
+
+    override fun supportsSwapInterval(): Boolean {
+        return getSwapInterval() != null
+    }
+
+    override fun swapInterval(value: Int) {
         val dpy = X.glXGetCurrentDisplay()
         val drawable = X.glXGetCurrentDrawable()
-        swapIntervalEXT?.callback(dpy, drawable, value)
+        getSwapInterval()?.callback(dpy, drawable, value)
     }
 }

@@ -150,7 +150,7 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
         fun callback(value: Int)
     }
 
-    override fun swapInterval(value: Int) {
+    private fun getSwapInterval(): SwapIntervalCallback? {
         if (!wglSwapIntervalEXTSet) {
             wglSwapIntervalEXTSet = true
             swapIntervalEXTPointer = Win32.wglGetProcAddress("wglSwapIntervalEXT")
@@ -161,6 +161,14 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
             }
             println("swapIntervalEXT: $swapIntervalEXT")
         }
-        swapIntervalEXT?.callback(value)
+        return swapIntervalEXT
+    }
+
+    override fun supportsSwapInterval(): Boolean {
+        return getSwapInterval() != null
+    }
+
+    override fun swapInterval(value: Int) {
+        getSwapInterval()?.callback(value)
     }
 }
