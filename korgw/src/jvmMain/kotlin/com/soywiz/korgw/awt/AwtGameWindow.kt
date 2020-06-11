@@ -120,6 +120,10 @@ class AwtGameWindow : GameWindow() {
 
         private var lastFactor = 0.0
 
+        fun beforeSwappingBuffers() {
+            frameCount++
+        }
+
         private fun ensureContext() {
             if (ctx == null) {
                 ctx = when {
@@ -139,19 +143,25 @@ class AwtGameWindow : GameWindow() {
                             }
                             override fun makeCurrent() = Unit
                             override fun releaseCurrent() = Unit
-                            override fun swapBuffers() = Unit
+                            override fun swapBuffers() {
+                                beforeSwappingBuffers()
+                            }
                         }
                     }
                     OS.isWindows -> Win32OpenglContext(
                         WinDef.HWND(Native.getComponentPointer(frame)),
                         doubleBuffered = true
-                    )
+                    ) {
+                        beforeSwappingBuffers()
+                    }
                     else -> {
                         val d = X.XOpenDisplay(null)
                         val src = X.XDefaultScreen(d)
                         val winId = Native.getWindowID(frame)
                         //println("winId: $winId")
-                        X11OpenglContext(d, X11.Window(winId), src)
+                        X11OpenglContext(d, X11.Window(winId), src) {
+                            beforeSwappingBuffers()
+                        }
                     }
                 }
             }
@@ -162,46 +172,39 @@ class AwtGameWindow : GameWindow() {
         // https://docs.oracle.com/javase/tutorial/extra/fullscreen/rendering.html
         // https://docs.oracle.com/javase/tutorial/extra/fullscreen/doublebuf.html
         override fun paint(g: Graphics) {
-            try {
-                if (fvsync) {
-                    EventQueue.invokeLater {
-                        //println("repaint!")
-                        frame.repaint()
-                    }
+            if (fvsync) {
+                EventQueue.invokeLater {
+                    //println("repaint!")
+                    frame.repaint()
                 }
-                val frame = this
-
-                ensureContext()
-
-                //GL.glClearColor(1f, 0f, 0f, 1f)
-                //GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-                ctx?.useContext(g, Runnable {
-                    val gl = ag.gl
-                    val factor = frameScaleFactor
-                    if (lastFactor != factor) {
-                        lastFactor = factor
-                        dispatchReshapeEvent()
-                    }
-
-                    //println("RENDER[1]")
-
-                    //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
-                    gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
-                    //gl.clearColor(.2f, .4f, .9f, 1f)
-                    gl.clearColor(.3f, .3f, .3f, 1f)
-                    gl.clear(gl.COLOR_BUFFER_BIT)
-                    //println(gl.getString(gl.VERSION))
-                    //println(gl.versionString)
-                    frame()
-                })
-                //Toolkit.getDefaultToolkit().sync();
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            } finally {
-                frameCount++
-                //println("FRAME!")
             }
+            val frame = this
+
+            ensureContext()
+
+            //GL.glClearColor(1f, 0f, 0f, 1f)
+            //GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+            ctx?.useContext(g, Runnable {
+                val gl = ag.gl
+                val factor = frameScaleFactor
+                if (lastFactor != factor) {
+                    lastFactor = factor
+                    dispatchReshapeEvent()
+                }
+
+                //println("RENDER[1]")
+
+                //println("FACTOR: $factor, nonScaledWidth=$nonScaledWidth, nonScaledHeight=$nonScaledHeight, scaledWidth=$scaledWidth, scaledHeight=$scaledHeight")
+                gl.viewport(0, 0, scaledWidth.toInt(), scaledHeight.toInt())
+                //gl.clearColor(.2f, .4f, .9f, 1f)
+                gl.clearColor(.3f, .3f, .3f, 1f)
+                gl.clear(gl.COLOR_BUFFER_BIT)
+                //println(gl.getString(gl.VERSION))
+                //println(gl.versionString)
+                frame()
+            })
+            //Toolkit.getDefaultToolkit().sync();
         }
     }
 
@@ -457,20 +460,21 @@ class AwtGameWindow : GameWindow() {
 
                 //events.postEvent(PeerEvent(toolkit, Runnable { frame.repaint() }, PeerEvent.ULTIMATE_PRIORITY_EVENT))
                 //println("---")
-                EventQueue.invokeLater { frame.repaint() }
 
                 val currentFrameCount = frameCount
-                while (running && currentFrameCount == frameCount) {
-                    Thread.sleep(0L, 100_000)
-                }
 
-                val nanos = System.nanoTime()
-                val frameTimeNanos = (1000.toDouble() / fps.toDouble()).hrMilliseconds.nanosecondsInt
-                val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
-                if (delayNanos > 0) {
-                    //println(delayNanos / 1_000_000)
-                    Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
-                }
+                EventQueue.invokeLater { frame.repaint() }
+
+                do {
+                    val nanos = System.nanoTime()
+                    val frameTimeNanos = (1000.toDouble() / fps.toDouble()).hrMilliseconds.nanosecondsInt
+                    val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
+                    if (delayNanos > 0) {
+                        //println(delayNanos / 1_000_000)
+                        Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
+                    }
+                } while (running && currentFrameCount == frameCount)
+
                 //println(System.nanoTime())
 
             }

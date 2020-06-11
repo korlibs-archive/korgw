@@ -5,7 +5,7 @@ import com.soywiz.korio.lang.*
 import com.sun.jna.platform.unix.*
 
 // https://www.khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
-class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, val vi: XVisualInfo? = chooseVisuals(d, scr), val doubleBuffered: Boolean = true) : BaseOpenglContext {
+class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, val vi: XVisualInfo? = chooseVisuals(d, scr), val doubleBuffered: Boolean = true, val swapCallback: () -> Unit) : BaseOpenglContext {
     companion object {
         fun chooseVisuals(d: X11.Display?, scr: Int = X.XDefaultScreen(d)): XVisualInfo? {
             val attrsList = listOf(
@@ -62,6 +62,7 @@ class X11OpenglContext(val d: X11.Display?, val w: X11.Window?, val scr: Int, va
     }
 
     override fun swapBuffers() {
+        swapCallback()
         val result = X.glXSwapBuffers(d, w)
         //println("swapBuffers: $result")
     }

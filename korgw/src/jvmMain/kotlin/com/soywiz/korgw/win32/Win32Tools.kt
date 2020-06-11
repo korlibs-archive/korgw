@@ -89,7 +89,7 @@ private fun Bitmap32.scaled(width: Int, height: Int): Bitmap32 {
     return scaleLinear(scaleX, scaleY)
 }
 
-class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = false) :
+class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = false, val swapCallback: () -> Unit) :
     BaseOpenglContext {
     val hDC = Win32.GetDC(hWnd)
 
@@ -137,8 +137,9 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
     }
 
     override fun swapBuffers() {
+        swapCallback()
         Win32.glFlush()
         Win32.SwapBuffers(hDC)
-        Thread.sleep(16L)
+        //Thread.sleep(16L)
     }
 }
