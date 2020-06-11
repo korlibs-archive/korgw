@@ -1,10 +1,7 @@
 package com.soywiz.korgw.awt
 
 import com.soywiz.kgl.KmlGl
-import com.soywiz.klock.PerformanceCounter
-import com.soywiz.klock.hr.hrMilliseconds
 import com.soywiz.klock.hr.hrSeconds
-import com.soywiz.klock.hr.timeSpan
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
@@ -12,7 +9,6 @@ import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.internal.MicroDynamic
 import com.soywiz.korgw.osx.CoreGraphics
 import com.soywiz.korgw.osx.DisplayLinkCallback
-import com.soywiz.korgw.osx.GL
 import com.soywiz.korgw.osx.MacKmlGL
 import com.soywiz.korgw.platform.BaseOpenglContext
 import com.soywiz.korgw.win32.Win32KmlGl
@@ -27,19 +23,17 @@ import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.net.URL
 import com.soywiz.korio.util.OS
+import com.sun.jna.CallbackThreadInitializer
 import com.sun.jna.Memory
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.platform.unix.X11
 import com.sun.jna.platform.win32.WinDef
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.Semaphore
 import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
 import java.lang.reflect.Method
 import java.net.URI
-import java.util.concurrent.TimeUnit
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 import javax.swing.JOptionPane
@@ -322,6 +316,32 @@ class AwtGameWindow : GameWindow() {
         )
     }
 
+    val displayLinkData = Memory(16L).also { it.clear() }
+    var displayLinkLock: java.lang.Object? = null
+    var displayLink: Pointer? = Pointer.NULL
+
+    val displayLinkCallback by lazy {
+        object : DisplayLinkCallback {
+            override fun callback(
+                displayLink: Pointer?,
+                inNow: Pointer?,
+                inOutputTime: Pointer?,
+                flagsIn: Pointer?,
+                flagsOut: Pointer?,
+                userInfo: Pointer?
+            ): Int {
+                displayLinkLock?.let { displayLock ->
+                    synchronized(displayLock) {
+                        displayLock.notify()
+                    }
+                }
+                return 0
+            }
+        }.also {
+            Native.setCallbackThreadInitializer(it, CallbackThreadInitializer(false, false, "DisplayLink"))
+        }
+    }
+
     override suspend fun loop(entry: suspend GameWindow.() -> Unit) {
         launchImmediately(getCoroutineDispatcherWithCurrentContext()) {
             entry()
@@ -423,41 +443,25 @@ class AwtGameWindow : GameWindow() {
         //val toolkit = Toolkit.getDefaultToolkit()
         //val events = toolkit.systemEventQueue
 
-        var displayLock: java.util.concurrent.Semaphore? = null
-        var displayLink: Pointer? = Pointer.NULL
-
         if (OS.isMac) {
             val displayID = CoreGraphics.CGMainDisplayID()
-            val data = Memory(16L).also { it.clear() }
-            val res = CoreGraphics.CVDisplayLinkCreateWithCGDisplay(displayID, data)
+            val res = CoreGraphics.CVDisplayLinkCreateWithCGDisplay(displayID, displayLinkData)
 
             if (res == 0) {
-                displayLock = java.util.concurrent.Semaphore(1)
-                displayLock.acquire()
-                displayLink = data.getPointer(0L)
-
-                if (CoreGraphics.CVDisplayLinkSetOutputCallback(displayLink, object : DisplayLinkCallback {
-                    override fun callback(
-                        displayLink: Pointer?,
-                        inNow: Pointer?,
-                        inOutputTime: Pointer?,
-                        flagsIn: Pointer?,
-                        flagsOut: Pointer?,
-                        userInfo: Pointer?
-                    ) {
-                        try {
-                            displayLock?.release()
-                        } catch (e: IllegalStateException) {
-                        }
-                    }
-                }, Pointer.NULL) == 0) {
+                displayLinkLock = java.lang.Object()
+                displayLink = displayLinkData.getPointer(0L)
+                if (CoreGraphics.CVDisplayLinkSetOutputCallback(displayLink, displayLinkCallback, Pointer.NULL) == 0) {
                     CoreGraphics.CVDisplayLinkStart(displayLink)
                 } else {
-                    displayLock = null
+                    displayLinkLock = null
                     displayLink = Pointer.NULL
                 }
             }
         }
+
+        //Thread.sleep(1000000L)
+
+        val displayLock = this.displayLinkLock
 
         if (displayLock != null) {
             println("Using DisplayLink")
@@ -506,6 +510,8 @@ class AwtGameWindow : GameWindow() {
                 //events.postEvent(PeerEvent(toolkit, Runnable { frame.repaint() }, PeerEvent.ULTIMATE_PRIORITY_EVENT))
                 //println("---")
 
+                //val start = PerformanceCounter.hr
+                //val currentTick = ticks
                 frame.repaint()
 
                 when {
@@ -513,8 +519,7 @@ class AwtGameWindow : GameWindow() {
                         Unit // Do nothing. Already waited for vsync
                     }
                     displayLock != null -> {
-                        //displayLock.lock()
-                        displayLock.tryAcquire(100L, TimeUnit.MILLISECONDS)
+                        synchronized(displayLock) { displayLock.wait(100L) }
                     }
                     else -> {
                         val nanos = System.nanoTime()
@@ -529,7 +534,8 @@ class AwtGameWindow : GameWindow() {
                         //println(System.nanoTime())
                     }
                 }
-
+                //val end = PerformanceCounter.hr
+                //println((end - start).timeSpan)
             }
         }
         //timer.stop()

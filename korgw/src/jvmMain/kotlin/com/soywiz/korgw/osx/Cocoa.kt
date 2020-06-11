@@ -514,7 +514,7 @@ inline fun autoreleasePool(body: () -> Unit) {
 }
 
 interface DisplayLinkCallback : Callback {
-    fun callback(displayLink: Pointer?, inNow: Pointer?, inOutputTime: Pointer?, flagsIn: Pointer?, flagsOut: Pointer?, userInfo: Pointer?)
+    fun callback(displayLink: Pointer?, inNow: Pointer?, inOutputTime: Pointer?, flagsIn: Pointer?, flagsOut: Pointer?, userInfo: Pointer?): Int
 }
 
 interface CoreGraphics : Library {
