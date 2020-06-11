@@ -512,3 +512,16 @@ inline fun autoreleasePool(body: () -> Unit) {
         autoreleasePool.msgSend("drain")
     }
 }
+
+interface DisplayLinkCallback : Callback {
+    fun callback(displayLink: Pointer?, inNow: Pointer?, inOutputTime: Pointer?, flagsIn: Pointer?, flagsOut: Pointer?, userInfo: Pointer?)
+}
+
+interface CoreGraphics : Library {
+    fun CGMainDisplayID(): Int
+    fun CVDisplayLinkCreateWithCGDisplay(displayId: Int, ptr: Pointer?): Int
+    fun CVDisplayLinkSetOutputCallback(displayLinkValue: Pointer?, callback: Callback?, userInfo: Pointer?)
+    fun CVDisplayLinkStart(displayLinkValue: Pointer?)
+    fun CVDisplayLinkStop(displayLinkValue: Pointer?)
+    companion object : CoreGraphics by NativeLoad("/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics")
+}

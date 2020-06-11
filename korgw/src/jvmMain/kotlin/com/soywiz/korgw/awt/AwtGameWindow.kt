@@ -10,6 +10,8 @@ import com.soywiz.korev.Key
 import com.soywiz.korev.MouseButton
 import com.soywiz.korgw.GameWindow
 import com.soywiz.korgw.internal.MicroDynamic
+import com.soywiz.korgw.osx.CoreGraphics
+import com.soywiz.korgw.osx.DisplayLinkCallback
 import com.soywiz.korgw.osx.GL
 import com.soywiz.korgw.osx.MacKmlGL
 import com.soywiz.korgw.platform.BaseOpenglContext
@@ -25,9 +27,13 @@ import com.soywiz.korio.file.VfsFile
 import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.net.URL
 import com.soywiz.korio.util.OS
+import com.sun.jna.Memory
 import com.sun.jna.Native
+import com.sun.jna.Pointer
 import com.sun.jna.platform.unix.X11
 import com.sun.jna.platform.win32.WinDef
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import java.awt.*
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.event.*
@@ -440,6 +446,42 @@ class AwtGameWindow : GameWindow() {
 
         //val toolkit = Toolkit.getDefaultToolkit()
         //val events = toolkit.systemEventQueue
+
+        var displayLock: Semaphore? = null
+        var displayLink: Pointer? = Pointer.NULL
+
+        if (OS.isMac) {
+            val displayID = CoreGraphics.CGMainDisplayID()
+            val data = Memory(16L).also { it.clear() }
+            val res = CoreGraphics.CVDisplayLinkCreateWithCGDisplay(displayID, data)
+
+            if (res == 0) {
+                displayLock = Semaphore(1, 1)
+                displayLink = data.getPointer(0L)
+
+                CoreGraphics.CVDisplayLinkSetOutputCallback(displayLink, object : DisplayLinkCallback {
+                    override fun callback(
+                        displayLink: Pointer?,
+                        inNow: Pointer?,
+                        inOutputTime: Pointer?,
+                        flagsIn: Pointer?,
+                        flagsOut: Pointer?,
+                        userInfo: Pointer?
+                    ) {
+                        displayLock?.release()
+                    }
+                }, Pointer.NULL)
+
+                CoreGraphics.CVDisplayLinkStart(displayLink)
+            }
+        }
+
+        if (displayLock != null) {
+            println("Using DisplayLink")
+        } else {
+            println("NOT Using DisplayLink")
+        }
+
         while (running) {
             //frame.invalidate()
             if (fvsync) {
@@ -483,20 +525,29 @@ class AwtGameWindow : GameWindow() {
 
                 frame.repaint()
 
-                val nanos = System.nanoTime()
-                val frameTimeNanos = (1.0 / fps.toDouble()).hrSeconds.nanosecondsInt
-                val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
-                if (delayNanos > 0) {
-                    //println(delayNanos / 1_000_000)
-                    Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
-                }
-                //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
+                if (displayLock != null) {
+                    //displayLock.lock()
+                    displayLock.acquire()
+                } else {
+                    val nanos = System.nanoTime()
+                    val frameTimeNanos = (1.0 / fps.toDouble()).hrSeconds.nanosecondsInt
+                    val delayNanos = frameTimeNanos - (nanos % frameTimeNanos)
+                    if (delayNanos > 0) {
+                        //println(delayNanos / 1_000_000)
+                        Thread.sleep(delayNanos / 1_000_000, (delayNanos % 1_000_000).toInt())
+                    }
+                    //println("[2] currentFrameCount=$currentFrameCount, frameCount=$frameCount")
 
-                //println(System.nanoTime())
+                    //println(System.nanoTime())
+                }
 
             }
         }
         //timer.stop()
+
+        if (OS.isMac && displayLink != Pointer.NULL) {
+            CoreGraphics.CVDisplayLinkStop(displayLink)
+        }
 
         dispatchDestroyEvent()
 
