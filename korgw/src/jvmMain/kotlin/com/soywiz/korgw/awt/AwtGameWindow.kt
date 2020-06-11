@@ -468,7 +468,10 @@ class AwtGameWindow : GameWindow() {
                         flagsOut: Pointer?,
                         userInfo: Pointer?
                     ) {
-                        displayLock?.release()
+                        try {
+                            displayLock?.release()
+                        } catch (e: IllegalStateException) {
+                        }
                     }
                 }, Pointer.NULL)
 
