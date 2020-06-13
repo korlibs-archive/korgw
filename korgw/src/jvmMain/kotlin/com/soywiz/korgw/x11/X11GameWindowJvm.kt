@@ -191,8 +191,9 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() 
 
         val dpy = X.glXGetCurrentDisplay()
         val drawable = X.glXGetCurrentDrawable()
-        //swapIntervalEXT?.callback(dpy, drawable, vsync.toInt())
-        swapIntervalEXT?.callback(dpy, drawable, 0)
+        swapIntervalEXT?.callback(dpy, drawable, vsync.toInt())
+        //swapIntervalEXT?.callback(dpy, drawable, 0)
+        //swapIntervalEXT?.callback(dpy, drawable, 1)
         //glXSwapIntervalEXT?.callback(dpy, drawable, 0)
 
         X.glViewport(0, 0, width, height)

@@ -398,9 +398,8 @@ open class EventLoopGameWindow : GameWindow() {
             }
             // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
             if (!vsync) {
-                //doSmallSleep()
+                sleepNextFrame()
             }
-            sleepNextFrame()
         }
         dispatchStopEvent()
         dispatchDestroyEvent()
