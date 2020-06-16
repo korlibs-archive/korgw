@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
+import android.view.View
 import com.soywiz.kds.Pool
 import com.soywiz.kgl.KmlGl
 import com.soywiz.kgl.KmlGlAndroid
@@ -38,6 +39,8 @@ abstract class KorgwActivity : Activity() {
     protected val mouseEvent = MouseEvent()
     protected val touchEvent = TouchEvent()
     protected val dropFileEvent = DropFileEvent()
+
+    private var defaultUiVisibility = -1
 
     //val touchEvents = Pool { TouchEvent() }
 
@@ -240,5 +243,27 @@ abstract class KorgwActivity : Activity() {
     }
 
     abstract suspend fun activityMain(): Unit
+
+    fun makeFullscreen(value: Boolean) {
+        if (value) window.decorView.run {
+            if (defaultUiVisibility == -1)
+                defaultUiVisibility = systemUiVisibility
+            val flags = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            systemUiVisibility = flags
+            setOnSystemUiVisibilityChangeListener { visibility ->
+                if ((visibility and View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                    systemUiVisibility = flags
+                }
+            }
+        } else window.decorView.run {
+            setOnSystemUiVisibilityChangeListener(null)
+            systemUiVisibility = defaultUiVisibility
+        }
+    }
 }
 
