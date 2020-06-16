@@ -38,16 +38,10 @@ class AndroidGameWindow(val activity: KorgwActivity) : GameWindow() {
     override var icon: Bitmap?
         get() = super.icon
         set(value) {}
-    override var fullscreen: Boolean = false
+    override var fullscreen: Boolean = true
         set(value) {
             field = value
-            activity.window.decorView.apply {
-                if (value) {
-                    systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                } else {
-                    systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                }
-            }
+            activity.makeFullscreen(value)
         }
     override var visible: Boolean
         get() = super.visible
@@ -55,6 +49,10 @@ class AndroidGameWindow(val activity: KorgwActivity) : GameWindow() {
     override var quality: Quality
         get() = super.quality
         set(value) {}
+
+    init {
+        fullscreen = true
+    }
 
     override fun setSize(width: Int, height: Int) {
     }
