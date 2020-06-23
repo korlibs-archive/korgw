@@ -593,8 +593,11 @@ abstract class AGOpengl : AG() {
         var cachedVersion = -1
         val texIds = FBuffer(4)
 
+        var forcedTexId: Int = -1
+
         val tex: Int
             get() {
+                if (forcedTexId >= 0) return forcedTexId
                 if (cachedVersion != contextVersion) {
                     cachedVersion = contextVersion
                     invalidate()
@@ -638,21 +641,33 @@ abstract class AGOpengl : AG() {
                 gl.LUMINANCE
             }
 
-            if (bmp is NativeImage) {
-                prepareUploadNativeTexture(bmp)
-                if (bmp.area != 0) {
-                    gl.texImage2D(gl.TEXTURE_2D, 0, type, type, gl.UNSIGNED_BYTE, bmp)
+            when (bmp) {
+                is ForcedTexId -> {
+                    this.forcedTexId = bmp.forcedTexId
+                    return
                 }
-            } else {
-                val buffer = createBufferForBitmap(bmp)
-                if (buffer != null && source.width != 0 && source.height != 0 && buffer.size != 0) {
-                    gl.texImage2D(
-                        gl.TEXTURE_2D, 0, type,
-                        source.width, source.height,
-                        0, type, gl.UNSIGNED_BYTE, buffer
-                    )
+                is NativeImage -> {
+                    // enable once korim updated
+                    //if (bmp.forcedTexId != -1) {
+                    //    this.forcedTexId = bmp.forcedTexId
+                    //    return
+                    //}
+                    prepareUploadNativeTexture(bmp)
+                    if (bmp.area != 0) {
+                        gl.texImage2D(gl.TEXTURE_2D, 0, type, type, gl.UNSIGNED_BYTE, bmp)
+                    }
                 }
-                //println(buffer)
+                else -> {
+                    val buffer = createBufferForBitmap(bmp)
+                    if (buffer != null && source.width != 0 && source.height != 0 && buffer.size != 0) {
+                        gl.texImage2D(
+                            gl.TEXTURE_2D, 0, type,
+                            source.width, source.height,
+                            0, type, gl.UNSIGNED_BYTE, buffer
+                        )
+                    }
+                    //println(buffer)
+                }
             }
 
             if (requestMipmaps && source.width.isPowerOfTwo && source.height.isPowerOfTwo) {
