@@ -647,11 +647,10 @@ abstract class AGOpengl : AG() {
                     return
                 }
                 is NativeImage -> {
-                    // enable once korim updated
-                    //if (bmp.forcedTexId != -1) {
-                    //    this.forcedTexId = bmp.forcedTexId
-                    //    return
-                    //}
+                    if (bmp.forcedTexId != -1) {
+                        this.forcedTexId = bmp.forcedTexId
+                        return
+                    }
                     prepareUploadNativeTexture(bmp)
                     if (bmp.area != 0) {
                         gl.texImage2D(gl.TEXTURE_2D, 0, type, type, gl.UNSIGNED_BYTE, bmp)
