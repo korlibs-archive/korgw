@@ -8,22 +8,28 @@ import com.soywiz.korim.color.*
 import com.soywiz.korio.lang.*
 
 open class LogAG(
+    width: Int = 640,
+    height: Int = 480
+) : LogBaseAG(width, height) {
+    val log = arrayListOf<String>()
+    fun getLogAsString(): String = log.joinToString("\n")
+    override fun log(str: String) {
+        this.log += str
+    }
+}
+
+open class LogBaseAG(
 	width: Int = 640,
 	height: Int = 480
 ) : AG() {
-	val log = arrayListOf<String>()
 	override val nativeComponent: Any = Any()
 
 	init {
 		ready()
 	}
 
-	protected fun log(str: String) {
-		this.log += str
-		//println(str)
+	open fun log(str: String) {
 	}
-
-	fun getLogAsString(): String = log.joinToString("\n")
 
 	override fun clear(
 		color: RGBA,
