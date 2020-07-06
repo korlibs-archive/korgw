@@ -31,6 +31,7 @@ class AGAndroid(val context: Context) : AGOpengl() {
     val ag = this
     val glv = GLSurfaceView(context)
     override val nativeComponent: Any = glv
+    override val android: Boolean = true
 
     init {
         //glv.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY

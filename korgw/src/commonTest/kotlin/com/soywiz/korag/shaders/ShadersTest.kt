@@ -64,7 +64,7 @@ class ShadersTest {
             Indenter {
                 block()
             }.toString(),
-            shader.toNewGlslString(gles = gles, version = version)
+            shader.toNewGlslStringResult(gles = gles, version = version).result
         )
     }
 

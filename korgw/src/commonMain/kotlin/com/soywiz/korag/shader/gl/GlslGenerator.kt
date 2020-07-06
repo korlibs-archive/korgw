@@ -4,12 +4,30 @@ import com.soywiz.korag.shader.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.util.*
 
+data class GlslConfig(
+    val gles: Boolean = true,
+    val version: Int = GlslGenerator.DEFAULT_VERSION,
+    val compatibility: Boolean = true,
+    val android: Boolean = false,
+    val programConfig: ProgramConfig = ProgramConfig.DEFAULT
+)
+
 class GlslGenerator constructor(
     val kind: ShaderType,
-    @Suppress("unused") val gles: Boolean = true,
-    val version: Int = DEFAULT_VERSION,
-    val compatibility: Boolean = true
+    val config: GlslConfig = GlslConfig()
 ) : Program.Visitor<String>("") {
+    constructor(
+        kind: ShaderType,
+        gles: Boolean = true,
+        version: Int = DEFAULT_VERSION,
+        compatibility: Boolean = true
+    ) : this(kind, GlslConfig(gles, version, compatibility))
+
+    val gles: Boolean get() = config.gles
+    val version: Int get() = config.version
+    val compatibility: Boolean get() = config.compatibility
+    val android: Boolean get() = config.android
+
     //val newGlSlVersion: Boolean = version > 120
     val newGlSlVersion: Boolean = false
 
@@ -39,7 +57,7 @@ class GlslGenerator constructor(
 		VarType.Mat2 -> "mat2"
 		VarType.Mat3 -> "mat3"
 		VarType.Mat4 -> "mat4"
-		VarType.TextureUnit -> "sampler2D"
+		VarType.TextureUnit -> if (config.programConfig.externalTextureSampler) "samplerExternalOES" else "sampler2D"
 		else -> {
 			when (type.kind) {
 				VarKind.TBYTE, VarKind.TUNSIGNED_BYTE, VarKind.TSHORT, VarKind.TUNSIGNED_SHORT, VarKind.TFLOAT -> {
@@ -92,10 +110,15 @@ class GlslGenerator constructor(
 
         val result = Indenter {
             if (gles) {
-                if (compatibility) {
-                    line("#version $version compatibility")
-                } else {
-                    line("#version $version")
+                if (!android) {
+                    if (compatibility) {
+                        line("#version $version compatibility")
+                    } else {
+                        line("#version $version")
+                    }
+                }
+                if (config.programConfig.externalTextureSampler) {
+                    line("#extension GL_OES_EGL_image_external : require")
                 }
                 line("#ifdef GL_ES")
                 indent {
@@ -220,5 +243,3 @@ class GlslGenerator constructor(
 	override fun visit(operand: Program.Swizzle): String = visit(operand.left) + "." + operand.swizzle
 	override fun visit(operand: Program.ArrayAccess): String = visit(operand.left) + "[" + visit(operand.index) + "]"
 }
-
-fun Shader.toGlSl(): String = GlslGenerator(this.type).generate(this.stm)

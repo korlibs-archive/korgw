@@ -3,13 +3,14 @@ package com.soywiz.korag
 import com.soywiz.kds.*
 import com.soywiz.kgl.*
 import com.soywiz.kmem.*
-import com.soywiz.korag.internal.*
+import com.soywiz.korag.internal.setFloats
 import com.soywiz.korag.shader.*
 import com.soywiz.korag.shader.gl.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
 import com.soywiz.korio.lang.*
 import com.soywiz.korma.geom.*
+import kotlin.jvm.JvmOverloads
 import kotlin.math.min
 
 abstract class AGOpengl : AG() {
@@ -21,6 +22,7 @@ abstract class AGOpengl : AG() {
 
     open val glSlVersion: Int? = null
     open val gles: Boolean = false
+    open val android: Boolean = false
     open val webgl: Boolean = false
 
     override var devicePixelRatio: Double = 1.0
@@ -188,12 +190,30 @@ abstract class AGOpengl : AG() {
             gl.disable(gl.SCISSOR_TEST)
         }
 
+        var useExternalSampler = false
+        for (n in 0 until uniforms.uniforms.size) {
+            val uniform = uniforms.uniforms[n]
+            val uniformType = uniform.type
+            val value = uniforms.values[n]
+            when (uniformType) {
+                VarType.TextureUnit -> {
+                    val unit = value as TextureUnit
+                    val tex = (unit.texture as GlTexture?)
+                    if (tex != null) {
+                        if (tex.forcedTexTarget != gl.TEXTURE_2D && tex.forcedTexTarget != -1) {
+                            useExternalSampler = true
+                        }
+                    }
+                }
+            }
+        }
+
         checkBuffers(vertices, indices)
-        val glProgram = getProgram(program)
+        val programConfig = if (useExternalSampler) ProgramConfig.EXTERNAL_TEXTURE_SAMPLER else ProgramConfig.DEFAULT
+        val glProgram = getProgram(program, programConfig)
         (vertices as GlBuffer).bind(gl)
         (indices as? GlBuffer?)?.bind(gl)
         glProgram.use()
-
 
         val totalSize = vertexLayout.totalSize
         for (n in 0 until vattrspos.size) {
@@ -413,10 +433,14 @@ abstract class AGOpengl : AG() {
             VarKind.TFLOAT -> gl.FLOAT
         }
 
-    private val programs = HashMap<Program, GlProgram>()
-    fun getProgram(program: Program): GlProgram = programs.getOrPut(program) { GlProgram(gl, program) }
+    private val programs = HashMap<Program, HashMap<ProgramConfig, GlProgram>>()
 
-    inner class GlProgram(val gl: KmlGl, val program: Program) : Closeable {
+    @JvmOverloads
+    fun getProgram(program: Program, config: ProgramConfig = ProgramConfig.DEFAULT): GlProgram {
+        return programs.getOrPut(program) { HashMap() }.getOrPut(config) { GlProgram(gl, program, config) }
+    }
+
+    inner class GlProgram(val gl: KmlGl, val program: Program, val programConfig: ProgramConfig) : Closeable {
         var cachedVersion = -1
         var id: Int = 0
         var fragmentShaderId: Int = 0
@@ -446,7 +470,9 @@ abstract class AGOpengl : AG() {
                 cachedVersion = contextVersion
                 id = gl.createProgram()
 
-                println("OpenglAG: Created program ${program.name} with id $id because contextVersion: $oldCachedVersion != $contextVersion")
+                if (GlslGenerator.DEBUG_GLSL) {
+                    println("OpenglAG: Created program ${program.name} with id $id because contextVersion: $oldCachedVersion != $contextVersion")
+                }
 
                 //println("GL_SHADING_LANGUAGE_VERSION: $glslVersionInt : $glslVersionString")
 
@@ -462,10 +488,10 @@ abstract class AGOpengl : AG() {
                 }
 
                 fragmentShaderId = createShaderCompat(gl.FRAGMENT_SHADER) { compatibility ->
-                    program.fragment.toNewGlslStringResult(gles = gles, version = usedGlSlVersion, compatibility = compatibility).result
+                    program.fragment.toNewGlslStringResult(GlslConfig(gles = gles, version = usedGlSlVersion, compatibility = compatibility, android = android, programConfig = programConfig)).result
                 }
                 vertexShaderId = createShaderCompat(gl.VERTEX_SHADER) { compatibility ->
-                    program.vertex.toNewGlslStringResult(gles = gles, version = usedGlSlVersion, compatibility = compatibility).result
+                    program.vertex.toNewGlslStringResult(GlslConfig(gles = gles, version = usedGlSlVersion, compatibility = compatibility, android = android, programConfig = programConfig)).result
                 }
                 gl.attachShader(id, fragmentShaderId)
                 gl.attachShader(id, vertexShaderId)
@@ -594,6 +620,7 @@ abstract class AGOpengl : AG() {
         val texIds = FBuffer(4)
 
         var forcedTexId: Int = -1
+        var forcedTexTarget: Int = gl.TEXTURE_2D
 
         val tex: Int
             get() {
@@ -644,23 +671,25 @@ abstract class AGOpengl : AG() {
             when (bmp) {
                 is ForcedTexId -> {
                     this.forcedTexId = bmp.forcedTexId
+                    if (bmp is ForcedTexTarget) this.forcedTexTarget = bmp.forcedTexTarget
                     return
                 }
                 is NativeImage -> {
                     if (bmp.forcedTexId != -1) {
                         this.forcedTexId = bmp.forcedTexId
+                        if (bmp.forcedTexTarget != -1) this.forcedTexTarget = bmp.forcedTexTarget
                         return
                     }
                     prepareUploadNativeTexture(bmp)
                     if (bmp.area != 0) {
-                        gl.texImage2D(gl.TEXTURE_2D, 0, type, type, gl.UNSIGNED_BYTE, bmp)
+                        gl.texImage2D(forcedTexTarget, 0, type, type, gl.UNSIGNED_BYTE, bmp)
                     }
                 }
                 else -> {
                     val buffer = createBufferForBitmap(bmp)
                     if (buffer != null && source.width != 0 && source.height != 0 && buffer.size != 0) {
                         gl.texImage2D(
-                            gl.TEXTURE_2D, 0, type,
+                            forcedTexTarget, 0, type,
                             source.width, source.height,
                             0, type, gl.UNSIGNED_BYTE, buffer
                         )
@@ -677,14 +706,14 @@ abstract class AGOpengl : AG() {
                 setWrapST()
                 //println("actualSyncUpload,generateMipmap.SOURCE: ${source.width},${source.height}, source=$source, bmp=$bmp, requestMipmaps=$requestMipmaps")
                 //printStackTrace()
-                gl.generateMipmap(gl.TEXTURE_2D)
+                gl.generateMipmap(forcedTexTarget)
             } else {
                 //println(" - nomipmaps")
             }
         }
 
-        override fun bind(): Unit = gl.bindTexture(gl.TEXTURE_2D, tex)
-        override fun unbind(): Unit = gl.bindTexture(gl.TEXTURE_2D, 0)
+        override fun bind(): Unit = gl.bindTexture(forcedTexTarget, tex)
+        override fun unbind(): Unit = gl.bindTexture(forcedTexTarget, 0)
 
         private var closed = false
         override fun close(): Unit {
@@ -708,13 +737,13 @@ abstract class AGOpengl : AG() {
         }
 
         private fun setWrapST() {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+            gl.texParameteri(forcedTexTarget, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+            gl.texParameteri(forcedTexTarget, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         }
 
         private fun setMinMag(min: Int, mag: Int) {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min)
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mag)
+            gl.texParameteri(forcedTexTarget, gl.TEXTURE_MIN_FILTER, min)
+            gl.texParameteri(forcedTexTarget, gl.TEXTURE_MAG_FILTER, mag)
         }
     }
 
