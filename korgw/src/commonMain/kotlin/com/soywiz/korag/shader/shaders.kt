@@ -158,6 +158,15 @@ object Output : Variable("out", VarType.Float4) {
     override fun hashCode(): Int = mhashcode()
 }
 
+data class ProgramConfig(
+    val externalTextureSampler: Boolean = false
+) {
+    companion object {
+        val DEFAULT = ProgramConfig()
+        val EXTERNAL_TEXTURE_SAMPLER = ProgramConfig(externalTextureSampler = true)
+    }
+}
+
 class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
 	val uniforms = vertex.uniforms + fragment.uniforms
 	val attributes = vertex.attributes + fragment.attributes
