@@ -180,9 +180,9 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement, val glOpts: dynamic) : KmlGl(
     override fun uniform4fv(location: Int, count: Int, value: FBuffer): Unit = gl.uniform4fv(location.get(), value.arrayFloat)
     override fun uniform4i(location: Int, v0: Int, v1: Int, v2: Int, v3: Int): Unit = gl.uniform4i(location.get(), v0, v1, v2, v3)
     override fun uniform4iv(location: Int, count: Int, value: FBuffer): Unit = gl.uniform4iv(location.get(), value.arrayInt)
-    override fun uniformMatrix2fv(location: Int, count: Int, transpose: Boolean, value: FBuffer): Unit = gl.uniformMatrix2fv(location.get(), transpose, value.arrayFloat)
-    override fun uniformMatrix3fv(location: Int, count: Int, transpose: Boolean, value: FBuffer): Unit = gl.uniformMatrix3fv(location.get(), transpose, value.arrayFloat)
-    override fun uniformMatrix4fv(location: Int, count: Int, transpose: Boolean, value: FBuffer): Unit = gl.uniformMatrix4fv(location.get(), transpose, value.arrayFloat)
+    override fun uniformMatrix2fv(location: Int, count: Int, transpose: Boolean, value: FBuffer): Unit = gl.uniformMatrix2fv(location.get(), transpose, value.arrayFloat.sliceIfRequired(count * 2 * 2))
+    override fun uniformMatrix3fv(location: Int, count: Int, transpose: Boolean, value: FBuffer): Unit = gl.uniformMatrix3fv(location.get(), transpose, value.arrayFloat.sliceIfRequired(count * 3 * 3))
+    override fun uniformMatrix4fv(location: Int, count: Int, transpose: Boolean, value: FBuffer): Unit = gl.uniformMatrix4fv(location.get(), transpose, value.arrayFloat.sliceIfRequired(count * 4 * 4))
     override fun useProgram(program: Int): Unit = gl.useProgram(program.get())
     override fun validateProgram(program: Int): Unit = gl.validateProgram(program.get())
     override fun vertexAttrib1f(index: Int, x: Float): Unit = gl.vertexAttrib1f(index, x)
@@ -195,4 +195,6 @@ class KmlGlJsCanvas(val canvas: HTMLCanvasElement, val glOpts: dynamic) : KmlGl(
     override fun vertexAttrib4fv(index: Int, v: FBuffer): Unit = gl.vertexAttrib4fv(index, v)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit = gl.vertexAttribPointer(index, size, type, normalized, stride, pointer)
     override fun viewport(x: Int, y: Int, width: Int, height: Int): Unit = gl.viewport(x, y, width, height)
+
+    private fun Float32Buffer.sliceIfRequired(count: Int): Float32Buffer = if (size == count) this else Float32Array(this.buffer, 0, count)
 }
