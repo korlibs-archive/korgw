@@ -1,8 +1,7 @@
 package com.soywiz.korgw.x11
 
 import com.soywiz.kgl.KmlGl
-import com.soywiz.klock.PerformanceCounter
-import com.soywiz.klock.hr.HRTimeSpan
+import com.soywiz.kgl.checkedIf
 import com.soywiz.kmem.toInt
 import com.soywiz.kmem.write32LE
 import com.soywiz.korag.AGOpengl
@@ -17,13 +16,13 @@ import com.sun.jna.*
 import com.sun.jna.platform.unix.X11.*
 
 //class X11Ag(val window: X11GameWindow, override val gl: KmlGl = LogKmlGlProxy(X11KmlGl())) : AGOpengl() {
-class X11Ag(val window: X11GameWindow, override val gl: KmlGl = X11KmlGl) : AGOpengl() {
+class X11Ag(val window: X11GameWindow, val checkGl: Boolean, override val gl: KmlGl = X11KmlGl.checkedIf(checkGl)) : AGOpengl() {
     override val gles: Boolean = true
     override val nativeComponent: Any = window
 }
 
-class X11GameWindow : EventLoopGameWindow(), DialogInterface by ZenityDialogs() {
-    override val ag: X11Ag by lazy { X11Ag(this) }
+class X11GameWindow(val checkGl: Boolean) : EventLoopGameWindow(), DialogInterface by ZenityDialogs() {
+    override val ag: X11Ag by lazy { X11Ag(this, checkGl) }
     override var width: Int = 200; private set
     override var height: Int = 200; private set
     override var title: String = "Korgw"

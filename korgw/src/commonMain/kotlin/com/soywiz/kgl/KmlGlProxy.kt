@@ -1451,6 +1451,9 @@ class LogKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {
 	override fun after(name: String, params: String, result: String): Unit = run { println("after: $name ($params) = $result") }
 }
 class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) : KmlGlProxy(parent) {
+    init {
+        //println("CheckErrorsKmlGlProxy")
+    }
 	override fun after(name: String, params: String, result: String): Unit {
         do {
             val error = parent.getError()
@@ -1466,3 +1469,6 @@ class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) 
     }
     override fun getError(): Int = parent.getError()
 }
+
+fun KmlGl.checked(throwException: Boolean = false) = CheckErrorsKmlGlProxy(this, throwException)
+fun KmlGl.checkedIf(checked: Boolean, throwException: Boolean = false) = if (checked) CheckErrorsKmlGlProxy(this, throwException) else this
