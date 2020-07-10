@@ -28,29 +28,34 @@ actual fun CreateDefaultGameWindow(): GameWindow {
         //?: "jna"
         ?: "default"
 
+    val checkGl = null
+        ?: System.getenv("KORGW_CHECK_OPENGL")?.toBooleanOrNull()
+        ?: System.getProperty("korgw.check.opengl")?.toBooleanOrNull()
+        ?: false
+
     return when (engine) {
         "default" -> when {
-            OS.isLinux -> X11GameWindow()
-            else -> AwtGameWindow()
+            OS.isLinux -> X11GameWindow(checkGl)
+            else -> AwtGameWindow(checkGl)
         }
         "jna" -> when {
             OS.isMac -> {
                 when {
-                    isOSXMainThread -> MacGameWindow()
+                    isOSXMainThread -> MacGameWindow(checkGl)
                     else -> {
                         println("WARNING. Slower startup: NOT in main thread! Using AWT! (on mac use -XstartOnFirstThread when possible)")
-                        AwtGameWindow()
+                        AwtGameWindow(checkGl)
                     }
                 }
             }
-            OS.isLinux -> X11GameWindow()
+            OS.isLinux -> X11GameWindow(checkGl)
             //OS.isWindows -> com.soywiz.korgw.win32.Win32GameWindow()
-            OS.isWindows -> AwtGameWindow()
-            else -> X11GameWindow()
+            OS.isWindows -> AwtGameWindow(checkGl)
+            else -> X11GameWindow(checkGl)
         }
         "awt" -> when {
-            OS.isMac && isOSXMainThread -> MacGameWindow()
-            else -> AwtGameWindow()
+            OS.isMac && isOSXMainThread -> MacGameWindow(checkGl)
+            else -> AwtGameWindow(checkGl)
         }
         //"jogl" -> {
         //    if (isOSXMainThread) {
@@ -109,4 +114,10 @@ object TestGameWindow {
             }
         }
     }
+}
+
+private fun String.toBooleanOrNull(): Boolean? = try {
+    toBoolean()
+} catch (e: Throwable) {
+    null
 }

@@ -1,6 +1,7 @@
 package com.soywiz.korgw.awt
 
 import com.soywiz.kgl.KmlGl
+import com.soywiz.kgl.checkedIf
 import com.soywiz.klock.hr.hrSeconds
 import com.soywiz.korag.AGOpengl
 import com.soywiz.korev.Key
@@ -39,20 +40,21 @@ import javax.swing.JFrame
 import javax.swing.JOptionPane
 
 
-class AwtAg(val window: AwtGameWindow) : AGOpengl() {
+class AwtAg(val window: AwtGameWindow, val checkGl: Boolean) : AGOpengl() {
     override val nativeComponent: Any = window
     override val gles: Boolean = true
     override val gl: KmlGl by lazy {
         when {
+            //OS.isMac -> MacKmlGL.checked(throwException = false)
             OS.isMac -> MacKmlGL
             OS.isWindows -> Win32KmlGl
             else -> X11KmlGl
-        }
+        }.checkedIf(checkGl)
     }
 }
 
-class AwtGameWindow : GameWindow() {
-    override val ag: AwtAg = AwtAg(this)
+class AwtGameWindow(val checkGl: Boolean) : GameWindow() {
+    override val ag: AwtAg = AwtAg(this, checkGl)
 
     /*
     fun JFrame.isFullScreen(): Boolean {

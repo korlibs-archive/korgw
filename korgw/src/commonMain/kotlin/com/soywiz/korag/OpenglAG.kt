@@ -43,11 +43,20 @@ abstract class AGOpengl : AG() {
         //gl.swapInterval = 0
     }
 
+    var backBufferTextureBinding2d: Int = 0
+    var backBufferRenderBufferBinding: Int = 0
+    var backBufferFrameBufferBinding: Int = 0
+
+    override fun unsetBackBuffer(width: Int, height: Int) {
+        backBufferTextureBinding2d = gl.getIntegerv(gl.TEXTURE_BINDING_2D)
+        backBufferRenderBufferBinding = gl.getIntegerv(gl.RENDERBUFFER_BINDING)
+        backBufferFrameBufferBinding = gl.getIntegerv(gl.FRAMEBUFFER_BINDING)
+    }
+
     override fun setBackBuffer(width: Int, height: Int) {
-        //checkErrors { gl.Flush() }
-        gl.bindTexture(gl.TEXTURE_2D, 0)
-        gl.bindRenderbuffer(gl.RENDERBUFFER, 0)
-        gl.bindFramebuffer(gl.FRAMEBUFFER, 0)
+        gl.bindTexture(gl.TEXTURE_2D, backBufferTextureBinding2d)
+        gl.bindRenderbuffer(gl.RENDERBUFFER, backBufferRenderBufferBinding)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, backBufferFrameBufferBinding)
         setViewport(0, 0, width, height)
     }
 
