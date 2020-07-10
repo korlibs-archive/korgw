@@ -157,9 +157,9 @@ abstract class AGOpengl : AG() {
     private val TEMP_MAX_MATRICES = 1024
     val tempBuffer1 = FBuffer(4)
     val tempBuffer = FBuffer(4 * 16 * TEMP_MAX_MATRICES)
-    val tempBufferM2 = FBuffer(4 * 2 * 2)
-    val tempBufferM3 = FBuffer(4 * 3 * 3)
-    val tempBufferM4 = FBuffer(4 * 4 * 4)
+    val tempBufferM2 = FBuffer.allocUnaligned(4 * 2 * 2)
+    val tempBufferM3 = FBuffer.allocUnaligned(4 * 3 * 3)
+    val tempBufferM4 = FBuffer.allocUnaligned(4 * 4 * 4)
     val tempF32 = tempBuffer.f32
 
     private val tempFloats = FloatArray(16 * TEMP_MAX_MATRICES)
