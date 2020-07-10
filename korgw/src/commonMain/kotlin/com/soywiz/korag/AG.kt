@@ -576,6 +576,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		val width: Int
 		val height: Int
 		fun setSize(width: Int, height: Int)
+        fun unset() = Unit
 		fun set()
 	}
 
@@ -588,7 +589,11 @@ abstract class AG : Extra by Extra.Mixin() {
 			this.height = height
 		}
 
-		override fun set() {
+        override fun unset() {
+            unsetBackBuffer(width, height)
+        }
+
+        override fun set() {
 			setBackBuffer(width, height)
 		}
 	}
@@ -669,7 +674,8 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 	}
 
-	inline fun renderToTexture(width: Int, height: Int, render: () -> Unit, use: (tex: Texture) -> Unit = { }) {
+    inline
+	fun renderToTexture(width: Int, height: Int, render: () -> Unit, use: (tex: Texture) -> Unit = { }) {
 		val rb = renderBuffers.alloc()
 		frameRenderBuffers += rb
 		val oldRenderBuffer = currentRenderBuffer
@@ -692,21 +698,27 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 	}
 
-	fun setRenderBuffer(renderBuffer: BaseRenderBuffer): BaseRenderBuffer {
+    inline
+    fun renderToBitmap(bmp: Bitmap32, render: () -> Unit) {
+        renderToTexture(bmp.width, bmp.height, {
+            render()
+            readColor(bmp)
+        })
+    }
+
+
+    fun setRenderBuffer(renderBuffer: BaseRenderBuffer): BaseRenderBuffer {
 		val old = currentRenderBuffer
+        currentRenderBuffer.unset()
 		currentRenderBuffer = renderBuffer
 		renderBuffer.set()
 		return old
 	}
 
-	open fun setBackBuffer(width: Int, height: Int) {
-	}
+    open fun unsetBackBuffer(width: Int, height: Int) {
+    }
 
-	inline fun renderToBitmap(bmp: Bitmap32, render: () -> Unit) {
-		renderToTexture(bmp.width, bmp.height, {
-			render()
-			readColor(bmp)
-		})
+    open fun setBackBuffer(width: Int, height: Int) {
 	}
 
 	open fun readColor(bitmap: Bitmap32): Unit = TODO()
