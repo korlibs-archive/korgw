@@ -724,15 +724,19 @@ abstract class AGOpengl : AG() {
             }
         }
 
-       private val GL_UNPACK_ALIGNMENT = 0x0CF5
-       private val GL_UNPACK_LSB_FIRST = 0x0CF1
-       private val GL_UNPACK_ROW_LENGTH = 0x0CF2
-       private val GL_UNPACK_SKIP_PIXELS = 0x0CF4
-       private val GL_UNPACK_SKIP_ROWS = 0x0CF3
-       private val GL_UNPACK_SWAP_BYTES = 0x0CF0
+        // https://download.blender.org/source/chest/blender_1.72_tree/glut-win/glut_bitmap.c
+        private val GL_UNPACK_ALIGNMENT = 0x0CF5
+        private val GL_UNPACK_LSB_FIRST = 0x0CF1
+        private val GL_UNPACK_ROW_LENGTH = 0x0CF2
+        private val GL_UNPACK_SKIP_PIXELS = 0x0CF4
+        private val GL_UNPACK_SKIP_ROWS = 0x0CF3
+        private val GL_UNPACK_SWAP_BYTES = 0x0CF0
         fun prepareTexImage2D() {
             if (linux) {
-                gl.pixelStorei(GL_UNPACK_LSB_FIRST, gl.TRUE)
+                println("prepareTexImage2D")
+                //gl.pixelStorei(GL_UNPACK_LSB_FIRST, gl.TRUE)
+                gl.pixelStorei(GL_UNPACK_LSB_FIRST, gl.FALSE)
+                gl.pixelStorei(GL_UNPACK_SWAP_BYTES, gl.TRUE)
             }
         }
 
