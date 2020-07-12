@@ -43,6 +43,7 @@ import javax.swing.JOptionPane
 class AwtAg(val window: AwtGameWindow, val checkGl: Boolean) : AGOpengl() {
     override val nativeComponent: Any = window
     override val gles: Boolean = true
+    override val linux: Boolean = OS.isLinux
     override val gl: KmlGl by lazy {
         when {
             //OS.isMac -> MacKmlGL.checked(throwException = false)

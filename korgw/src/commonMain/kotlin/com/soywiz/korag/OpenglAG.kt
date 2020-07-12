@@ -22,6 +22,7 @@ abstract class AGOpengl : AG() {
 
     open val glSlVersion: Int? = null
     open val gles: Boolean = false
+    open val linux: Boolean = false
     open val android: Boolean = false
     open val webgl: Boolean = false
 
@@ -691,12 +692,14 @@ abstract class AGOpengl : AG() {
                     }
                     prepareUploadNativeTexture(bmp)
                     if (bmp.area != 0) {
+                        prepareTexImage2D()
                         gl.texImage2D(forcedTexTarget, 0, type, type, gl.UNSIGNED_BYTE, bmp)
                     }
                 }
                 else -> {
                     val buffer = createBufferForBitmap(bmp)
                     if (buffer != null && source.width != 0 && source.height != 0 && buffer.size != 0) {
+                        prepareTexImage2D()
                         gl.texImage2D(
                             forcedTexTarget, 0, type,
                             source.width, source.height,
@@ -718,6 +721,18 @@ abstract class AGOpengl : AG() {
                 gl.generateMipmap(forcedTexTarget)
             } else {
                 //println(" - nomipmaps")
+            }
+        }
+
+       private val GL_UNPACK_ALIGNMENT = 0x0CF5
+       private val GL_UNPACK_LSB_FIRST = 0x0CF1
+       private val GL_UNPACK_ROW_LENGTH = 0x0CF2
+       private val GL_UNPACK_SKIP_PIXELS = 0x0CF4
+       private val GL_UNPACK_SKIP_ROWS = 0x0CF3
+       private val GL_UNPACK_SWAP_BYTES = 0x0CF0
+        fun prepareTexImage2D() {
+            if (linux) {
+                gl.pixelStorei(GL_UNPACK_LSB_FIRST, gl.TRUE)
             }
         }
 
