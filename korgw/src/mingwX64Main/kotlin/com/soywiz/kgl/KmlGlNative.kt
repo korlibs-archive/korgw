@@ -12,7 +12,7 @@ import platform.opengl32.*
 import platform.windows.*
 import platform.posix.*
 
-class KmlGlNative : KmlGl() {
+actual class KmlGlNative actual constructor() : KmlGl() {
     val tempBufferAddress = TempBufferAddress()
     override fun activeTexture(texture: Int): Unit = tempBufferAddress { glActiveTexture(texture.convert()) }
     override fun attachShader(program: Int, shader: Int): Unit = tempBufferAddress { glAttachShader(program.convert(), shader.convert()) }
@@ -163,7 +163,7 @@ class KmlGlNative : KmlGl() {
     override fun vertexAttrib3fv(index: Int, v: FBuffer): Unit = tempBufferAddress { glVertexAttrib3fv(index.convert(), v.unsafeAddress().reinterpret()) }
     override fun vertexAttrib4f(index: Int, x: Float, y: Float, z: Float, w: Float): Unit = tempBufferAddress { glVertexAttrib4f(index.convert(), x, y, z, w) }
     override fun vertexAttrib4fv(index: Int, v: FBuffer): Unit = tempBufferAddress { glVertexAttrib4fv(index.convert(), v.unsafeAddress().reinterpret()) }
-    override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit = tempBufferAddress { glVertexAttribPointer(index.convert(), size.convert(), type.convert(), normalized.toInt().convert(), stride.convert(), pointer.toLong().toCPointer<IntVar>()) }
+    override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Long): Unit = tempBufferAddress { glVertexAttribPointer(index.convert(), size.convert(), type.convert(), normalized.toInt().convert(), stride.convert(), pointer.toCPointer<IntVar>()) }
     override fun viewport(x: Int, y: Int, width: Int, height: Int): Unit = tempBufferAddress { glViewport(x.convert(), y.convert(), width.convert(), height.convert()) }
 
 	companion object {
@@ -263,6 +263,9 @@ class KmlGlNative : KmlGl() {
 		val glVertexAttrib3fv: PFNGLVERTEXATTRIB3FVPROC by lazy { wglGetProcAddressAny("glVertexAttrib3fv").reinterpret2<PFNGLVERTEXATTRIB3FVPROC>() }
 		val glVertexAttrib4f: PFNGLVERTEXATTRIB4FPROC by lazy { wglGetProcAddressAny("glVertexAttrib4f").reinterpret2<PFNGLVERTEXATTRIB4FPROC>() }
 		val glVertexAttrib4fv: PFNGLVERTEXATTRIB4FVPROC by lazy { wglGetProcAddressAny("glVertexAttrib4fv").reinterpret2<PFNGLVERTEXATTRIB4FVPROC>() }
-		val glVertexAttribPointer: PFNGLVERTEXATTRIBPOINTERPROC by lazy { wglGetProcAddressAny("glVertexAttribPointer").reinterpret2<PFNGLVERTEXATTRIBPOINTERPROC>() }
+        val glVertexAttribPointer: PFNGLVERTEXATTRIBPOINTERPROCFixed by lazy { wglGetProcAddressAny("glVertexAttribPointer").reinterpret2<PFNGLVERTEXATTRIBPOINTERPROCFixed>() }
 	}
 }
+
+// Regresion. The original ptr: COpaquePointer? can be null
+typealias PFNGLVERTEXATTRIBPOINTERPROCFixed = CPointer<CFunction<(index: GLuint, size: GLint, type: GLenum, normalized: GLboolean, stride: GLsizei, ptr: COpaquePointer?) -> Unit>>

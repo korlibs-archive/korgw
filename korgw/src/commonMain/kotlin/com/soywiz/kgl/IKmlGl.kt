@@ -147,6 +147,13 @@ interface IKmlGl {
 	fun vertexAttrib3fv(index: Int, v: FBuffer): Unit
 	fun vertexAttrib4f(index: Int, x: Float, y: Float, z: Float, w: Float): Unit
 	fun vertexAttrib4fv(index: Int, v: FBuffer): Unit
-	fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit
+	fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Long): Unit
 	fun viewport(x: Int, y: Int, width: Int, height: Int): Unit
+    fun enableDisable(cap: Int, enable: Boolean) {
+        if (enable) enable(cap) else disable(cap)
+    }
+    fun enableDisableVertexAttribArray(index: Int, enable: Boolean) {
+        if (enable) enableVertexAttribArray(index) else disableVertexAttribArray(index)
+    }
 }
+

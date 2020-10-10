@@ -1,5 +1,6 @@
 package com.soywiz.korgw.win32
 
+import com.soywiz.kgl.*
 import com.soywiz.korgw.platform.*
 import com.soywiz.korim.bitmap.*
 import com.sun.jna.*
@@ -89,8 +90,8 @@ private fun Bitmap32.scaled(width: Int, height: Int): Bitmap32 {
     return scaleLinear(scaleX, scaleY)
 }
 
-class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = false) : BaseOpenglContext {
-    val hDC = Win32.GetDC(hWnd)
+class Win32OpenglContext(val hDC: WinDef.HDC, val doubleBuffered: Boolean = false) : BaseOpenglContext {
+    constructor(hWnd: WinDef.HWND, doubleBuffered: Boolean = false) : this(Win32.GetDC(hWnd), doubleBuffered)
 
     val pfd = WinGDI.PIXELFORMATDESCRIPTOR.ByReference()
 
@@ -101,7 +102,8 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
             WinGDI.PFD_DRAW_TO_WINDOW or WinGDI.PFD_SUPPORT_OPENGL or (if (doubleBuffered) WinGDI.PFD_DOUBLEBUFFER else 0)
         //pfd.dwFlags = WinGDI.PFD_DRAW_TO_WINDOW or WinGDI.PFD_SUPPORT_OPENGL;
         pfd.iPixelType = WinGDI.PFD_TYPE_RGBA.toByte()
-        pfd.cColorBits = 32
+        pfd.cColorBits = 24
+        pfd.cStencilBits = 8.toByte()
         //pfd.cColorBits = 24
         pfd.cDepthBits = 16
     }
@@ -125,9 +127,16 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
         makeCurrent()
         println("GL_VERSION: " + Win32KmlGl.getString(Win32KmlGl.VERSION))
         println("GL_VENDOR: " + Win32KmlGl.getString(Win32KmlGl.VENDOR))
+        println("GL_RED_BITS: " + Win32KmlGl.getIntegerv(Win32KmlGl.RED_BITS))
+        println("GL_GREEN_BITS: " + Win32KmlGl.getIntegerv(Win32KmlGl.GREEN_BITS))
+        println("GL_BLUE_BITS: " + Win32KmlGl.getIntegerv(Win32KmlGl.BLUE_BITS))
+        println("GL_ALPHA_BITS: " + Win32KmlGl.getIntegerv(Win32KmlGl.ALPHA_BITS))
+        println("GL_DEPTH_BITS: " + Win32KmlGl.getIntegerv(Win32KmlGl.DEPTH_BITS))
+        println("GL_STENCIL_BITS: " + Win32KmlGl.getIntegerv(Win32KmlGl.STENCIL_BITS))
     }
 
     override fun makeCurrent() {
+        //println("makeCurrent")
         Win32.wglMakeCurrent(hDC, hRC)
     }
 
@@ -136,6 +145,7 @@ class Win32OpenglContext(val hWnd: WinDef.HWND, val doubleBuffered: Boolean = fa
     }
 
     override fun swapBuffers() {
+        //println("swapBuffers")
         Win32.glFlush()
         Win32.SwapBuffers(hDC)
         //Thread.sleep(16L)

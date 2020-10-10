@@ -7,6 +7,15 @@ import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
 import com.soywiz.korio.lang.*
 
+open class PrintAG(
+    width: Int = 640,
+    height: Int = 480
+) : LogBaseAG() {
+    override fun log(str: String) {
+        println("PrintAG: $str")
+    }
+}
+
 open class LogAG(
     width: Int = 640,
     height: Int = 480
@@ -23,10 +32,6 @@ open class LogBaseAG(
 	height: Int = 480
 ) : AG() {
 	override val nativeComponent: Any = Any()
-
-	init {
-		ready()
-	}
 
 	open fun log(str: String) {
 	}
@@ -69,8 +74,8 @@ open class LogBaseAG(
 	}
 
 	inner class LogRenderBuffer(override val id: Int) : RenderBuffer() {
-		override fun setSize(width: Int, height: Int) = log("$this.setSize($width, $height)")
-		override fun set() = log("$this.set()")
+        override fun setSize(x: Int, y: Int, width: Int, height: Int, fullWidth: Int, fullHeight: Int) = log("$this.setSize($width, $height)")
+        override fun set() = log("$this.set()")
 		override fun close() = log("$this.close()")
 		override fun toString(): String = "RenderBuffer[$id]"
 	}

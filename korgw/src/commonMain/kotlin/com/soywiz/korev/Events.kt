@@ -4,6 +4,7 @@ import com.soywiz.kds.*
 import com.soywiz.klock.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.lang.*
+import com.soywiz.korio.util.*
 import com.soywiz.korma.geom.*
 import kotlin.jvm.*
 
@@ -23,7 +24,18 @@ data class MouseEvent(
     var isMetaDown: Boolean = false,
     var scaleCoords: Boolean = true
 ) : Event() {
+    var component: Any? = null
+
 	enum class Type { MOVE, DRAG, UP, DOWN, CLICK, ENTER, EXIT, SCROLL }
+
+    val typeMove get() = type == Type.MOVE
+    val typeDrag get() = type == Type.DRAG
+    val typeUp get() = type == Type.UP
+    val typeDown get() = type == Type.DOWN
+    val typeClick get() = type == Type.CLICK
+    val typeEnter get() = type == Type.ENTER
+    val typeExit get() = type == Type.EXIT
+    val typeScroll get() = type == Type.SCROLL
 
     fun copyFrom(other: MouseEvent) {
         this.type = other.type
@@ -41,6 +53,16 @@ data class MouseEvent(
         this.isMetaDown = other.isMetaDown
         this.scaleCoords = other.scaleCoords
     }
+
+    var requestLock: () -> Unit = { }
+}
+
+data class FocusEvent(
+    var type: Type = Type.FOCUS
+) {
+    enum class Type { FOCUS, BLUR }
+    val typeFocus get() = type == Type.FOCUS
+    val typeBlur get() = type == Type.BLUR
 }
 
 data class Touch(
@@ -126,14 +148,26 @@ data class TouchEvent(
     enum class Type { START, END, MOVE }
 }
 
-data class KeyEvent(
+data class KeyEvent constructor(
     var type: Type = Type.UP,
     var id: Int = 0,
     var key: Key = Key.UP,
     var keyCode: Int = 0,
     //var char: Char = '\u0000' // @TODO: This caused problem on Kotlin/Native because it is a keyword (framework H)
-    var character: Char = '\u0000'
+    var character: Char = '\u0000',
+    var shift: Boolean = false,
+    var ctrl: Boolean = false,
+    var alt: Boolean = false,
+    var meta: Boolean = false,
 ) : Event() {
+    var deltaTime = TimeSpan.ZERO
+
+    val typeType get() = type == Type.TYPE
+    val typeDown get() = type == Type.DOWN
+    val typeUp get() = type == Type.UP
+
+    val ctrlOrMeta: Boolean get() = if (OS.isMac) meta else ctrl
+
 	enum class Type { UP, DOWN, TYPE }
 
     fun copyFrom(other: KeyEvent) {
@@ -142,6 +176,11 @@ data class KeyEvent(
         this.key = other.key
         this.keyCode = other.keyCode
         this.character = other.character
+        this.shift = other.shift
+        this.ctrl = other.ctrl
+        this.alt = other.alt
+        this.meta = other.meta
+        this.deltaTime = other.deltaTime
     }
 }
 
@@ -157,7 +196,7 @@ data class GamePadConnectionEvent(var type: Type = Type.CONNECTED, var gamepad: 
 @Suppress("ArrayInDataClass")
 data class GamePadUpdateEvent @JvmOverloads constructor(
     var gamepadsLength: Int = 0,
-    val gamepads: Array<GamepadInfo> = Array(8) { GamepadInfo() }
+    val gamepads: Array<GamepadInfo> = Array(8) { GamepadInfo(it) }
 ) : Event() {
     fun copyFrom(that: GamePadUpdateEvent) {
         this.gamepadsLength = that.gamepadsLength
@@ -169,7 +208,6 @@ data class GamePadUpdateEvent @JvmOverloads constructor(
     override fun toString(): String = "GamePadUpdateEvent(${gamepads.filter { it.connected }})"
 }
 
-//@Deprecated("")
 data class GamePadButtonEvent @JvmOverloads constructor(
     var type: Type = Type.DOWN,
     var gamepad: Int = 0,
@@ -186,7 +224,6 @@ data class GamePadButtonEvent @JvmOverloads constructor(
     }
 }
 
-//@Deprecated("")
 data class GamePadStickEvent(
     var gamepad: Int = 0,
     var stick: GameStick = GameStick.LEFT,
@@ -276,6 +313,7 @@ class MouseEvents(val ed: EventDispatcher) : Closeable {
 	fun move(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.MOVE) callback(it) }
 	fun drag(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.DRAG) callback(it) }
 	fun enter(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.ENTER) callback(it) }
+    fun scroll(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.SCROLL) callback(it) }
 	fun exit(callback: MouseEvent.() -> Unit) = ed.addEventListener<MouseEvent> { if (it.type == MouseEvent.Type.EXIT) callback(it) }
 	override fun close() {
 	}
@@ -303,6 +341,3 @@ class KeysEvents(val ed: EventDispatcher) : Closeable {
 	override fun close() {
 	}
 }
-
-fun EventDispatcher.mouse(callback: MouseEvents.() -> Unit) = MouseEvents(this).apply(callback)
-fun EventDispatcher.keys(callback: KeysEvents.() -> Unit) = KeysEvents(this).apply(callback)

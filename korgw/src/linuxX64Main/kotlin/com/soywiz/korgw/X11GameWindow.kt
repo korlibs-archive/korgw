@@ -2,8 +2,7 @@ package com.soywiz.korgw
 
 import GL.*
 import com.soywiz.kds.IntMap
-import com.soywiz.kgl.KmlGl
-import com.soywiz.kgl.toInt
+import com.soywiz.kgl.*
 import com.soywiz.klock.hr.HRTimeSpan
 import com.soywiz.kmem.startAddressOf
 import com.soywiz.kmem.write32LE
@@ -19,10 +18,16 @@ import com.soywiz.korio.stream.toByteArray
 import kotlinx.cinterop.*
 import platform.posix.*
 
+// https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_swap_control.txt
+@ThreadLocal
+private var setSwapInterval = false
+@ThreadLocal
+private var swapIntervalEXT: CPointer<CFunction<(CPointer<Display>?, GLXDrawable, Int) -> Unit>>? = null
 
 //class X11Ag(val window: X11GameWindow, override val gl: KmlGl = LogKmlGlProxy(X11KmlGl())) : AGOpengl() {
 class X11Ag(val window: X11GameWindow, override val gl: KmlGl = com.soywiz.kgl.KmlGlNative()) : AGOpengl() {
     override val gles: Boolean = true
+    override val linux: Boolean = true
     override val nativeComponent: Any = window
 }
 
@@ -60,8 +65,8 @@ class X11OpenglContext(val d: CPointer<Display>?, val w: Window, val doubleBuffe
     init {
         println("VI: $vi, d: $d, w: $w, glc: $glc")
         makeCurrent()
-        println("GL_VENDOR: " + glGetString(GL.GL_VENDOR))
-        println("GL_VERSION: " + glGetString(GL.GL_VERSION))
+        println("GL_VENDOR: " + glGetString(GL.GL_VENDOR)?.toKString())
+        println("GL_VERSION: " + glGetString(GL.GL_VERSION)?.toKString())
     }
 
     fun makeCurrent() {
@@ -252,7 +257,8 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
                     val conf = e.xconfigure
                     width = conf.width
                     height = conf.height
-                    dispatchReshapeEvent(conf.x, conf.y, conf.width, conf.height)
+                    //dispatchReshapeEvent(conf.x, conf.y, conf.width, conf.height)
+                    dispatchReshapeEvent(0, 0, conf.width, conf.height)
                     if (!doubleBuffered) {
                         render(doUpdate = false)
                     }
@@ -307,12 +313,6 @@ class X11GameWindow : EventLoopGameWindow(), DialogInterface by NativeZenityDial
             }
         }
     }
-
-    // https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_swap_control.txt
-    @ThreadLocal
-    var setSwapInterval = false
-    @ThreadLocal
-    var swapIntervalEXT: CPointer<CFunction<(CPointer<Display>?, GLXDrawable, Int) -> Unit>>? = null
 
     override fun doInitRender() {
         ctx.makeCurrent()

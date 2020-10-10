@@ -14,6 +14,7 @@ import com.soywiz.korio.file.std.localCurrentDirVfs
 import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
+import com.soywiz.korma.geom.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
@@ -30,7 +31,7 @@ interface DialogInterface {
 }
 
 open class GameWindowCoroutineDispatcherSetNow : GameWindowCoroutineDispatcher() {
-    var currentTime: HRTimeSpan = PerformanceCounter.hr
+    var currentTime: TimeSpan = PerformanceCounter.reference
     override fun now() = currentTime
 }
 
@@ -38,7 +39,7 @@ open class GameWindowCoroutineDispatcherSetNow : GameWindowCoroutineDispatcher()
 open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeable {
     override fun dispatchYield(context: CoroutineContext, block: Runnable): Unit = dispatch(context, block)
 
-    class TimedTask(val time: HRTimeSpan, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
+    class TimedTask(val time: TimeSpan, val continuation: CancellableContinuation<Unit>?, val callback: Runnable?) {
         var exception: Throwable? = null
     }
 
@@ -59,13 +60,13 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         tasks.enqueue(block)
     }
 
-    open fun now() = PerformanceCounter.hr
+    open fun now() = PerformanceCounter.reference
 
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        scheduleResumeAfterDelay(timeMillis.toDouble().hrMilliseconds, continuation)
+        scheduleResumeAfterDelay(timeMillis.toDouble().milliseconds, continuation)
     }
 
-    fun scheduleResumeAfterDelay(time: HRTimeSpan, continuation: CancellableContinuation<Unit>) {
+    fun scheduleResumeAfterDelay(time: TimeSpan, continuation: CancellableContinuation<Unit>) {
         val task = TimedTask(now() + time, continuation, null)
         continuation.invokeOnCancellation {
             task.exception = it
@@ -74,7 +75,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun invokeOnTimeout(timeMillis: Long, block: Runnable): DisposableHandle {
-        val task = TimedTask(now() + timeMillis.toDouble().hrMilliseconds, null, block)
+        val task = TimedTask(now() + timeMillis.toDouble().milliseconds, null, block)
         timedTasks.add(task)
         return object : DisposableHandle {
             override fun dispose() {
@@ -83,12 +84,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         }
     }
 
-    @Deprecated("")
-    open fun executePending() {
-        executePending(1.hrSeconds)
-    }
-
-    fun executePending(availableTime: HRTimeSpan) {
+    fun executePending(availableTime: TimeSpan) {
         try {
             val startTime = now()
             while (timedTasks.isNotEmpty() && startTime >= timedTasks.head.time) {
@@ -117,7 +113,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun close() {
-        executePending(1.hrSeconds)
+        executePending(1.seconds)
         println("GameWindowCoroutineDispatcher.close")
         while (timedTasks.isNotEmpty()) {
             timedTasks.removeHead().continuation?.resume(Unit)
@@ -131,6 +127,47 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
 }
 
 open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element, AGWindow {
+    enum class Cursor {
+        DEFAULT, CROSSHAIR, TEXT, HAND, MOVE, WAIT,
+        RESIZE_EAST, RESIZE_WEST, RESIZE_SOUTH, RESIZE_NORTH,
+        RESIZE_NORTH_EAST, RESIZE_NORTH_WEST, RESIZE_SOUTH_EAST, RESIZE_SOUTH_WEST;
+
+        companion object {
+            val ANGLE_TO_CURSOR = mapOf(
+                (45.degrees * 0) to RESIZE_EAST,
+                (45.degrees * 1) to RESIZE_SOUTH_EAST,
+                (45.degrees * 2) to RESIZE_SOUTH,
+                (45.degrees * 3) to RESIZE_SOUTH_WEST,
+                (45.degrees * 4) to RESIZE_WEST,
+                (45.degrees * 5) to RESIZE_NORTH_WEST,
+                (45.degrees * 6) to RESIZE_NORTH,
+                (45.degrees * 7) to RESIZE_NORTH_EAST,
+            )
+
+            fun fromAngle(angle: Angle?): Cursor? {
+                var minDistance = 360.degrees
+                var cursor: Cursor? = null
+                if (angle != null) {
+                    for ((cangle, ccursor) in ANGLE_TO_CURSOR) {
+                        val cdistance = (angle - cangle).absoluteValue
+                        if (cdistance <= minDistance) {
+                            minDistance = cdistance
+                            cursor = ccursor
+                        }
+                    }
+                }
+                return cursor
+            }
+        }
+    }
+
+    data class MenuItem(val text: String?, val enabled: Boolean = true, val children: List<MenuItem>? = null, val action: () -> Unit)
+
+    open fun showContextMenu(items: List<MenuItem?>) {
+    }
+
+    open var cursor: Cursor = Cursor.DEFAULT
+
     override val key: CoroutineContext.Key<*> get() = CoroutineKey
     companion object CoroutineKey : CoroutineContext.Key<GameWindow>
 
@@ -156,23 +193,25 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     protected val mouseEvent = MouseEvent()
     protected val touchEvent = TouchEvent()
     protected val dropFileEvent = DropFileEvent()
-    @Deprecated("") protected val gamePadButtonEvent = GamePadButtonEvent()
-    @Deprecated("") protected val gamePadStickEvent = GamePadStickEvent()
     protected val gamePadUpdateEvent = GamePadUpdateEvent()
     protected val gamePadConnectionEvent = GamePadConnectionEvent()
+
+    fun onRenderEvent(block: (RenderEvent) -> Unit) {
+        addEventListener<RenderEvent>(block)
+    }
 
     protected open fun _setFps(fps: Int): Int {
         return if (fps <= 0) 60 else fps
     }
 
-    var counterTimePerFrame: HRTimeSpan = 0.0.hrNanoseconds; private set
-    val timePerFrame: TimeSpan get() = counterTimePerFrame.timeSpan
+    var counterTimePerFrame: TimeSpan = 0.0.milliseconds; private set
+    val timePerFrame: TimeSpan get() = counterTimePerFrame
 
     var fps: Int = 60
         set(value) {
             val value = _setFps(value)
             field = value
-            counterTimePerFrame = (1_000_000.0 / value).hrMicroseconds
+            counterTimePerFrame = (1_000_000.0 / value).microseconds
         }
 
     init {
@@ -192,6 +231,14 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open var fullscreen: Boolean = false
     open var visible: Boolean = false
     open var quality: Quality get() = Quality.AUTOMATIC; set(value) = Unit
+
+    val onDebugChanged = Signal<Boolean>()
+    open val debugComponent: Any? = null
+    open var debug: Boolean = false
+        set(value) {
+            field = value
+            onDebugChanged(value)
+        }
 
     /**
      * Describes if the rendering should focus on performance or quality.
@@ -238,7 +285,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 
     suspend fun waitClose() {
         while (running) {
-            delay(100.hrMilliseconds)
+            delay(100.milliseconds)
         }
     }
 
@@ -250,9 +297,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             entry()
         }
         while (running) {
-            val start = PerformanceCounter.hr
+            val start = PerformanceCounter.reference
             frame()
-            val elapsed = PerformanceCounter.hr - start
+            val elapsed = PerformanceCounter.reference - start
             val available = counterTimePerFrame - elapsed
             delay(available)
         }
@@ -263,19 +310,85 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         frame(true)
     }
 
-    fun frame(doUpdate: Boolean, startTime: HRTimeSpan = PerformanceCounter.hr) {
+    fun frame(doUpdate: Boolean, startTime: TimeSpan = PerformanceCounter.reference) {
+        frameRender()
+        if (doUpdate) {
+            frameUpdate(startTime)
+        }
+    }
+
+    fun frameRender() {
+        if (contextLost) {
+            contextLost = false
+            ag.contextLost()
+        }
+        if (surfaceChanged) {
+            surfaceChanged = false
+            ag.mainRenderBuffer.setSize(surfaceX, surfaceY, surfaceWidth, surfaceHeight)
+            dispatchReshapeEvent(surfaceX, surfaceY, surfaceWidth, surfaceHeight)
+        }
+        if (doInitialize) {
+            doInitialize = false
+            //ag.mainRenderBuffer.setSize(0, 0, width, height)
+            println("---------------- Trigger AG.initialized ag.mainRenderBuffer.setSize ($width, $height) --------------")
+            dispatch(initEvent)
+        }
         try {
-            ag.onRender(ag)
-            dispatchRenderEvent(update = doUpdate)
-            if (doUpdate) {
-                val elapsed = PerformanceCounter.hr - startTime
-                val available = counterTimePerFrame - elapsed
-                coroutineDispatcher.executePending(available)
-            }
+            dispatchRenderEvent(update = false)
         } catch (e: Throwable) {
-            println("ERROR GameWindow.frame:")
+            println("ERROR GameWindow.frameRender:")
+            println(e)
+            e.printStackTrace()
+        }
+    }
+
+    private var surfaceChanged = false
+    private var surfaceX = -1
+    private var surfaceY = -1
+    private var surfaceWidth = -1
+    private var surfaceHeight = -1
+
+    private var doInitialize = false
+    private var initialized = false
+    private var contextLost = false
+
+    fun handleContextLost() {
+        println("---------------- handleContextLost --------------")
+        contextLost = true
+    }
+
+    fun handleInitEventIfRequired() {
+        if (initialized) return
+        initialized = true
+        doInitialize = true
+    }
+
+    fun handleReshapeEventIfRequired(x: Int, y: Int, width: Int, height: Int) {
+        if (surfaceX == x && surfaceY == y && surfaceWidth == width && surfaceHeight == height) return
+        println("handleReshapeEventIfRequired: $x, $y, $width, $height")
+        surfaceChanged = true
+        surfaceX = x
+        surfaceY = y
+        surfaceWidth = width
+        surfaceHeight = height
+    }
+
+    private var lastTime = PerformanceCounter.reference
+    fun frameUpdate(startTime: TimeSpan = lastTime) {
+        try {
+            val now = PerformanceCounter.reference
+            val elapsed = now - startTime
+            lastTime = now
+            val available = counterTimePerFrame - elapsed
+            coroutineDispatcher.executePending(available)
+        } catch (e: Throwable) {
+            println("ERROR GameWindow.frameRender:")
             println(e)
         }
+    }
+
+    fun executePending() {
+        coroutineDispatcher.executePending(1.seconds)
     }
 
     fun dispatchInitEvent() = dispatch(initEvent)
@@ -290,7 +403,11 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     fun dispatchFullscreenEvent(fullscreen: Boolean) = dispatch(fullScreenEvent.also { it.fullscreen = fullscreen })
 
     fun dispatchReshapeEvent(x: Int, y: Int, width: Int, height: Int) {
-        ag.resized(width, height)
+        dispatchReshapeEventEx(x, y, width, height, width, height)
+    }
+
+    fun dispatchReshapeEventEx(x: Int, y: Int, width: Int, height: Int, fullWidth: Int, fullHeight: Int) {
+        ag.resized(x, y, width, height, fullWidth, fullHeight)
         dispatch(reshapeEvent.apply {
             this.x = x
             this.y = y
@@ -309,6 +426,23 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         })
     }
 
+    fun dispatchKeyEventEx(
+        type: KeyEvent.Type, id: Int, character: Char, key: Key, keyCode: Int,
+        shift: Boolean, ctrl: Boolean, alt: Boolean, meta: Boolean
+    ) {
+        dispatch(keyEvent.apply {
+            this.id = id
+            this.character = character
+            this.key = key
+            this.keyCode = keyCode
+            this.type = type
+            this.shift = shift
+            this.ctrl = ctrl
+            this.alt = alt
+            this.meta = meta
+        })
+    }
+
     fun dispatchSimpleMouseEvent(
         type: MouseEvent.Type, id: Int, x: Int, y: Int, button: MouseButton, simulateClickOnUp: Boolean = false
     ) {
@@ -321,17 +455,14 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         val isAltDown = false
         val isMetaDown = false
         val scaleCoords = false
-        dispatchMouseEvent(type, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
-        if (simulateClickOnUp && type == MouseEvent.Type.UP) {
-            dispatchMouseEvent(MouseEvent.Type.CLICK, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords)
-        }
+        dispatchMouseEvent(type, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords, simulateClickOnUp = simulateClickOnUp)
     }
 
     fun dispatchMouseEvent(
         type: MouseEvent.Type, id: Int, x: Int, y: Int, button: MouseButton, buttons: Int,
         scrollDeltaX: Double, scrollDeltaY: Double, scrollDeltaZ: Double,
         isShiftDown: Boolean, isCtrlDown: Boolean, isAltDown: Boolean, isMetaDown: Boolean,
-        scaleCoords: Boolean
+        scaleCoords: Boolean, simulateClickOnUp: Boolean = false
     ) {
         dispatch(mouseEvent.apply {
             this.type = type
@@ -349,6 +480,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             this.isMetaDown = isMetaDown
             this.scaleCoords = scaleCoords
         })
+        if (simulateClickOnUp && type == MouseEvent.Type.UP) {
+            dispatchMouseEvent(MouseEvent.Type.CLICK, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords, simulateClickOnUp = false)
+        }
     }
 
     fun dispatchTouchEventStartStart() = dispatchTouchEventStart(TouchEvent.Type.START)
@@ -393,7 +527,7 @@ open class EventLoopGameWindow : GameWindow() {
         while (running) {
             doHandleEvents()
             if (mustPerformRender()) {
-                coroutineDispatcher.currentTime = PerformanceCounter.hr
+                coroutineDispatcher.currentTime = PerformanceCounter.reference
                 render(doUpdate = true)
             }
             // Here we can trigger a GC if we have enough time, and we can try to disable GC all the other times.
@@ -409,36 +543,40 @@ open class EventLoopGameWindow : GameWindow() {
 
     fun mustPerformRender(): Boolean = if (vsync) true else elapsedSinceLastRenderTime() >= counterTimePerFrame
 
-    var lastRenderTime = PerformanceCounter.hr
-    fun elapsedSinceLastRenderTime() = PerformanceCounter.hr - lastRenderTime
+    var lastRenderTime = PerformanceCounter.reference
+    fun elapsedSinceLastRenderTime() = PerformanceCounter.reference - lastRenderTime
     fun render(doUpdate: Boolean) {
-        lastRenderTime = PerformanceCounter.hr
+        lastRenderTime = PerformanceCounter.reference
         doInitRender()
         frame(doUpdate, lastRenderTime)
         doSwapBuffers()
     }
+    fun update() {
+        lastRenderTime = PerformanceCounter.reference
+        frameUpdate(lastRenderTime)
+    }
 
     fun sleepNextFrame() {
-        val now = PerformanceCounter.hr
-        val frameTime = (1.toDouble() / fps.toDouble()).hrSeconds
+        val now = PerformanceCounter.reference
+        val frameTime = (1.toDouble() / fps.toDouble()).seconds
         val delay = frameTime - (now % frameTime)
-        if (delay > 0.hrNanoseconds) {
+        if (delay > 0.0.milliseconds) {
             //println(delayNanos / 1_000_000)
             blockingSleep(delay)
         }
     }
 
-    protected fun sleep(time: HRTimeSpan) {
+    protected fun sleep(time: TimeSpan) {
         // Reimplement: Spinlock!
-        val start = PerformanceCounter.hr
-        while ((PerformanceCounter.hr - start) < time) {
+        val start = PerformanceCounter.reference
+        while ((PerformanceCounter.reference - start) < time) {
             doSmallSleep()
         }
     }
 
     protected fun doSmallSleep() {
         if (!vsync) {
-            blockingSleep(0.1.hrMilliseconds)
+            blockingSleep(0.1.milliseconds)
         }
     }
     protected open fun doHandleEvents() = Unit

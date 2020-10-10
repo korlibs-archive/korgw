@@ -1,16 +1,16 @@
 package com.soywiz.korag
 
 import com.soywiz.kds.*
+import com.soywiz.kgl.KmlGl
 import com.soywiz.kmem.*
 import com.soywiz.korag.shader.*
 import com.soywiz.korim.bitmap.*
 import com.soywiz.korim.color.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.lang.*
-import com.soywiz.korio.util.*
 import com.soywiz.korma.geom.*
-import kotlinx.coroutines.*
 import kotlin.coroutines.*
+import kotlinx.coroutines.*
 
 interface AGFactory {
 	val supportsNativeFrame: Boolean
@@ -49,18 +49,12 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	open val devicePixelRatio: Double = 1.0
 
-	private val _onReadyDeferred = CompletableDeferred<AG>(Job())
-	protected fun ready() {
-		//println("AG.ready!")
-		__ready()
-	}
-
-	fun __ready() {
-		_onReadyDeferred.complete(this)
-	}
-
-	val onReady: Deferred<AG> = _onReadyDeferred
-	val onRender = Signal<AG>()
+    inline fun doRender(block: () -> Unit) {
+        mainRenderBuffer.init()
+        setRenderBufferTemporally(mainRenderBuffer) {
+            block()
+        }
+    }
 
 	open fun offscreenRendering(callback: () -> Unit) {
 		callback()
@@ -70,33 +64,28 @@ abstract class AG : Extra by Extra.Mixin() {
 	}
 
 	open fun resized(width: Int, height: Int) {
-		//println("ag.resized($width, $height)")
-		//printStackTrace()
-		mainRenderBuffer.setSize(width, height)
-		setViewport(0, 0, width, height)
+		mainRenderBuffer.setSize(0, 0, width, height, width, height)
 	}
 
-	open fun dispose() {
+    open fun resized(x: Int, y: Int, width: Int, height: Int, fullWidth: Int, fullHeight: Int) {
+        mainRenderBuffer.setSize(x, y, width, height, fullWidth, fullHeight)
+    }
+
+    open fun dispose() {
 	}
 
-	val viewport = intArrayOf(0, 0, 640, 480)
+    // On MacOS components, this will be the size of the component
+	open val backWidth: Int get() = mainRenderBuffer.width
+	open val backHeight: Int get() = mainRenderBuffer.height
 
-	open val backWidth: Int get() = viewport[2]
-	open val backHeight: Int get() = viewport[3]
+    // On MacOS components, this will be the full size of the window
+    val realBackWidth get() = mainRenderBuffer.fullWidth
+    val realBackHeight get() = mainRenderBuffer.fullHeight
 
-	protected fun getViewport(out: IntArray): IntArray {
-		arraycopy(this.viewport, 0, out, 0, 4)
-		return out
-	}
+    val currentWidth: Int get() = currentRenderBuffer?.width ?: mainRenderBuffer.width
+    val currentHeight: Int get() = currentRenderBuffer?.height ?: mainRenderBuffer.height
 
-	open fun setViewport(x: Int, y: Int, width: Int, height: Int) {
-		viewport[0] = x
-		viewport[1] = y
-		viewport[2] = width
-		viewport[3] = height
-	}
-
-	protected fun setViewport(v: IntArray) = setViewport(v[0], v[1], v[2], v[3])
+    //protected fun setViewport(v: IntArray) = setViewport(v[0], v[1], v[2], v[3])
 
 	enum class BlendEquation {
 		ADD, SUBTRACT, REVERSE_SUBTRACT
@@ -119,6 +108,12 @@ abstract class AG : Extra by Extra.Mixin() {
 		var x: Int, var y: Int,
 		var width: Int, var height: Int
 	) {
+        val rect: Rectangle = Rectangle()
+            get() {
+                field.setTo(x.toDouble(), y.toDouble(), width.toDouble(), height.toDouble())
+                return field
+            }
+
 		val top get() = y
 		val left get() = x
 		val right get() = x + width
@@ -177,7 +172,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		val gen: () -> Bitmap?
 	) : BitmapSourceBase {
 		companion object {
-			val NULL = SyncBitmapSource(true, 0, 0) { null }
+			val NIL = SyncBitmapSource(true, 0, 0) { null }
 		}
 
 		override fun toString(): String = "SyncBitmapSource(rgba=$rgba, width=$width, height=$height)"
@@ -191,7 +186,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		val gen: suspend () -> Bitmap?
 	) : BitmapSourceBase {
 		companion object {
-			val NULL = AsyncBitmapSource(EmptyCoroutineContext, true, 0, 0) { null }
+			val NIL = AsyncBitmapSource(EmptyCoroutineContext, true, 0, 0) { null }
 		}
 	}
 
@@ -201,12 +196,15 @@ abstract class AG : Extra by Extra.Mixin() {
 
 	enum class TextureKind { RGBA, LUMINANCE }
 
+    enum class TextureTargetKind { TEXTURE_2D, TEXTURE_3D, TEXTURE_CUBE_MAP } //TODO: there are other possible values
+
+    //TODO: would it better if this was an interface ?
 	open inner class Texture : Closeable {
 		var isFbo = false
 		open val premultiplied = true
 		var requestMipmaps = false
 		var mipmaps = false; protected set
-		var source: BitmapSourceBase = SyncBitmapSource.NULL
+		var source: BitmapSourceBase = SyncBitmapSource.NIL
 		private var uploaded: Boolean = false
 		private var generating: Boolean = false
 		private var generated: Boolean = false
@@ -230,7 +228,7 @@ abstract class AG : Extra by Extra.Mixin() {
 					rgba = bmp.bpp > 8,
 					width = bmp.width,
 					height = bmp.height
-				) { bmp } else SyncBitmapSource.NULL, mipmaps)
+				) { bmp } else SyncBitmapSource.NIL, mipmaps)
 		}
 
 		fun upload(bmp: BitmapSlice<Bitmap>?, mipmaps: Boolean = false): Texture {
@@ -304,7 +302,7 @@ abstract class AG : Extra by Extra.Mixin() {
 		override fun close() {
 			if (!alreadyClosed) {
 				alreadyClosed = true
-				source = SyncBitmapSource.NULL
+				source = SyncBitmapSource.NIL
 				tempBitmap = null
 				deletedTextureCount++
 				//Console.log("CLOSED TEXTURE: $texId")
@@ -400,6 +398,13 @@ abstract class AG : Extra by Extra.Mixin() {
 		TRIANGLE_FAN,
 	}
 
+    enum class IndexType {
+        UBYTE, USHORT,
+        // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/drawElements
+        @Deprecated("UINT is not always supported on webgl")
+        UINT
+    }
+
 	val dummyTexture by lazy { createTexture() }
 
 	fun createTexture(): Texture = createTexture(premultiplied = true)
@@ -411,6 +416,9 @@ abstract class AG : Extra by Extra.Mixin() {
 		createTexture(premultiplied).upload(bmp, mipmaps)
 
 	open fun createTexture(premultiplied: Boolean): Texture = Texture()
+
+    open fun createTexture(targetKind: TextureTargetKind, init:Texture.(gl:KmlGl)->Unit): Texture = Texture()
+
 	open fun createBuffer(kind: Buffer.Kind) = Buffer(kind)
 	fun createIndexBuffer() = createBuffer(Buffer.Kind.INDEX)
 	fun createVertexBuffer() = createBuffer(Buffer.Kind.VERTEX)
@@ -486,30 +494,25 @@ abstract class AG : Extra by Extra.Mixin() {
 		var referenceValue: Int = 0,
 		var readMask: Int = 0xFF,
 		var writeMask: Int = 0xFF
-	)
+	) {
+        fun copyFrom(other: StencilState) {
+            this.enabled = other.enabled
+            this.triangleFace = other.triangleFace
+            this.compareMode = other.compareMode
+            this.actionOnBothPass = other.actionOnBothPass
+            this.actionOnDepthFail = other.actionOnDepthFail
+            this.actionOnDepthPassStencilFail = other.actionOnDepthPassStencilFail
+            this.referenceValue = other.referenceValue
+            this.readMask = other.readMask
+            this.writeMask = other.writeMask
+        }
+    }
 
 	private val dummyRenderState = RenderState()
 	private val dummyStencilState = StencilState()
 	private val dummyColorMaskState = ColorMaskState()
 
-    @Deprecated("")
-	fun draw(
-		vertices: Buffer,
-		program: Program,
-		type: DrawType,
-		vertexLayout: VertexLayout,
-		vertexCount: Int,
-		indices: Buffer? = null,
-		offset: Int = 0,
-		blending: Blending = Blending.NORMAL,
-		uniforms: UniformValues = UniformValues.EMPTY,
-		stencil: StencilState = dummyStencilState,
-		colorMask: ColorMaskState = dummyColorMaskState,
-		scissor: Scissor? = null
-	) = draw(
-        vertices, program, type, vertexLayout, vertexCount, indices, offset, blending,
-		uniforms, stencil, colorMask, dummyRenderState, scissor
-    )
+    //open val supportInstancedDrawing: Boolean get() = false
 
     fun draw(
         vertices: Buffer,
@@ -518,6 +521,7 @@ abstract class AG : Extra by Extra.Mixin() {
         vertexLayout: VertexLayout,
         vertexCount: Int,
         indices: Buffer? = null,
+        indexType: IndexType = IndexType.USHORT,
         offset: Int = 0,
         blending: Blending = Blending.NORMAL,
         uniforms: UniformValues = UniformValues.EMPTY,
@@ -532,6 +536,7 @@ abstract class AG : Extra by Extra.Mixin() {
         batch.vertexLayout = vertexLayout
         batch.vertexCount = vertexCount
         batch.indices = indices
+        batch.indexType = indexType
         batch.offset = offset
         batch.blending = blending
         batch.uniforms = uniforms
@@ -541,21 +546,22 @@ abstract class AG : Extra by Extra.Mixin() {
         batch.scissor = scissor
     })
 
-    class Batch {
-        var vertices: Buffer = Buffer(Buffer.Kind.VERTEX)
-        var program: Program = DefaultShaders.PROGRAM_DEBUG
-        var type: DrawType = DrawType.TRIANGLES
-        var vertexLayout: VertexLayout = VertexLayout()
-        var vertexCount: Int = 0
-        var indices: Buffer? = null
-        var offset: Int = 0
-        var blending: Blending = Blending.NORMAL
-        var uniforms: UniformValues = UniformValues.EMPTY
-        var stencil: StencilState = StencilState()
-        var colorMask: ColorMaskState = ColorMaskState()
-        var renderState: RenderState = RenderState()
-        var scissor: Scissor? = null
-    }
+    data class Batch(
+        var vertices: Buffer = Buffer(Buffer.Kind.VERTEX),
+        var program: Program = DefaultShaders.PROGRAM_DEBUG,
+        var type: DrawType = DrawType.TRIANGLES,
+        var vertexLayout: VertexLayout = VertexLayout(),
+        var vertexCount: Int = 0,
+        var indices: Buffer? = null,
+        var indexType: IndexType = IndexType.USHORT,
+        var offset: Int = 0,
+        var blending: Blending = Blending.NORMAL,
+        var uniforms: UniformValues = UniformValues.EMPTY,
+        var stencil: StencilState = StencilState(),
+        var colorMask: ColorMaskState = ColorMaskState(),
+        var renderState: RenderState = RenderState(),
+        var scissor: Scissor? = null,
+    )
 
     private val batch = Batch()
 
@@ -573,32 +579,49 @@ abstract class AG : Extra by Extra.Mixin() {
 	val renderBuffers = Pool<RenderBuffer>() { createRenderBuffer() }
 
 	interface BaseRenderBuffer {
+        val x: Int
+        val y: Int
 		val width: Int
 		val height: Int
-		fun setSize(width: Int, height: Int)
+        val fullWidth: Int
+        val fullHeight: Int
+        val scissor: RectangleInt?
+        fun setSize(x: Int, y: Int, width: Int, height: Int, fullWidth: Int = width, fullHeight: Int = height)
+        fun init() = Unit
+		fun set() = Unit
         fun unset() = Unit
-		fun set()
+        fun scissor(scissor: RectangleInt?)
 	}
 
-	val mainRenderBuffer = object : BaseRenderBuffer {
-		override var width = 128
-		override var height = 128
+    open class BaseRenderBufferImpl : BaseRenderBuffer {
+        override var x = 0
+        override var y = 0
+        override var width = 128
+        override var height = 128
+        override var fullWidth = 128
+        override var fullHeight = 128
+        private val _scissor = RectangleInt()
+        override var scissor: RectangleInt? = null
 
-		override fun setSize(width: Int, height: Int) {
-			this.width = width
-			this.height = height
-		}
-
-        override fun unset() {
-            unsetBackBuffer(width, height)
+        override fun setSize(x: Int, y: Int, width: Int, height: Int, fullWidth: Int, fullHeight: Int) {
+            this.x = x
+            this.y = y
+            this.width = width
+            this.height = height
+            this.fullWidth = fullWidth
+            this.fullHeight = fullHeight
         }
 
-        override fun set() {
-			setBackBuffer(width, height)
-		}
-	}
+        override fun scissor(scissor: RectangleInt?) {
+            this.scissor = scissor?.let { _scissor.setTo(it) }
+        }
+    }
 
-	open inner class RenderBuffer : Closeable, BaseRenderBuffer {
+	val mainRenderBuffer: BaseRenderBuffer by lazy { createMainRenderBuffer() }
+
+    open fun createMainRenderBuffer() = BaseRenderBufferImpl()
+
+	open inner class RenderBuffer : Closeable, BaseRenderBufferImpl() {
 		open val id: Int = -1
 		private var cachedTexVersion = -1
 		private var _tex: Texture? = null
@@ -612,16 +635,12 @@ abstract class AG : Extra by Extra.Mixin() {
 				return _tex!!
 			}
 
-		override var width = 0
-		override var height = 0
-
 		protected var dirty = false
 
-		override fun setSize(width: Int, height: Int) {
-			this.width = width
-			this.height = height
-			dirty = true
-		}
+        override fun setSize(x: Int, y: Int, width: Int, height: Int, fullWidth: Int, fullHeight: Int) {
+            super.setSize(x, y, width, height, fullWidth, fullHeight)
+            dirty = true
+        }
 
 		override fun set(): Unit = Unit
 		fun readBitmap(bmp: Bitmap32) = this@AG.readColor(bmp)
@@ -650,9 +669,9 @@ abstract class AG : Extra by Extra.Mixin() {
 	) = Unit
 
 	@PublishedApi
-	internal var currentRenderBuffer: BaseRenderBuffer = mainRenderBuffer
+	internal var currentRenderBuffer: BaseRenderBuffer? = null
 
-	val renderingToTexture get() = currentRenderBuffer !== mainRenderBuffer
+	val renderingToTexture get() = currentRenderBuffer !== mainRenderBuffer && currentRenderBuffer !== null
 
 	inline fun backupTexture(tex: Texture?, callback: () -> Unit) {
 		if (tex != null) {
@@ -674,23 +693,17 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 	}
 
-    inline
-	fun renderToTexture(width: Int, height: Int, render: () -> Unit, use: (tex: Texture) -> Unit = { }) {
+    inline fun renderToTexture(width: Int, height: Int, render: () -> Unit, use: (tex: Texture) -> Unit) {
 		val rb = renderBuffers.alloc()
 		frameRenderBuffers += rb
-		val oldRenderBuffer = currentRenderBuffer
 
-		rb.setSize(width, height)
-		setRenderBuffer(rb)
+        try {
+            rb.setSize(0, 0, width, height, width, height)
+            setRenderBufferTemporally(rb) {
+                clear(Colors.TRANSPARENT_BLACK) // transparent
+                render()
+            }
 
-		try {
-			clear(Colors.TRANSPARENT_BLACK) // transparent
-			render()
-		} finally {
-			setRenderBuffer(oldRenderBuffer)
-		}
-
-		try {
 			use(rb.tex)
 		} finally {
 			frameRenderBuffers -= rb
@@ -698,27 +711,19 @@ abstract class AG : Extra by Extra.Mixin() {
 		}
 	}
 
-    inline
-    fun renderToBitmap(bmp: Bitmap32, render: () -> Unit) {
+    inline fun renderToBitmap(bmp: Bitmap32, render: () -> Unit) {
         renderToTexture(bmp.width, bmp.height, {
             render()
             readColor(bmp)
-        })
+        }, {})
     }
 
-
-    fun setRenderBuffer(renderBuffer: BaseRenderBuffer): BaseRenderBuffer {
+    fun setRenderBuffer(renderBuffer: BaseRenderBuffer?): BaseRenderBuffer? {
 		val old = currentRenderBuffer
-        currentRenderBuffer.unset()
+        currentRenderBuffer?.unset()
 		currentRenderBuffer = renderBuffer
-		renderBuffer.set()
+		renderBuffer?.set()
 		return old
-	}
-
-    open fun unsetBackBuffer(width: Int, height: Int) {
-    }
-
-    open fun setBackBuffer(width: Int, height: Int) {
 	}
 
 	open fun readColor(bitmap: Bitmap32): Unit = TODO()
@@ -814,6 +819,10 @@ abstract class AG : Extra by Extra.Mixin() {
 			for (pair in pairs) put(pair.first, pair.second)
 		}
 
+        operator fun plus(other: UniformValues): UniformValues {
+            return UniformValues().put(this).put(other)
+        }
+
 		fun clear() {
 			_uniforms.clear()
 			_values.clear()
@@ -836,16 +845,17 @@ abstract class AG : Extra by Extra.Mixin() {
 			}
 		}
 
-		fun put(uniform: Uniform, value: Any) {
+		fun put(uniform: Uniform, value: Any): UniformValues {
 			for (n in 0 until _uniforms.size) {
 				if (_uniforms[n].name == uniform.name) {
 					_values[n] = value
-					return
+					return this
 				}
 			}
 
 			_uniforms.add(uniform)
 			_values.add(value)
+            return this
 		}
 
 		fun remove(uniform: Uniform) {
@@ -858,10 +868,11 @@ abstract class AG : Extra by Extra.Mixin() {
 			}
 		}
 
-		fun put(uniforms: UniformValues) {
+		fun put(uniforms: UniformValues): UniformValues {
 			for (n in 0 until uniforms.size) {
 				this.put(uniforms._uniforms[n], uniforms._values[n])
 			}
+            return this
 		}
 
 		fun setTo(uniforms: UniformValues) {

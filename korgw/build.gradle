@@ -4,8 +4,6 @@ apply plugin: com.soywiz.korlibs.KorlibsPlugin
 
 dependencies {
     commonMainApi("com.soywiz.korlibs.korim:korim:$korimVersion")
-    commonMainApi("com.soywiz.korlibs.klock:klock:$klockVersion")
-    commonMainApi("com.soywiz.korlibs.kmem:kmem:$kmemVersion")
 }
 
 korlibs {

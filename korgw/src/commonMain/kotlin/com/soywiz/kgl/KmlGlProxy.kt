@@ -998,7 +998,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
 		after("vertexAttrib4fv", sparams, "$res")
 		return res
 	}
-	override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit {
+	override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Long): Unit {
 		val sparams = "$index, $size, $type, $normalized, $stride, $pointer"
 		before("vertexAttribPointer", sparams)
 		val res = parent.vertexAttribPointer(index, size, type, normalized, stride, pointer)
@@ -1439,7 +1439,7 @@ open class KmlGlFastProxy(val parent: KmlGl) : KmlGl() {
 	override fun vertexAttrib4fv(index: Int, v: FBuffer): Unit {
 		return parent.vertexAttrib4fv(index, v)
 	}
-	override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Int): Unit {
+	override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, pointer: Long): Unit {
 		return parent.vertexAttribPointer(index, size, type, normalized, stride, pointer)
 	}
 	override fun viewport(x: Int, y: Int, width: Int, height: Int): Unit {
@@ -1454,7 +1454,12 @@ class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) 
     init {
         //println("CheckErrorsKmlGlProxy")
     }
-	override fun after(name: String, params: String, result: String): Unit {
+
+    override fun before(name: String, params: String) {
+        super.before(name, params)
+    }
+
+    override fun after(name: String, params: String, result: String): Unit {
         do {
             val error = parent.getError()
             if (error != NO_ERROR) {
@@ -1462,7 +1467,7 @@ class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) 
                 if (throwException) {
                     throw RuntimeException("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
                 } else {
-                    printStackTrace()
+                    printStackTrace("glError: $error ${parent.getErrorString(error)} calling $name($params) = $result")
                 }
             }
         } while (error != NO_ERROR)
@@ -1472,3 +1477,4 @@ class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) 
 
 fun KmlGl.checked(throwException: Boolean = false) = CheckErrorsKmlGlProxy(this, throwException)
 fun KmlGl.checkedIf(checked: Boolean, throwException: Boolean = false) = if (checked) CheckErrorsKmlGlProxy(this, throwException) else this
+fun KmlGl.logIf(log:Boolean=false) = if (log) LogKmlGlProxy(this) else this
