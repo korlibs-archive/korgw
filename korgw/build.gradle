@@ -12,7 +12,6 @@ korlibs {
     //dependencyCInterops("GL", ["linuxX64"])
 
     dependencies {
-        def jnaVersion = "5.5.0"
         add("jvmMainApi", "net.java.dev.jna:jna:$jnaVersion")
         add("jvmMainApi", "net.java.dev.jna:jna-platform:$jnaVersion")
         //add("jvmMainApi", "com.github.jnr:jnr-ffi:2.1.11")
