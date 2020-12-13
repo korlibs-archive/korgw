@@ -1013,9 +1013,7 @@ open class KmlGlProxy(val parent: KmlGl) : KmlGl() {
 		return res
 	}
 }
-open class KmlGlFastProxy(val parent: KmlGl) : KmlGl() {
-	open fun before(name: String, params: String): Unit = Unit
-	open fun after(name: String, params: String, result: String): Unit = Unit
+open class KmlGlFastProxy(var parent: KmlGl) : KmlGl() {
 	override fun activeTexture(texture: Int): Unit {
 		return parent.activeTexture(texture)
 	}
@@ -1446,9 +1444,13 @@ open class KmlGlFastProxy(val parent: KmlGl) : KmlGl() {
 		return parent.viewport(x, y, width, height)
 	}
 }
-class LogKmlGlProxy(parent: KmlGl) : KmlGlProxy(parent) {
-	override fun before(name: String, params: String): Unit = run { println("before: $name ($params)") }
-	override fun after(name: String, params: String, result: String): Unit = run { println("after: $name ($params) = $result") }
+class LogKmlGlProxy(parent: KmlGl, var logBefore: Boolean = false, var logAfter: Boolean = true) : KmlGlProxy(parent) {
+	override fun before(name: String, params: String): Unit {
+        if (logBefore) println("before: $name ($params)")
+	}
+	override fun after(name: String, params: String, result: String): Unit {
+        if (logAfter) println("after: $name ($params) = $result")
+	}
 }
 class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) : KmlGlProxy(parent) {
     init {
@@ -1477,4 +1479,5 @@ class CheckErrorsKmlGlProxy(parent: KmlGl, val throwException: Boolean = false) 
 
 fun KmlGl.checked(throwException: Boolean = false) = CheckErrorsKmlGlProxy(this, throwException)
 fun KmlGl.checkedIf(checked: Boolean, throwException: Boolean = false) = if (checked) CheckErrorsKmlGlProxy(this, throwException) else this
+fun KmlGl.cachedIf(cached: Boolean, throwException: Boolean = false) = if (cached) KmlGlCached(this) else this
 fun KmlGl.logIf(log:Boolean=false) = if (log) LogKmlGlProxy(this) else this
