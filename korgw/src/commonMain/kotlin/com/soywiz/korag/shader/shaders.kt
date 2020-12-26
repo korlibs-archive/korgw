@@ -71,7 +71,19 @@ enum class VarType(val kind: VarKind, val elementCount: Int, val isMatrix: Boole
 	SInt4(VarKind.TINT, elementCount = 4),
 	;
 
-	val bytesSize: Int = kind.bytesSize * elementCount
+    fun withElementCount(length: Int): VarType {
+        return when (kind) {
+            VarKind.TBYTE -> BYTE(length)
+            VarKind.TUNSIGNED_BYTE -> UBYTE(length)
+            VarKind.TSHORT -> SHORT(length)
+            VarKind.TUNSIGNED_SHORT -> USHORT(length)
+            VarKind.TINT -> INT(length)
+            VarKind.TFLOAT -> FLOAT(length)
+            else -> TODO()
+        }
+    }
+
+    val bytesSize: Int = kind.bytesSize * elementCount
 
 	companion object {
 		fun BYTE(count: Int) =
@@ -103,6 +115,7 @@ enum class ShaderType {
 }
 
 open class Operand(open val type: VarType) {
+    val elementCount get() = type.elementCount
 }
 
 open class Variable(val name: String, type: VarType, val arrayCount: Int) : Operand(type) {
@@ -176,7 +189,8 @@ data class ProgramConfig(
 class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: String = "program") : Closeable {
 	val uniforms = vertex.uniforms + fragment.uniforms
 	val attributes = vertex.attributes + fragment.attributes
-    override fun hashCode(): Int = (vertex.hashCode() * 11) + (fragment.hashCode() * 7) + name.hashCode()
+    val cachedHashCode = (vertex.hashCode() * 11) + (fragment.hashCode() * 7) + name.hashCode()
+    override fun hashCode(): Int = cachedHashCode
     override fun equals(other: Any?): Boolean = (other is Program) && (this.vertex == other.vertex)
         && (this.fragment == other.fragment) && (this.name == other.name)
 
@@ -245,6 +259,9 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 			return stmIf
 		}
 
+        fun PUT(shader: Shader) {
+            outputStms.add(shader.stm)
+        }
 		fun SET(target: Operand, expr: Operand) = run { outputStms += Stm.Set(target, expr) }
 		fun DISCARD() = run { outputStms += Stm.Discard() }
 
@@ -455,6 +472,7 @@ class Program(val vertex: VertexShader, val fragment: FragmentShader, val name: 
 
 open class Shader(val type: ShaderType, val stm: Program.Stm) {
     private val stmHashCode = stm.hashCode()
+    private val cachedHashCode = (type.hashCode() * 17) + stmHashCode
 
 	val uniforms = LinkedHashSet<Uniform>().also { out ->
         object : Program.Visitor<Unit>(Unit) {
@@ -469,7 +487,7 @@ open class Shader(val type: ShaderType, val stm: Program.Stm) {
     }.toSet()
 
     override fun equals(other: Any?): Boolean = other is Shader && (this.type == other.type) && (this.stmHashCode == other.stmHashCode) && (this.stm == other.stm)
-    override fun hashCode(): Int = (type.hashCode() * 17) + stmHashCode
+    override fun hashCode(): Int = cachedHashCode
 }
 
 open class VertexShader(stm: Program.Stm) : Shader(ShaderType.VERTEX, stm)
