@@ -44,4 +44,8 @@ class AwtAg(override val nativeComponent: Any, private val checkGl: Boolean, log
             else -> X11KmlGl
         }.checkedIf(checkGl)
     }
+
+    override fun beforeDoRender() {
+        gl.beforeDoRender(contextVersion)
+    }
 }

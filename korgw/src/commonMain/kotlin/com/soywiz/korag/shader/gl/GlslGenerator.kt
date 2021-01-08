@@ -52,6 +52,13 @@ class GlslGenerator constructor(
 
 	private fun errorType(type: VarType): Nothing = invalidOp("Don't know how to serialize type $type")
 
+    fun precToString(prec: Precision) = when (prec) {
+        Precision.DEFAULT -> ""
+        Precision.LOW -> "lowp "
+        Precision.MEDIUM -> "mediump "
+        Precision.HIGH -> "highp "
+    }
+
 	fun typeToString(type: VarType) = when (type) {
 		VarType.Byte4 -> "vec4"
 		VarType.Mat2 -> "mat2"
@@ -128,27 +135,41 @@ class GlslGenerator constructor(
                 }
                 line("#ifdef GL_ES")
                 indent {
-                    line("precision mediump float;")
-                    line("precision mediump int;")
+                    line("precision highp float;")
+                    line("precision highp int;")
                     line("precision lowp sampler2D;")
                     line("precision lowp samplerCube;")
                 }
+                line("#else")
+                indent {
+                    line("  #define highp ")
+                    line("  #define mediump ")
+                    line("  #define lowp ")
+                }
+                //indent {
+                //    line("precision highp float;")
+                //    line("precision highp int;")
+                //}
                 line("#endif")
+                //line("precision highp float;")
+                //line("precision highp int;")
+                //line("precision lowp sampler2D;")
+                //line("precision lowp samplerCube;")
             }
 
-            for (it in attributes) line("$IN ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
-            for (it in uniforms) line("$UNIFORM ${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+            for (it in attributes) line("$IN ${precToString(it.precision)}${typeToString(it.type)} ${it.name}${it.arrayDecl};")
+            for (it in uniforms) line("$UNIFORM ${precToString(it.precision)}${typeToString(it.type)} ${it.name}${it.arrayDecl};")
             for (it in varyings) {
                 if (newGlSlVersion && it.name == gl_FragColor) {
-                    line("layout(location=0) $OUT ${typeToString(it.type)} ${it.name};")
+                    line("layout(location=0) $OUT ${precToString(it.precision)}${typeToString(it.type)} ${it.name};")
                 } else {
-                    line("$OUT ${typeToString(it.type)} ${it.name};")
+                    line("$OUT ${precToString(it.precision)}${typeToString(it.type)} ${it.name};")
                 }
             }
 
             line("void main()") {
                 for (temp in temps) {
-                    line(typeToString(temp.type) + " " + temp.name + ";")
+                    line(precToString(temp.precision) + typeToString(temp.type) + " " + temp.name + ";")
                 }
                 line(programIndenter)
             }
