@@ -10,6 +10,7 @@ import com.soywiz.korgw.osx.*
 import com.soywiz.korgw.platform.*
 import com.soywiz.korgw.win32.*
 import com.soywiz.korgw.x11.*
+import com.soywiz.korim.color.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
 import com.soywiz.korio.file.std.*
@@ -189,10 +190,23 @@ abstract class BaseAwtGameWindow : GameWindow() {
 
             //gl.clearColor(1f, 1f, 1f, 1f)
             //gl.clear(gl.COLOR_BUFFER_BIT)
-            updateGamepads()
-            frame()
-            gl.flush()
-            gl.finish()
+            var gamePadTime: TimeSpan = 0.milliseconds
+            var frameTime: TimeSpan = 0.milliseconds
+            var finishTime: TimeSpan = 0.milliseconds
+            val totalTime = measureTime {
+                gamePadTime = measureTime {
+                    updateGamepads()
+                }
+                frameTime = measureTime {
+                    frame()
+                }
+                finishTime = measureTime {
+                    gl.flush()
+                    gl.finish()
+                }
+            }
+
+            //println("totalTime=$totalTime, gamePadTime=$gamePadTime, finishTime=$finishTime, frameTime=$frameTime, timedTasksTime=${coroutineDispatcher.timedTasksTime}, tasksTime=${coroutineDispatcher.tasksTime}, renderTime=${renderTime}, updateTime=${updateTime}")
         }
     }
 
@@ -238,6 +252,11 @@ abstract class BaseAwtGameWindow : GameWindow() {
         get() = component.isVisible
         set(value) {
             component.isVisible = value
+        }
+    override var bgcolor: RGBA
+        get() = component.background.toRgba()
+        set(value) {
+            component.background = value.toAwt()
         }
     override var quality: Quality = Quality.AUTOMATIC
 
@@ -343,7 +362,6 @@ abstract class BaseAwtGameWindow : GameWindow() {
             }
         })
 
-        var waitingRobotEvents = true
         fun handleMouseEvent(e: MouseEvent) {
             val ev = when (e.id) {
                 MouseEvent.MOUSE_MOVED -> com.soywiz.korev.MouseEvent.Type.MOVE
@@ -352,15 +370,9 @@ abstract class BaseAwtGameWindow : GameWindow() {
                 MouseEvent.MOUSE_RELEASED -> com.soywiz.korev.MouseEvent.Type.UP
                 else -> com.soywiz.korev.MouseEvent.Type.MOVE
             }
-            if (waitingRobotEvents) {
-                if (ev == com.soywiz.korev.MouseEvent.Type.CLICK) {
-                    waitingRobotEvents = false
-                }
-                return
-            }
-            //println("MOUSE EVENT: $ev : ${e.button}")
+            //println("MOUSE EVENT: $ev : ${e.button} : ${MouseButton[e.button - 1]}")
             queue {
-                val button = MouseButton[e.button - 1]
+                val button = if (e.button == 0) MouseButton.NONE else MouseButton[e.button - 1]
                 val factor = frameScaleFactor
                 val sx = e.x * factor
                 val sy = e.y * factor
@@ -434,21 +446,6 @@ abstract class BaseAwtGameWindow : GameWindow() {
             }
         }
 
-        contentComponent.addMouseMotionListener(object : MouseMotionAdapter() {
-            override fun mouseMoved(e: MouseEvent) = handleMouseEvent(e)
-            override fun mouseDragged(e: MouseEvent) = handleMouseEvent(e)
-        })
-
-        contentComponent.addMouseListener(object : MouseAdapter() {
-            override fun mouseReleased(e: MouseEvent) = handleMouseEvent(e)
-            override fun mouseMoved(e: MouseEvent) = handleMouseEvent(e)
-            override fun mouseEntered(e: MouseEvent) = handleMouseEvent(e)
-            override fun mouseDragged(e: MouseEvent) = handleMouseEvent(e)
-            override fun mouseClicked(e: MouseEvent) = handleMouseEvent(e)
-            override fun mouseExited(e: MouseEvent) = handleMouseEvent(e)
-            override fun mousePressed(e: MouseEvent) = handleMouseEvent(e)
-        })
-
         component.addMouseWheelListener { e -> handleMouseWheelEvent(e) }
 
         component.setFocusTraversalKeysEnabled(false)
@@ -468,12 +465,15 @@ abstract class BaseAwtGameWindow : GameWindow() {
             //fullscreen = true
 
             // keys.up(Key.ENTER) { if (it.alt) gameWindow.toggleFullScreen() }
-            if (OS.isWindows) {
+
+            // @TODO: HACK so the windows grabs focus on Windows 10 when launching on gradle daemon
+            val useRobotHack = OS.isWindows
+
+            if (useRobotHack) {
                 (component as? Frame?)?.apply {
                     val frame = this
                     val insets = frame.insets
                     frame.isAlwaysOnTop = true
-                    // @TODO: HACK so the windows grabs focus on Windows 10 at least when launching on gradle daemon
                     try {
                         val robot = Robot()
                         val pos = MouseInfo.getPointerInfo().location
@@ -485,7 +485,6 @@ abstract class BaseAwtGameWindow : GameWindow() {
                         //println("frame.insets: ${insets}")
                         //println(frame.contentPane.bounds)
                         //println("START ROBOT")
-                        waitingRobotEvents = true
                         robot.mouseMove(bounds.centerX.toInt(), bounds.centerY.toInt())
                         robot.mousePress(InputEvent.BUTTON3_MASK)
                         robot.mouseRelease(InputEvent.BUTTON3_MASK)
@@ -496,6 +495,28 @@ abstract class BaseAwtGameWindow : GameWindow() {
                     frame.isAlwaysOnTop = false
                 }
             }
+
+            EventQueue.invokeLater {
+                // Here all the robot events have been already processed so they won't be processed
+                //println("END ROBOT2")
+
+                contentComponent.addMouseMotionListener(object : MouseMotionAdapter() {
+                    override fun mouseMoved(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mouseDragged(e: MouseEvent) = handleMouseEvent(e)
+                })
+
+                contentComponent.addMouseListener(object : MouseAdapter() {
+                    override fun mouseReleased(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mouseMoved(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mouseEntered(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mouseDragged(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mouseClicked(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mouseExited(e: MouseEvent) = handleMouseEvent(e)
+                    override fun mousePressed(e: MouseEvent) = handleMouseEvent(e)
+                })
+
+            }
+
         }
 
         //val timer = Timer(1000 / 60, ActionListener { component.repaint() })
@@ -569,7 +590,7 @@ abstract class BaseAwtGameWindow : GameWindow() {
                 //println((end - start).timeSpan)
             }
         }
-        println("completed. running=$running")
+        println("completed.running=$running")
         //timer.stop()
 
         if (OS.isMac && displayLink != Pointer.NULL) {

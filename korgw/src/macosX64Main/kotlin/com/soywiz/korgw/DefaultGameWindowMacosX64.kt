@@ -2,7 +2,7 @@ package com.soywiz.korgw
 
 import com.soywiz.klock.*
 import com.soywiz.klock.hr.*
-import com.soywiz.kmem.startAddressOf
+import com.soywiz.kmem.*
 import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korim.bitmap.*
@@ -123,36 +123,59 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRend
 
             fun getHeight() = openglView.bounds.height
 
-            override fun mouseUp(event: NSEvent) {
-                //super.mouseUp(event)
-                val rx = event.locationInWindow.x.toInt()
-                val ry = (getHeight() - event.locationInWindow.y).toInt()
+            var lastModifierFlags: Int = 0
+
+            fun dispatchFlagIfRequired(event: NSEvent, mask: Int, key: Key) {
+                val old = (lastModifierFlags and mask) != 0
+                val new = (event.modifierFlags.toInt() and mask) != 0
+                if (old == new) return
+
+                dispatchKeyEventEx(
+                    type = if (new) KeyEvent.Type.DOWN else KeyEvent.Type.UP,
+                    id = 0,
+                    character = ' ',
+                    key = key,
+                    keyCode = key.ordinal,
+                    shift = event.shift,
+                    ctrl = event.ctrl,
+                    alt = event.alt,
+                    meta = event.meta
+                )
+            }
+
+            override fun flagsChanged(event: NSEvent) {
+                dispatchFlagIfRequired(event, NSShiftKeyMask.toInt(), Key.LEFT_SHIFT)
+                dispatchFlagIfRequired(event, NSControlKeyMask.toInt(), Key.LEFT_CONTROL)
+                dispatchFlagIfRequired(event, NSAlternateKeyMask.toInt(), Key.LEFT_ALT)
+                dispatchFlagIfRequired(event, NSCommandKeyMask.toInt(), Key.META)
+                dispatchFlagIfRequired(event, NSFunctionKeyMask.toInt(), Key.FUNCTION)
+                dispatchFlagIfRequired(event, NSEventModifierFlagCapsLock.toInt(), Key.CAPS_LOCK)
+
+                lastModifierFlags = event.modifierFlags.toInt()
+            }
+
+            override fun mouseUp(event: NSEvent) = mouseEvent(MouseEvent.Type.UP, event)
+            override fun rightMouseUp(event: NSEvent) = mouseEvent(MouseEvent.Type.UP, event)
+            override fun otherMouseUp(event: NSEvent) = mouseEvent(MouseEvent.Type.UP, event)
+
+            override fun mouseDown(event: NSEvent) = mouseEvent(MouseEvent.Type.DOWN, event)
+            override fun rightMouseDown(event: NSEvent) = mouseEvent(MouseEvent.Type.DOWN, event)
+            override fun otherMouseDown(event: NSEvent) = mouseEvent(MouseEvent.Type.DOWN, event)
+
+            override fun mouseDragged(event: NSEvent) = mouseEvent(MouseEvent.Type.DRAG, event)
+            override fun rightMouseDragged(event: NSEvent) = mouseEvent(MouseEvent.Type.DRAG, event)
+            override fun otherMouseDragged(event: NSEvent) = mouseEvent(MouseEvent.Type.DRAG, event)
+
+            override fun scrollWheel(event: NSEvent) = mouseEvent(MouseEvent.Type.SCROLL, event)
+
+            override fun mouseMoved(event: NSEvent) = mouseEvent(MouseEvent.Type.MOVE, event)
+
+            private fun mouseEvent(etype: MouseEvent.Type, e: NSEvent) {
+                val ex = e.locationInWindow.x.toInt()
+                val ey = (getHeight() - e.locationInWindow.y).toInt()
                 //println("mouseUp($rx,$ry)")
-                val x = rx
-                val y = ry
-                val button = event.buttonNumber.toInt()
+                val ebutton = e.buttonNumber.toInt()
 
-                mouseEvent(MouseEvent.Type.UP, x, y, button, event)
-                mouseEvent(MouseEvent.Type.CLICK, x, y, button, event) // @TODO: Conditionally depending on the down x,y & time
-            }
-
-            override fun mouseDown(event: NSEvent) {
-                //super.mouseDown(event)
-                val rx = event.locationInWindow.x.toInt()
-                val ry = (getHeight() - event.locationInWindow.y).toInt()
-                //println("mouseDown($rx,$ry)")
-                mouseEvent(MouseEvent.Type.DOWN, rx, ry, event.buttonNumber.toInt(), event)
-            }
-
-            override fun mouseMoved(event: NSEvent) {
-                //super.mouseMoved(event)
-                val rx = event.locationInWindow.x.toInt()
-                val ry = (getHeight() - event.locationInWindow.y).toInt()
-                //println("mouseMoved($rx,$ry)")
-                mouseEvent(MouseEvent.Type.MOVE, rx, ry, 0, event)
-            }
-
-            private fun mouseEvent(etype: MouseEvent.Type, ex: Int, ey: Int, ebutton: Int, e: NSEvent) {
                 val factor = backingScaleFactor
                 val sx = ex * factor
                 val sy = ey * factor
@@ -162,18 +185,34 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRend
                     type = etype,
                     x = sx.toInt(),
                     y = sy.toInt(),
-                    button = MouseButton[ebutton],
-                    buttons = e.buttonMask.toInt(),
-                    isShiftDown = e.shift, isCtrlDown = e.ctrl, isAltDown = e.alt, isMetaDown = e.meta
+                    button = when (etype) {
+                        MouseEvent.Type.SCROLL -> MouseButton.BUTTON_WHEEL
+                        else -> button(ebutton)
+                    },
+                    buttons = when (etype) {
+                        MouseEvent.Type.SCROLL -> 0
+                        else -> buttonMask(e.buttonMask.toInt())
+                    },
+                    scrollDeltaX = e.deltaX.toDouble(), scrollDeltaY = e.deltaY.toDouble(), scrollDeltaZ = e.deltaZ.toDouble(),
+                    isShiftDown = e.shift, isCtrlDown = e.ctrl, isAltDown = e.alt, isMetaDown = e.meta,
                 )
             }
 
-            override fun mouseDragged(event: NSEvent) {
-                super.mouseDragged(event)
-                val rx = event.locationInWindow.x.toInt()
-                val ry = (getHeight() - event.locationInWindow.y).toInt()
-                //println("mouseDragged($rx,$ry)")
-                mouseEvent(MouseEvent.Type.DRAG, rx, ry, 0, event)
+            fun buttonMask(mask: Int): Int {
+                var out = 0
+                for (n in 0 until 8) {
+                    if (mask.extractBool(n)) out = out or button(n).bits
+                }
+                return out
+            }
+
+            fun button(index: Int): MouseButton {
+                return when (index) {
+                    0 -> MouseButton.LEFT
+                    1 -> MouseButton.RIGHT
+                    2 -> MouseButton.MIDDLE
+                    else -> MouseButton[index]
+                }
             }
 
             fun keyDownUp(event: NSEvent, pressed: Boolean, e: NSEvent) {
@@ -185,6 +224,9 @@ actual fun CreateDefaultGameWindow(): GameWindow = object : GameWindow(), DoRend
                 val keyCode = event.keyCode.toInt()
 
                 val key = KeyCodesToKeys[keyCode] ?: CharToKeys[char] ?: Key.UNKNOWN
+
+                lastModifierFlags = event.modifierFlags.toInt()
+
                 //println("keyDownUp: char=$char, keyCode=${keyCode.toInt()}, key=$key, pressed=$pressed, shift=${e.shift}, ctrl=${e.ctrl}, alt=${e.alt}, meta=${e.meta}")
                 dispatchKeyEventEx(
                     type = if (pressed) KeyEvent.Type.DOWN else KeyEvent.Type.UP,

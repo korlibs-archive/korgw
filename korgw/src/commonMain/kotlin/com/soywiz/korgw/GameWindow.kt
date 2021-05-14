@@ -2,13 +2,13 @@ package com.soywiz.korgw
 
 import com.soywiz.kds.*
 import com.soywiz.klock.*
-import com.soywiz.klogger.*
 import com.soywiz.kmem.setBits
 import com.soywiz.korag.*
 import com.soywiz.korag.log.*
 import com.soywiz.korev.*
 import com.soywiz.korgw.internal.*
 import com.soywiz.korim.bitmap.*
+import com.soywiz.korim.color.*
 import com.soywiz.korio.*
 import com.soywiz.korio.async.*
 import com.soywiz.korio.file.*
@@ -57,6 +57,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     val timedTasks = PriorityQueue<TimedTask> { a, b -> a.time.compareTo(b.time) }
 
     fun queue(block: () -> Unit) {
+        //println("queue: $block")
         tasks.enqueue(Runnable { block() })
     }
 
@@ -67,6 +68,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
+        //println("dispatch: $block")
         tasks.enqueue(block)
     }
 
@@ -94,32 +96,42 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
         }
     }
 
+    var timedTasksTime = 0.milliseconds
+    var tasksTime = 0.milliseconds
+
     fun executePending(availableTime: TimeSpan) {
         try {
             val startTime = now()
-            while (timedTasks.isNotEmpty() && startTime >= timedTasks.head.time) {
-                val item = timedTasks.removeHead()
-                if (item.exception != null) {
-                    item.continuation?.resumeWithException(item.exception!!)
-                    if (item.callback != null) {
-                        item.exception?.printStackTrace()
+
+            timedTasksTime = measureTime {
+                while (timedTasks.isNotEmpty() && startTime >= timedTasks.head.time) {
+                    val item = timedTasks.removeHead()
+                    if (item.exception != null) {
+                        item.continuation?.resumeWithException(item.exception!!)
+                        if (item.callback != null) {
+                            item.exception?.printStackTrace()
+                        }
+                    } else {
+                        item.continuation?.resume(Unit)
+                        item.callback?.run()
                     }
-                } else {
-                    item.continuation?.resume(Unit)
-                    item.callback?.run()
-                }
-                if ((now() - startTime) >= availableTime) {
-                    informTooMuchCallbacksToHandleInThisFrame()
-                    break
+                    if ((now() - startTime) >= availableTime) {
+                        informTooMuchCallbacksToHandleInThisFrame()
+                        break
+                    }
                 }
             }
-
-            while (tasks.isNotEmpty()) {
-                val task = tasks.dequeue()
-                task?.run()
-                if ((now() - startTime) >= availableTime) {
-                    informTooMuchCallbacksToHandleInThisFrame()
-                    break
+            tasksTime = measureTime {
+                while (tasks.isNotEmpty()) {
+                    val task = tasks.dequeue()
+                    val time = measureTime {
+                        task?.run()
+                    }
+                    //println("task=$time, task=$task")
+                    if ((now() - startTime) >= availableTime) {
+                        informTooMuchCallbacksToHandleInThisFrame()
+                        break
+                    }
                 }
             }
         } catch (e: Throwable) {
@@ -146,7 +158,7 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
     override fun toString(): String = "GameWindowCoroutineDispatcher"
 }
 
-open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element, AGWindow {
+open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element, AGWindow, Extra by Extra.Mixin() {
     enum class Cursor {
         DEFAULT, CROSSHAIR, TEXT, HAND, MOVE, WAIT,
         RESIZE_EAST, RESIZE_WEST, RESIZE_SOUTH, RESIZE_NORTH,
@@ -211,7 +223,8 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     private val reshapeEvent = ReshapeEvent()
     protected val keyEvent = KeyEvent()
     protected val mouseEvent = MouseEvent()
-    protected val touchEvent = TouchEvent()
+    protected val touchBuilder = TouchBuilder()
+    protected val touchEvent get() = touchBuilder.new
     protected val dropFileEvent = DropFileEvent()
     protected val gamePadUpdateEvent = GamePadUpdateEvent()
     protected val gamePadConnectionEvent = GamePadConnectionEvent()
@@ -225,6 +238,20 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 
     open fun computeDisplayRefreshRate(): Int {
         return 60
+    }
+
+    open fun registerTime(name: String, time: TimeSpan) {
+        //println("registerTime: $name=$time")
+    }
+
+    inline fun <T> registerTime(name: String, block: () -> T): T {
+        val start = PerformanceCounter.microseconds
+        try {
+            return block()
+        } finally {
+            val end = PerformanceCounter.microseconds
+            registerTime(name, (end - start).microseconds)
+        }
     }
 
     private val fpsCached by IntTimedCache(1000.milliseconds) { computeDisplayRefreshRate() }
@@ -246,14 +273,17 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
     open var icon: Bitmap? = null
     open var fullscreen: Boolean = false
     open var visible: Boolean = false
+    open var bgcolor: RGBA = Colors.BLACK
     open var quality: Quality get() = Quality.AUTOMATIC; set(value) = Unit
 
+    val onDebugEnabled = Signal<Unit>()
     val onDebugChanged = Signal<Boolean>()
     open val debugComponent: Any? = null
     open var debug: Boolean = false
         set(value) {
             field = value
             onDebugChanged(value)
+            if (value) onDebugEnabled()
         }
 
     /**
@@ -329,10 +359,19 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         frame(true)
     }
 
+    var renderTime = 0.milliseconds
+    var updateTime = 0.milliseconds
+
     fun frame(doUpdate: Boolean, startTime: TimeSpan = PerformanceCounter.reference) {
-        frameRender()
+        renderTime = measureTime {
+            frameRender()
+        }
+        //println("renderTime=$renderTime")
         if (doUpdate) {
-            frameUpdate(startTime)
+            updateTime = measureTime {
+                frameUpdate(startTime)
+            }
+            //println("updateTime=$updateTime")
         }
     }
 
@@ -487,7 +526,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
         scaleCoords: Boolean = this.scaleCoords, simulateClickOnUp: Boolean = false
     ) {
         if (type != MouseEvent.Type.DOWN && type != MouseEvent.Type.UP) {
-            this.mouseButtons = this.mouseButtons.setBits(1 shl button.ordinal, type == MouseEvent.Type.DOWN)
+            this.mouseButtons = this.mouseButtons.setBits(if (button != null) 1 shl button.ordinal else 0, type == MouseEvent.Type.DOWN)
         }
         dispatch(mouseEvent.apply {
             this.type = type
@@ -505,20 +544,18 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             this.isMetaDown = isMetaDown
             this.scaleCoords = scaleCoords
         })
-        if (simulateClickOnUp && type == MouseEvent.Type.UP) {
-            dispatchMouseEvent(MouseEvent.Type.CLICK, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords, simulateClickOnUp = false)
-        }
+        //if (simulateClickOnUp && type == MouseEvent.Type.UP) {
+        //    dispatchMouseEvent(MouseEvent.Type.CLICK, id, x, y, button, buttons, scrollDeltaX, scrollDeltaY, scrollDeltaZ, isShiftDown, isCtrlDown, isAltDown, isMetaDown, scaleCoords, simulateClickOnUp = false)
+        //}
     }
 
-    fun dispatchTouchEventStartStart() = dispatchTouchEventStart(TouchEvent.Type.START)
-    fun dispatchTouchEventStartMove() = dispatchTouchEventStart(TouchEvent.Type.MOVE)
-    fun dispatchTouchEventStartEnd() = dispatchTouchEventStart(TouchEvent.Type.END)
-    fun dispatchTouchEventStart(type: TouchEvent.Type) = touchEvent.startFrame(type)
-    fun dispatchTouchEventAddTouch(id: Int, x: Double, y: Double) = touchEvent.touch(id, x, y)
-    fun dispatchTouchEventAddTouchAdd(id: Int, x: Double, y: Double) = touchEvent.touch(id, x, y, Touch.Status.ADD)
-    fun dispatchTouchEventAddTouchKeep(id: Int, x: Double, y: Double) = touchEvent.touch(id, x, y, Touch.Status.KEEP)
-    fun dispatchTouchEventAddTouchRemove(id: Int, x: Double, y: Double) = touchEvent.touch(id, x, y, Touch.Status.REMOVE)
-    fun dispatchTouchEventEnd() = dispatch(touchEvent)
+    // iOS tools
+    fun dispatchTouchEventModeIos() { touchBuilder.mode = TouchBuilder.Mode.IOS }
+    fun dispatchTouchEventStartStart() = touchBuilder.startFrame(TouchEvent.Type.START)
+    fun dispatchTouchEventStartMove() = touchBuilder.startFrame(TouchEvent.Type.MOVE)
+    fun dispatchTouchEventStartEnd() = touchBuilder.startFrame(TouchEvent.Type.END)
+    fun dispatchTouchEventAddTouch(id: Int, x: Double, y: Double) = touchBuilder.touch(id, x, y)
+    fun dispatchTouchEventEnd() = dispatch(touchBuilder.endFrame())
 
     // @TODO: Is this used?
     fun entry(callback: suspend () -> Unit) {
@@ -664,12 +701,14 @@ fun GameWindow.configure(
     height: Int,
     title: String? = "GameWindow",
     icon: Bitmap? = null,
-    fullscreen: Boolean? = null
+    fullscreen: Boolean? = null,
+    bgcolor: RGBA = Colors.BLACK,
 ) {
     this.setSize(width, height)
     if (title != null) this.title = title
     this.icon = icon
     if (fullscreen != null) this.fullscreen = fullscreen
+    this.bgcolor = bgcolor
     this.visible = true
 }
 
