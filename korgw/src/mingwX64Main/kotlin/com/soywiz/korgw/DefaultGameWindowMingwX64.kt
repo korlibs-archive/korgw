@@ -1,6 +1,5 @@
 package com.soywiz.korgw
 
-import com.soywiz.kgl.internal.*
 import com.soywiz.kgl.toInt
 import com.soywiz.kmem.*
 import com.soywiz.korag.*
@@ -130,9 +129,12 @@ class WindowsGameWindow : EventLoopGameWindow() {
     private var fsY = 0
     private var fsW = 128
     private var fsH = 128
+    private var lastFullScreen: Boolean? = null
     override var fullscreen: Boolean
-        get() = GetWindowLongPtrA(hwnd, GWL_STYLE.convert()).toLong().hasBits(WS_POPUP.toLong())
+        get() = if (hwnd != null) GetWindowLongPtrA(hwnd, GWL_STYLE.convert()).toLong().hasBits(WS_POPUP.toLong()) else lastFullScreen ?: false
         set(value) {
+            lastFullScreen = value
+            if (hwnd == null) return
             if (fullscreen == value) return
             memScoped {
                 val style = GetWindowLongPtrA(hwnd, GWL_STYLE.convert())
@@ -144,14 +146,14 @@ class WindowsGameWindow : EventLoopGameWindow() {
                     fsW = rect.width
                     fsH = rect.height
 
-                    SetWindowLongPtrA(hwnd, GWL_STYLE.convert(), style.toLong().without(WS_OVERLAPPEDWINDOW.toLong()).with(WS_POPUP.toLong()).convert())
+                    SetWindowLongPtrA(hwnd, GWL_STYLE.convert(), getWinStyle(true, style).convert())
                     MoveWindow(hwnd, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), TRUE)
-                    SetWindowLongPtrA(hwnd, GWL_EXSTYLE.convert(), 0.convert())
+                    SetWindowLongPtrA(hwnd, GWL_EXSTYLE.convert(), getWinExStyle(true).convert())
                     //ShowWindow(hwnd, SW_MAXIMIZE)
                 } else {
-                    SetWindowLongPtrA(hwnd, GWL_STYLE.convert(), style.toLong().without(WS_POPUP.toLong()).with(WS_OVERLAPPEDWINDOW.toLong()).convert())
+                    SetWindowLongPtrA(hwnd, GWL_STYLE.convert(), getWinStyle(false, style).convert())
                     MoveWindow(hwnd, fsX, fsY, fsW, fsH, TRUE)
-                    SetWindowLongPtrA(hwnd, GWL_EXSTYLE.convert(), 256.convert())
+                    SetWindowLongPtrA(hwnd, GWL_EXSTYLE.convert(), getWinExStyle(false).convert())
                     //ShowWindow(hwnd, SW_RESTORE)
                 }
             }
@@ -208,7 +210,7 @@ class WindowsGameWindow : EventLoopGameWindow() {
         return super.prompt(message, default)
     }
 
-    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
+    override suspend fun openFileDialog(filter: FileFilter?, write: Boolean, multi: Boolean, currentDir: VfsFile?): List<VfsFile> {
         val selectedFile = openSelectFile(hwnd = hwnd)
         if (selectedFile != null) {
             return listOf(com.soywiz.korio.file.std.localVfs(selectedFile))
@@ -303,34 +305,48 @@ class WindowsGameWindow : EventLoopGameWindow() {
             val screenHeight = GetSystemMetrics(SM_CYSCREEN)
 
             val realSize = getRealSize(windowWidth, windowHeight)
-            val realWidth = realSize.width
-            val realHeight = realSize.height
+            val realWidth = realSize.width//.clamp(0, screenWidth)
+            val realHeight = realSize.height//.clamp(0, screenHeight)
 
             //println("Initial window size: $windowWidth, $windowHeight")
 
+            fsX = ((screenWidth - realWidth) / 2).clamp(0, screenWidth - 16)
+            fsY = ((screenHeight - realHeight) / 2).clamp(0, realHeight - 16)
+            fsW = realWidth
+            fsH = realHeight
+
+            //val initialFullScreen = lastFullScreen
+            val initialFullScreen = false
+
             hwnd = CreateWindowExW(
-                winExStyle.convert(),
+                getWinExStyle(initialFullScreen).convert(),
                 clazzName,
                 title,
-                winStyle.convert(),
-                min2(max2(0, (screenWidth - realWidth) / 2), screenWidth - 16).convert(),
-                min2(max2(0, (screenHeight - realHeight) / 2), screenHeight - 16).convert(),
-                realWidth.convert(),
-                realHeight.convert(),
+                getWinStyle(initialFullScreen).convert(),
+                if (initialFullScreen) 0 else fsX.convert(),
+                if (initialFullScreen) 0 else fsY.convert(),
+                if (initialFullScreen) screenWidth else fsW.convert(),
+                if (initialFullScreen) screenHeight else fsH.convert(),
                 null, null, null, null
             )
             println("ERROR: " + GetLastError())
 
             _setIcon()
             ShowWindow(hwnd, SW_SHOWNORMAL.convert())
+            if (lastFullScreen != null) {
+                fullscreen = lastFullScreen!!
+            }
 
             //SetTimer(hwnd, 1, 1000 / 60, staticCFunction(::WndTimer))
         }
     }
 
     private val hasMenu = false
-    private val winStyle = WS_OVERLAPPEDWINDOW
-    private val winExStyle = WS_EX_CLIENTEDGE
+    private val winStyle: Long get() = getWinStyle(fullscreen)
+    private val winExStyle: Long get() = getWinExStyle(fullscreen)
+
+    fun getWinStyle(fullscreen: Boolean, extra: Long = 0): Long = if (fullscreen) extra.without(WS_OVERLAPPEDWINDOW.toLong()).with(WS_POPUP.toLong()) else extra.with(WS_OVERLAPPEDWINDOW.toLong()).without(WS_POPUP.toLong())
+    fun getWinExStyle(fullscreen: Boolean): Long = if (fullscreen) 0L else WS_EX_OVERLAPPEDWINDOW.toLong()
 
     fun getBorderSize(): SizeInt {
         val w = 1000
@@ -349,10 +365,9 @@ class WindowsGameWindow : EventLoopGameWindow() {
         }
     }
 
-    fun keyUpdate(keyCode: Int, down: Boolean) {
-        // @TODO: KeyEvent.Tpe.TYPE
+    fun keyEvent(keyCode: Int, type: KeyEvent.Type) {
         dispatch(keyEvent.apply {
-            this.type = if (down) com.soywiz.korev.KeyEvent.Type.DOWN else com.soywiz.korev.KeyEvent.Type.UP
+            this.type = type
             this.id = 0
             this.key = KEYS[keyCode] ?: com.soywiz.korev.Key.UNKNOWN
             this.keyCode = keyCode
@@ -362,6 +377,14 @@ class WindowsGameWindow : EventLoopGameWindow() {
             this.shift = GetKeyState(VK_SHIFT) < 0
             this.meta = GetKeyState(VK_LWIN) < 0 || GetKeyState(VK_RWIN) < 0
         })
+    }
+
+    fun keyUpdate(keyCode: Int, down: Boolean) {
+        keyEvent(keyCode, if (down) com.soywiz.korev.KeyEvent.Type.DOWN else com.soywiz.korev.KeyEvent.Type.UP)
+    }
+
+    fun keyType(character: Int) {
+        keyEvent(character, com.soywiz.korev.KeyEvent.Type.TYPE)
     }
 
     fun mouseEvent(
@@ -417,6 +440,8 @@ val _WM_KEYUP: UINT = WM_KEYUP.convert()
 val _WM_SYSKEYDOWN: UINT = WM_SYSKEYDOWN.convert()
 val _WM_SYSKEYUP: UINT = WM_SYSKEYUP.convert()
 val _WM_CLOSE: UINT = WM_CLOSE.convert()
+val _WM_CHAR: UINT = WM_CHAR.convert()
+val _WM_UNICHAR: UINT = WM_UNICHAR.convert()
 
 @Suppress("UNUSED_PARAMETER")
 fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT {
@@ -486,9 +511,9 @@ fun WndProc(hWnd: HWND?, message: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT
         _WM_KEYUP -> windowsGameWindow.keyUpdate(wParam.toInt(), false)
         _WM_SYSKEYDOWN -> windowsGameWindow.keyUpdate(wParam.toInt(), true)
         _WM_SYSKEYUP -> windowsGameWindow.keyUpdate(wParam.toInt(), false)
-        _WM_CLOSE -> {
-            kotlin.system.exitProcess(0)
-        }
+        _WM_CHAR -> windowsGameWindow.keyType(wParam.toInt())
+        //_WM_UNICHAR -> windowsGameWindow.keyType(wParam.toInt())
+        _WM_CLOSE -> kotlin.system.exitProcess(0)
     }
     return DefWindowProcW(hWnd, message, wParam, lParam)
 }

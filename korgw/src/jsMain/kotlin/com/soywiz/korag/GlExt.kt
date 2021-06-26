@@ -41,8 +41,6 @@ open class AGWebgl(val config: AGConfig, val glDecorator: (KmlGl) -> KmlGl = { i
             ?: (document.createElement("canvas") as HTMLCanvasElement)
     }
 
-
-
 	val canvas by lazy { getCanvas() }
 
 	val glOpts = jsObject(

@@ -3,7 +3,6 @@ package com.soywiz.korgw.awt
 import com.soywiz.kgl.*
 import com.soywiz.klock.*
 import com.soywiz.kmem.*
-import com.soywiz.korag.*
 import com.soywiz.korev.*
 import com.soywiz.korgw.*
 import com.soywiz.korgw.osx.*
@@ -23,7 +22,6 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import java.net.*
 import javax.swing.*
-import java.awt.GraphicsDevice
 
 abstract class BaseAwtGameWindow : GameWindow() {
     abstract override val ag: AwtAg
@@ -45,8 +43,9 @@ abstract class BaseAwtGameWindow : GameWindow() {
     }
     val windowOrComponent get() = window ?: component
 
-    override var cursor: Cursor = Cursor.DEFAULT
+    override var cursor: ICursor = Cursor.DEFAULT
         set(value) {
+            if (field == value) return
             field = value
             val awtCursor = when (value) {
                 Cursor.DEFAULT -> java.awt.Cursor.DEFAULT_CURSOR
@@ -63,24 +62,58 @@ abstract class BaseAwtGameWindow : GameWindow() {
                 Cursor.RESIZE_NORTH_WEST -> java.awt.Cursor.NW_RESIZE_CURSOR
                 Cursor.RESIZE_SOUTH_EAST -> java.awt.Cursor.SE_RESIZE_CURSOR
                 Cursor.RESIZE_SOUTH_WEST -> java.awt.Cursor.SW_RESIZE_CURSOR
+                else -> java.awt.Cursor.DEFAULT_CURSOR
             }
             component.cursor = java.awt.Cursor(awtCursor)
         }
 
-    override fun showContextMenu(items: List<MenuItem?>) {
-        val popupMenu = JPopupMenu()
-        for (item in items) {
-            if (item?.text == null) {
-                popupMenu.add(JSeparator())
-            } else {
-                popupMenu.add(JMenuItem(item.text).also {
+    fun MenuItem?.toJMenuItem(): JComponent {
+        val item = this
+        return when {
+            item == null || item.text == null -> JSeparator()
+            item.children != null -> {
+                JMenu(item.text).also {
                     it.isEnabled = item.enabled
-                    it.addActionListener {
-                        item.action()
+                    it.addActionListener { item.action() }
+                    for (child in item.children) {
+                        it.add(child.toJMenuItem())
                     }
-                })
+                }
+            }
+            else -> JMenuItem(item.text).also {
+                it.isEnabled = item.enabled
+                it.addActionListener { item.action() }
             }
         }
+    }
+
+    override fun setMainMenu(items: List<MenuItem>) {
+        val component = this.component
+        if (component !is JFrame) {
+            println("GameWindow.setMainMenu: component=$component")
+            return
+        }
+
+        val bar = JMenuBar()
+        for (item in items) {
+            val mit = item.toJMenuItem()
+            if (mit is JMenu) {
+                bar.add(mit)
+            }
+        }
+        component.jMenuBar = bar
+        component.doLayout()
+        component.repaint()
+        println("GameWindow.setMainMenu: component=$component, bar=$bar")
+    }
+
+    override fun showContextMenu(items: List<MenuItem>) {
+        val popupMenu = JPopupMenu()
+        for (item in items) {
+            popupMenu.add(item.toJMenuItem())
+        }
+        //println("showContextMenu: $items")
+        popupMenu.setLightWeightPopupEnabled(false)
         popupMenu.show(contentComponent, mouseX, mouseY)
     }
 
@@ -278,10 +311,14 @@ abstract class BaseAwtGameWindow : GameWindow() {
         return JOptionPane.showInputDialog(component, message, "Input", JOptionPane.PLAIN_MESSAGE, null, null, default).toString()
     }
 
-    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
+    override suspend fun openFileDialog(filter: FileFilter?, write: Boolean, multi: Boolean, currentDir: VfsFile?): List<VfsFile> {
         //val chooser = JFileChooser()
         val mode = if (write) FileDialog.SAVE else FileDialog.LOAD
         val chooser = FileDialog(this.component.getContainerFrame(), "Select file", mode)
+        if (currentDir != null) {
+            chooser.directory = currentDir.absolutePath
+        }
+        chooser.setFilenameFilter { dir, name -> filter == null || filter.matches(name) }
         chooser.setLocationRelativeTo(null)
         //chooser.fileFilter = filter // @TODO: Filters
         chooser.isMultipleMode = multi
@@ -362,6 +399,19 @@ abstract class BaseAwtGameWindow : GameWindow() {
             }
         })
 
+        var lastMouseX: Int = 0
+        var lastMouseY: Int = 0
+        var lockingX: Int = 0
+        var lockingY: Int = 0
+        var locking = false
+
+        mouseEvent.requestLock = {
+            val location = MouseInfo.getPointerInfo().location
+            lockingX = location.x
+            lockingY = location.y
+            locking = true
+        }
+
         fun handleMouseEvent(e: MouseEvent) {
             val ev = when (e.id) {
                 MouseEvent.MOUSE_MOVED -> com.soywiz.korev.MouseEvent.Type.MOVE
@@ -374,6 +424,16 @@ abstract class BaseAwtGameWindow : GameWindow() {
             queue {
                 val button = if (e.button == 0) MouseButton.NONE else MouseButton[e.button - 1]
                 val factor = frameScaleFactor
+
+                if (locking) {
+                    Robot().mouseMove(lockingX, lockingY)
+                    if (ev == com.soywiz.korev.MouseEvent.Type.UP) {
+                        locking = false
+                    }
+                }
+
+                lastMouseX = e.x
+                lastMouseY = e.y
                 val sx = e.x * factor
                 val sy = e.y * factor
                 val modifiers = e.modifiersEx

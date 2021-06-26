@@ -16,6 +16,7 @@ import com.soywiz.korio.file.std.localCurrentDirVfs
 import com.soywiz.korio.file.std.localVfs
 import com.soywiz.korio.lang.*
 import com.soywiz.korio.net.*
+import com.soywiz.korio.util.*
 import com.soywiz.korma.geom.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.*
@@ -26,14 +27,29 @@ var GLOBAL_CHECK_GL = false
 
 expect fun CreateDefaultGameWindow(): GameWindow
 
-interface DialogInterface {
+/**
+ * @example FileFilter("All files" to listOf("*.*"), "Image files" to listOf("*.png", "*.jpg", "*.jpeg", "*.gif"))
+ */
+data class FileFilter(val entries: List<Pair<String, List<String>>>) {
+    private val regexps = entries.flatMap { it.second }.map { Regex.fromGlob(it) }
+
+    constructor(vararg entries: Pair<String, List<String>>) : this(entries.toList())
+    fun matches(fileName: String): Boolean = entries.isEmpty() || regexps.any { it.matches(fileName) }
+}
+
+interface DialogInterface : Closeable {
     suspend fun browse(url: URL): Unit = unsupported()
     suspend fun alert(message: String): Unit = unsupported()
     suspend fun confirm(message: String): Boolean = unsupported()
     suspend fun prompt(message: String, default: String = ""): String = unsupported()
     // @TODO: Provide current directory
-    suspend fun openFileDialog(filter: String? = null, write: Boolean = false, multi: Boolean = false): List<VfsFile> =
+    suspend fun openFileDialog(filter: FileFilter? = null, write: Boolean = false, multi: Boolean = false, currentDir: VfsFile? = null): List<VfsFile> =
         unsupported()
+    override fun close(): Unit = unsupported()
+}
+
+suspend fun DialogInterface.openFileDialog(filter: String? = null, write: Boolean = false, multi: Boolean = false): List<VfsFile> {
+    return openFileDialog(null, write, multi)
 }
 
 suspend fun DialogInterface.alertError(e: Throwable) {
@@ -159,7 +175,9 @@ open class GameWindowCoroutineDispatcher : CoroutineDispatcher(), Delay, Closeab
 }
 
 open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, CoroutineContext.Element, AGWindow, Extra by Extra.Mixin() {
-    enum class Cursor {
+    interface ICursor
+
+    enum class Cursor : ICursor {
         DEFAULT, CROSSHAIR, TEXT, HAND, MOVE, WAIT,
         RESIZE_EAST, RESIZE_WEST, RESIZE_SOUTH, RESIZE_NORTH,
         RESIZE_NORTH_EAST, RESIZE_NORTH_WEST, RESIZE_SOUTH_EAST, RESIZE_SOUTH_WEST;
@@ -176,9 +194,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
                 (45.degrees * 7) to RESIZE_NORTH_EAST,
             )
 
-            fun fromAngle(angle: Angle?): Cursor? {
+            fun fromAngleResize(angle: Angle?): ICursor? {
                 var minDistance = 360.degrees
-                var cursor: Cursor? = null
+                var cursor: ICursor? = null
                 if (angle != null) {
                     for ((cangle, ccursor) in ANGLE_TO_CURSOR) {
                         val cdistance = (angle - cangle).absoluteValue
@@ -190,18 +208,70 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
                 }
                 return cursor
             }
+
+            fun fromAnchorResize(anchor: Anchor): ICursor? {
+                return when (anchor) {
+                    Anchor.TOP_LEFT -> RESIZE_NORTH_WEST
+                    Anchor.TOP -> RESIZE_NORTH
+                    Anchor.TOP_RIGHT -> RESIZE_NORTH_EAST
+                    Anchor.LEFT -> RESIZE_WEST
+                    Anchor.RIGHT -> RESIZE_EAST
+                    Anchor.BOTTOM_LEFT -> RESIZE_SOUTH_WEST
+                    Anchor.BOTTOM -> RESIZE_SOUTH
+                    Anchor.BOTTOM_RIGHT -> RESIZE_SOUTH_EAST
+                    else -> null
+                }
+            }
         }
     }
 
-    data class MenuItem(val text: String?, val enabled: Boolean = true, val children: List<MenuItem>? = null, val action: () -> Unit)
+    data class MenuItem(val text: String?, val enabled: Boolean = true, val children: List<MenuItem>? = null, val action: () -> Unit = {})
 
-    open fun showContextMenu(items: List<MenuItem?>) {
+    open fun setMainMenu(items: List<MenuItem>) {
     }
 
-    open var cursor: Cursor = Cursor.DEFAULT
+    open fun showContextMenu(items: List<MenuItem>) {
+    }
+
+    class MenuItemBuilder(private var text: String? = null, private var enabled: Boolean = true, private var action: () -> Unit = {}) {
+        @PublishedApi internal val children = arrayListOf<MenuItem>()
+
+        inline fun separator() {
+            item(null)
+        }
+
+        inline fun item(text: String?, enabled: Boolean = true, noinline action: () -> Unit = {}, block: MenuItemBuilder.() -> Unit = {}): MenuItem {
+            val mib = MenuItemBuilder(text, enabled, action)
+            block(mib)
+            val item = mib.toItem()
+            children.add(item)
+            return item
+        }
+
+        fun toItem() = MenuItem(text, enabled, children.ifEmpty { null }, action)
+    }
+
+    fun showContextMenu(block: MenuItemBuilder.() -> Unit) {
+        showContextMenu(MenuItemBuilder().also(block).toItem().children ?: listOf())
+    }
+
+    open val isSoftKeyboardVisible: Boolean get() = false
+
+    open fun setInputRectangle(windowRect: Rectangle) {
+    }
+
+    open fun showSoftKeyboard(force: Boolean = true) {
+    }
+
+    open fun hideSoftKeyboard() {
+    }
+
+    open var cursor: ICursor = Cursor.DEFAULT
 
     override val key: CoroutineContext.Key<*> get() = CoroutineKey
-    companion object CoroutineKey : CoroutineContext.Key<GameWindow>
+    companion object CoroutineKey : CoroutineContext.Key<GameWindow> {
+        val MenuItemSeparatror = MenuItem(null)
+    }
 
     override val ag: AG = LogAG()
     open val coroutineDispatcher: GameWindowCoroutineDispatcher = GameWindowCoroutineDispatcher()
@@ -495,6 +565,7 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
 
     fun dispatchKeyEventEx(
         type: KeyEvent.Type, id: Int, character: Char, key: Key, keyCode: Int,
+
         shift: Boolean = this.shift, ctrl: Boolean = this.ctrl, alt: Boolean = this.alt, meta: Boolean = this.meta
     ) {
         if (type != KeyEvent.Type.TYPE) {
@@ -569,6 +640,9 @@ open class GameWindow : EventDispatcher.Mixin(), DialogInterface, Closeable, Cor
             }
         }
     }
+
+    //open fun lockMousePointer() = println("WARNING: lockMousePointer not implemented")
+    //open fun unlockMousePointer() = Unit
 }
 
 open class EventLoopGameWindow : GameWindow() {
@@ -675,7 +749,7 @@ open class ZenityDialogs : DialogInterface {
         ""
     }
 
-    override suspend fun openFileDialog(filter: String?, write: Boolean, multi: Boolean): List<VfsFile> {
+    override suspend fun openFileDialog(filter: FileFilter?, write: Boolean, multi: Boolean, currentDir: VfsFile?): List<VfsFile> {
         return exec(*com.soywiz.korio.util.buildList<String> {
             add("zenity")
             add("--file-selection")
