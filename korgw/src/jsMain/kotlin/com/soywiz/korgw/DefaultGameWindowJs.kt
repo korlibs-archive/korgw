@@ -221,15 +221,12 @@ open class BrowserGameWindow : GameWindow() {
     }
 
     private fun mouseEvent(e: MouseEvent, type: com.soywiz.korev.MouseEvent.Type, pressingType: com.soywiz.korev.MouseEvent.Type = type) {
-        // If we are in a touch device, touch events will be dispatched, and then we don't want to emit mouse events, that would be duplicated
-        if (is_touch_device()) return
-
         val canvasBounds = canvas.getBoundingClientRect()
 
         val tx = transformEventX(e.clientX.toDouble() - canvasBounds.left).toInt()
         val ty = transformEventY(e.clientY.toDouble() - canvasBounds.top).toInt()
         //console.log("mouseEvent", type.toString(), e.clientX, e.clientY, tx, ty)
-        dispatch(mouseEvent {
+        mouseEvent {
             this.type = if (e.buttons.toInt() != 0) pressingType else type
             this.scaleCoords = false
             this.id = 0
@@ -241,7 +238,32 @@ open class BrowserGameWindow : GameWindow() {
             this.isCtrlDown = e.ctrlKey
             this.isAltDown = e.altKey
             this.isMetaDown = e.metaKey
-        })
+            if (type == com.soywiz.korev.MouseEvent.Type.SCROLL) {
+                val we = e.unsafeCast<WheelEvent>()
+                val multiplier = when (we.deltaMode) {
+                    WheelEvent.DOM_DELTA_PIXEL -> 0.1
+                    WheelEvent.DOM_DELTA_LINE -> 1.0
+                    WheelEvent.DOM_DELTA_PAGE -> 10.0
+                    else -> 1.0
+                }
+
+                this.scrollDeltaX = we.deltaX * multiplier
+                this.scrollDeltaY = we.deltaY * multiplier
+                this.scrollDeltaZ = we.deltaZ * multiplier
+                // @TODO: Enable after ABI change
+                //this.scrollDeltaMode = when (we.deltaMode) {
+                //    WheelEvent.DOM_DELTA_PIXEL -> com.soywiz.korev.MouseEvent.ScrollDeltaMode.PIXEL
+                //    WheelEvent.DOM_DELTA_LINE -> com.soywiz.korev.MouseEvent.ScrollDeltaMode.LINE
+                //    WheelEvent.DOM_DELTA_PAGE -> com.soywiz.korev.MouseEvent.ScrollDeltaMode.PAGE
+                //    else -> com.soywiz.korev.MouseEvent.ScrollDeltaMode.LINE
+                //}
+            }
+        }
+
+        // If we are in a touch device, touch events will be dispatched, and then we don't want to emit mouse events, that would be duplicated
+        if (!is_touch_device() || type == com.soywiz.korev.MouseEvent.Type.SCROLL) {
+            dispatch(mouseEvent)
+        }
     }
 
     override var title: String
@@ -251,6 +273,35 @@ open class BrowserGameWindow : GameWindow() {
     override val height: Int get() = canvas.clientHeight
     override val bufferWidth: Int get() = canvas.width
     override val bufferHeight: Int get() = canvas.height
+
+    override var cursor: ICursor = Cursor.DEFAULT
+        set(value) {
+            field = value
+            canvas.style.cursor = when (value) {
+                is Cursor -> {
+                    when (value) {
+                        Cursor.DEFAULT -> "default"
+                        Cursor.CROSSHAIR -> "crosshair"
+                        Cursor.TEXT -> "text"
+                        Cursor.HAND -> "pointer"
+                        Cursor.MOVE -> "move"
+                        Cursor.WAIT -> "wait"
+                        Cursor.RESIZE_EAST -> "e-resize"
+                        Cursor.RESIZE_WEST -> "w-resize"
+                        Cursor.RESIZE_SOUTH -> "s-resize"
+                        Cursor.RESIZE_NORTH -> "n-resize"
+                        Cursor.RESIZE_NORTH_EAST -> "ne-resize"
+                        Cursor.RESIZE_NORTH_WEST -> "nw-resize"
+                        Cursor.RESIZE_SOUTH_EAST -> "se-resize"
+                        Cursor.RESIZE_SOUTH_WEST -> "sw-resize"
+                        //Cursor.ZOOM_IN -> "zoom-in"
+                        //Cursor.ZOOM_OUT -> "zoom-out"
+                        else -> "default"
+                    }
+                }
+                else -> "default"
+            }
+        }
 
     override var icon: Bitmap? = null
         set(value) {
@@ -362,6 +413,9 @@ open class BrowserGameWindow : GameWindow() {
             document.body?.style?.overflowX = "hidden"
             document.body?.style?.overflowY = "hidden"
         }
+
+        canvas.addEventListener("wheel", { mouseEvent(it.unsafeCast<WheelEvent>(), com.soywiz.korev.MouseEvent.Type.SCROLL) })
+
         canvas.addEventListener("mouseenter", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.ENTER) })
         canvas.addEventListener("mouseleave", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.EXIT) })
         canvas.addEventListener("mouseover", { mouseEvent(it.unsafeCast<MouseEvent>(), com.soywiz.korev.MouseEvent.Type.MOVE, com.soywiz.korev.MouseEvent.Type.DRAG) })
