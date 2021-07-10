@@ -1,8 +1,6 @@
 package com.soywiz.korag
 
-import com.soywiz.kds.Extra
-import com.soywiz.kds.FastStringMap
-import com.soywiz.kds.getOrPut
+import com.soywiz.kds.*
 import com.soywiz.kds.iterators.*
 import com.soywiz.kgl.*
 import com.soywiz.klock.*
@@ -26,7 +24,7 @@ import kotlin.math.*
 
 abstract class AGOpengl : AG() {
     class ShaderException(val str: String, val error: String, val errorInt: Int, val gl: KmlGl) :
-        RuntimeException("Error Compiling Shader : $errorInt : '$error' : source='$str', gl.versionInt=${gl.versionInt}, gl.versionString='${gl.versionString}', gl=$gl")
+        RuntimeException("Error Compiling Shader : ${errorInt.hex} : '$error' : source='$str', gl.versionInt=${gl.versionInt}, gl.versionString='${gl.versionString}', gl=$gl")
 
     open var isGlAvailable = true
     abstract val gl: KmlGl
@@ -268,8 +266,8 @@ abstract class AGOpengl : AG() {
             val value = uniforms.values[n]
             when (uniformType) {
                 VarType.TextureUnit -> {
-                    val unit = value as TextureUnit
-                    val tex = (unit.texture as GlTexture?)
+                    val unit = value.fastCastTo<TextureUnit>()
+                    val tex = (unit.texture.fastCastTo<GlTexture?>())
                     if (tex != null) {
                         if (tex.forcedTexTarget != gl.TEXTURE_2D && tex.forcedTexTarget != -1) {
                             useExternalSampler = true
@@ -327,21 +325,18 @@ abstract class AGOpengl : AG() {
             //println("uniform: $uniform, arrayCount=$arrayCount, stride=$stride")
 
             when (uniformType) {
-                VarType.TextureUnit -> {
-                    val unit = value as TextureUnit
+                VarType.TextureUnit, VarType.SamplerCube -> {
+                    val unit = value.fastCastTo<TextureUnit>()
                     gl.activeTexture(gl.TEXTURE0 + textureUnit)
-                    val tex = (unit.texture as GlTexture?)
-                    tex?.bindEnsuring()
-                    tex?.setFilter(unit.linear)
-                    gl.uniform1i(location, textureUnit)
-                    textureUnit++
-                }
-                VarType.SamplerCube -> {
-                    val unit = value as TextureUnit
-                    gl.activeTexture(gl.TEXTURE0 + textureUnit)
-                    val tex = unit.texture as TextureGeneric
-                    tex.initialiseIfNeeded()
-                    tex.bindEnsuring()
+                    if (uniformType == VarType.TextureUnit) {
+                        val tex = (unit.texture.fastCastTo<GlTexture?>())
+                        tex?.bindEnsuring()
+                        tex?.setFilter(unit.linear)
+                    } else {
+                        val tex = unit.texture.fastCastTo<TextureGeneric>()
+                        tex.initialiseIfNeeded()
+                        tex.bindEnsuring()
+                    }
                     gl.uniform1i(location, textureUnit)
                     textureUnit++
                 }
@@ -350,7 +345,7 @@ abstract class AGOpengl : AG() {
                         is Array<*> -> value
                         is Matrix3D -> mat3dArray.also { it[0].copyFrom(value) }
                         else -> error("Not an array or a matrix3d")
-                    } as Array<Matrix3D>
+                    }.fastCastTo<Array<Matrix3D>>()
                     val arrayCount = min(declArrayCount, matArray.size)
 
                     val matSize = when (uniformType) {

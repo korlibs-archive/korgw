@@ -160,6 +160,9 @@ abstract class AG : AGFeatures, Extra by Extra.Mixin() {
         val disabled: Boolean get() = srcRGB == BlendFactor.ONE && dstRGB == BlendFactor.ZERO && srcA == BlendFactor.ONE && dstA == BlendFactor.ZERO
         val enabled: Boolean get() = !disabled
 
+        private val cachedHashCode: Int = hashCode(srcRGB, dstRGB, srcA, dstA, eqRGB, eqA)
+        override fun hashCode(): Int = cachedHashCode
+
         companion object {
             val NONE = Blending(BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ONE, BlendFactor.ZERO)
             val NORMAL = Blending(
@@ -331,7 +334,12 @@ abstract class AG : AGFeatures, Extra by Extra.Mixin() {
     data class TextureUnit(
         var texture: AG.Texture? = null,
         var linear: Boolean = true
-    )
+    ) {
+        fun set(texture: AG.Texture?, linear: Boolean) {
+            this.texture = texture
+            this.linear = linear
+        }
+    }
 
     open class Buffer(val kind: Kind) : Closeable {
         enum class Kind { INDEX, VERTEX }
@@ -375,7 +383,9 @@ abstract class AG : AGFeatures, Extra by Extra.Mixin() {
         }
 
         fun upload(data: ShortArray, offset: Int = 0, length: Int = data.size): Buffer {
-            mem = FBuffer(length * 2)
+            if (mem == null || mem!!.size < length * 2) {
+                mem = FBuffer(length * 2)
+            }
             mem!!.setAlignedArrayInt16(0, data, offset, length)
             memOffset = 0
             memLength = length * 2
@@ -564,7 +574,7 @@ abstract class AG : AGFeatures, Extra by Extra.Mixin() {
     })
 
     fun drawV2(
-        vertexData: List<VertexData>,
+        vertexData: FastArrayList<VertexData>,
         program: Program,
         type: DrawType,
         vertexCount: Int,
@@ -601,7 +611,7 @@ abstract class AG : AGFeatures, Extra by Extra.Mixin() {
     )
 
     data class Batch constructor(
-        var vertexData: List<VertexData> = listOf(VertexData()),
+        var vertexData: FastArrayList<VertexData> = fastArrayListOf(VertexData()),
         var program: Program = DefaultShaders.PROGRAM_DEBUG,
         var type: DrawType = DrawType.TRIANGLES,
         var vertexCount: Int = 0,
@@ -616,7 +626,7 @@ abstract class AG : AGFeatures, Extra by Extra.Mixin() {
         var scissor: Scissor? = null,
         var instances: Int = 1
     ) {
-        private val singleVertexData = arrayListOf<VertexData>()
+        private val singleVertexData = FastArrayList<VertexData>()
 
         private fun ensureSingleVertexData() {
             if (singleVertexData.isEmpty()) singleVertexData.add(VertexData())
