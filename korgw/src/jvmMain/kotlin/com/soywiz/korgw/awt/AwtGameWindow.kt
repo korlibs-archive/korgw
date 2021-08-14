@@ -106,10 +106,15 @@ class AwtGameWindow(checkGl: Boolean, logGl: Boolean) : BaseAwtGameWindow() {
                     null
                 }
                 */
-
-                MicroDynamic {
-                    getClass("com.apple.eawt.FullScreenUtilities").invoke("setWindowCanFullScreen", frame, true)
-                    //getClass("com.apple.eawt.FullScreenUtilities").invoke("addFullScreenListenerTo", frame, listener)
+                try {
+                    MicroDynamic {
+                        getClass("com.apple.eawt.FullScreenUtilities").invoke("setWindowCanFullScreen", frame, true)
+                        //getClass("com.apple.eawt.FullScreenUtilities").invoke("addFullScreenListenerTo", frame, listener)
+                    }
+                } catch (e: Throwable) {
+                    if (e::class.qualifiedName != "java.lang.reflect.InaccessibleObjectException") {
+                        e.printStackTrace()
+                    }
                 }
 
                 // @TODO: This one owns the whole screen in a bad way
@@ -191,9 +196,18 @@ class AwtGameWindow(checkGl: Boolean, logGl: Boolean) : BaseAwtGameWindow() {
                         //println("TOGGLING!")
                         if (fullscreen != value) {
                             queue {
-                                MicroDynamic {
-                                    //println("INVOKE!: ${getClass("com.apple.eawt.Application").invoke("getApplication")}")
-                                    getClass("com.apple.eawt.Application").invoke("getApplication").invoke("requestToggleFullScreen", frame)
+                                try {
+                                    MicroDynamic {
+                                        //println("INVOKE!: ${getClass("com.apple.eawt.Application").invoke("getApplication")}")
+                                        getClass("com.apple.eawt.Application").invoke("getApplication")
+                                            .invoke("requestToggleFullScreen", frame)
+                                    }
+                                } catch (e: Throwable) {
+                                    if (e::class.qualifiedName != "java.lang.reflect.InaccessibleObjectException") {
+                                        e.printStackTrace()
+                                    }
+                                    GraphicsEnvironment.getLocalGraphicsEnvironment().defaultScreenDevice.fullScreenWindow = if (value) frame else null
+                                    frame.isVisible = true
                                 }
                             }
                         }
